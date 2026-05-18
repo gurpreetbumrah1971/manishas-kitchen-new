@@ -20,13 +20,13 @@ async function main() {
 
   // Create Categories
   const snacks = await prisma.category.create({
-    data: { name: 'Snacks', image: 'https://images.unsplash.com/photo-1601050633647-81a3175c20d1?auto=format&fit=crop&q=80&w=400' },
+    data: { name: 'Snacks', image: '/food/poha.png' },
   });
   const meals = await prisma.category.create({
-    data: { name: 'Meals', image: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&q=80&w=400' },
+    data: { name: 'Meals', image: '/food/chole-puri.png' },
   });
   const beverages = await prisma.category.create({
-    data: { name: 'Beverages', image: 'https://images.unsplash.com/photo-1544145945-f904253d0c7b?auto=format&fit=crop&q=80&w=400' },
+    data: { name: 'Beverages', image: '/food/iced-tea.png' },
   });
   const custom = await prisma.category.create({
     data: { name: 'Custom', image: 'https://images.unsplash.com/photo-1495195129352-aeb325a55b65?auto=format&fit=crop&q=80&w=400' },
