@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { ChevronRight } from 'lucide-react';
+import logo from '../assets/logo.png';
+import hero from '../assets/hero.png';
 import API_URL from '../utils/api';
 
 interface Category {
@@ -24,7 +26,7 @@ const Home = () => {
       {/* Hero Section */}
       <section style={{
         height: '60vh',
-        background: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=1200") no-repeat center/cover',
+        background: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${hero}) no-repeat center/cover`,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
