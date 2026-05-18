@@ -1,4 +1,4 @@
-# Spice Restaurant Order Booking System
+# Manisha's Kitchen Order Booking System
 
 A modern, responsive, and full-stack restaurant order booking system for Indian restaurants.
 

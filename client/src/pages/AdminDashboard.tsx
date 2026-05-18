@@ -39,6 +39,7 @@ const AdminDashboard = () => {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const navigate = useNavigate();
   const token = localStorage.getItem('adminToken');
 
@@ -88,6 +89,9 @@ const AdminDashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
+      if (selectedOrder?.id === id) {
+        setSelectedOrder({ ...selectedOrder, status });
+      }
     } catch (err) {
       alert('Failed to update status');
     }
@@ -125,6 +129,117 @@ const AdminDashboard = () => {
     ],
   };
 
+  const OrderDetailsModal = () => {
+    if (!selectedOrder) return null;
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1001,
+        padding: '1rem'
+      }}>
+        <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #eee', paddingBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.5rem' }}>Order Details: {selectedOrder.orderNumber}</h2>
+            <button onClick={() => setSelectedOrder(null)} style={{ background: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div>
+              <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '2px' }}>Customer Name</p>
+              <p style={{ fontWeight: '600' }}>{selectedOrder.customerName}</p>
+            </div>
+            <div>
+              <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '2px' }}>WhatsApp/Mobile</p>
+              <p style={{ fontWeight: '600' }}>{selectedOrder.whatsappNumber || selectedOrder.mobileNumber}</p>
+            </div>
+            <div>
+              <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '2px' }}>Order Type</p>
+              <p style={{ fontWeight: '600' }}><span style={{ fontSize: '0.8rem', padding: '2px 8px', borderRadius: '12px', backgroundColor: '#eee' }}>{selectedOrder.orderType}</span></p>
+            </div>
+            {selectedOrder.tableNumber && (
+              <div>
+                <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '2px' }}>Table Number</p>
+                <p style={{ fontWeight: '600' }}>{selectedOrder.tableNumber}</p>
+              </div>
+            )}
+            <div>
+              <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '2px' }}>Order Status</p>
+              <select 
+                value={selectedOrder.status} 
+                onChange={(e) => updateStatus(selectedOrder.id, e.target.value)}
+                style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8rem', fontWeight: '600' }}
+              >
+                <option value="PENDING">Pending</option>
+                <option value="PREPARING">Preparing</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+            <div>
+              <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '2px' }}>Date & Time</p>
+              <p style={{ fontWeight: '600' }}>{new Date(selectedOrder.createdAt).toLocaleString()}</p>
+            </div>
+          </div>
+
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Items</h3>
+          <div style={{ backgroundColor: '#f9f9f9', borderRadius: '8px', padding: '1rem' }}>
+            {selectedOrder.orderItems.map((item: any) => (
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <img src={item.foodItem.image} alt={item.foodItem.name} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+                  <div>
+                    <p style={{ fontWeight: '600', fontSize: '0.9rem' }}>{item.foodItem.name}</p>
+                    <p style={{ fontSize: '0.8rem', color: '#666' }}>₹{item.unitPrice} × {item.quantity}</p>
+                  </div>
+                </div>
+                <p style={{ fontWeight: '600' }}>₹{item.subtotal}</p>
+              </div>
+            ))}
+            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                <span>Subtotal</span>
+                <span>₹{selectedOrder.totalAmount}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                <span>Discount</span>
+                <span>-₹{selectedOrder.discountAmount}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1.2rem', marginTop: '10px', paddingTop: '10px', borderTop: '2px solid #eee' }}>
+                <span>Total Amount</span>
+                <span style={{ color: 'var(--primary-color)' }}>₹{selectedOrder.grandTotal}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+            <button 
+              onClick={() => window.print()} 
+              style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', cursor: 'pointer' }}
+            >
+              Print Receipt
+            </button>
+            <button 
+              onClick={() => setSelectedOrder(null)} 
+              className="btn-primary" 
+              style={{ flex: 1, padding: '10px' }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderOrdersTable = (limit?: number) => {
     const displayOrders = limit ? orders.slice(0, limit) : orders;
     return (
@@ -148,7 +263,14 @@ const AdminDashboard = () => {
             <tbody>
               {displayOrders.map(order => (
                 <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '1rem' }}>{order.orderNumber}</td>
+                  <td style={{ padding: '1rem' }}>
+                    <button 
+                      onClick={() => setSelectedOrder(order)} 
+                      style={{ color: 'var(--primary-color)', fontWeight: 'bold', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                    >
+                      {order.orderNumber}
+                    </button>
+                  </td>
                   <td style={{ padding: '1rem' }}>
                     {order.customerName}<br/>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -173,11 +295,13 @@ const AdminDashboard = () => {
                       backgroundColor: 
                         order.status === 'PENDING' ? '#fff3e0' : 
                         order.status === 'PREPARING' ? '#e3f2fd' : 
-                        '#e8f5e9',
+                        order.status === 'COMPLETED' ? '#e8f5e9' :
+                        '#ffebee',
                       color:
                         order.status === 'PENDING' ? '#ef6c00' : 
                         order.status === 'PREPARING' ? '#1976d2' : 
-                        '#2e7d32'
+                        order.status === 'COMPLETED' ? '#2e7d32' :
+                        '#c62828'
                     }}>
                       {order.status}
                     </span>
@@ -199,6 +323,7 @@ const AdminDashboard = () => {
             </tbody>
           </table>
         </div>
+        <OrderDetailsModal />
       </div>
     );
   };

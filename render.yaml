@@ -4,11 +4,15 @@ services:
     env: node
     plan: free
     rootDir: server
-    buildCommand: npm install && npm run build && npx prisma db push --accept-data-loss
-    startCommand: npm start
+    buildCommand: npm ci --legacy-peer-deps && npx prisma generate && npm run build
+    startCommand: npx prisma db push --accept-data-loss && npm start
     envVars:
       - key: NODE_VERSION
-        value: 18.0.0
+        value: 20
+      - key: NODE_ENV
+        value: production
+      - key: CI
+        value: true
       - key: PORT
         value: 10000
       - key: DATABASE_URL
@@ -16,7 +20,22 @@ services:
           name: manishas-kitchen-db
           property: connectionString
 
+  - type: web
+    name: manishas-kitchen-frontend
+    env: static
+    plan: free
+    rootDir: client
+    buildCommand: npm ci --legacy-peer-deps && npm run build:only
+    publishDir: dist
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+      - key: CI
+        value: true
+
 databases:
   - name: manishas-kitchen-db
-    databaseName: spice_restaurant
+    databaseName: manishas_kitchen
     plan: free
