@@ -1,11 +1,10 @@
 services:
   - type: web
-    name: manishas-kitchen-api
-    env: node
+    name: manishas-kitchen
+    runtime: node
     plan: free
-    rootDir: server
-    buildCommand: npm ci --legacy-peer-deps && npx prisma generate && npm run build
-    startCommand: npx prisma db push --accept-data-loss && npm start
+    buildCommand: npm --prefix server ci --legacy-peer-deps && npm --prefix client ci --legacy-peer-deps && npm --prefix client run build:only && npm --prefix server run build
+    startCommand: npm --prefix server run deploy && npm --prefix server start
     envVars:
       - key: NODE_VERSION
         value: 20
@@ -13,27 +12,12 @@ services:
         value: production
       - key: CI
         value: true
-      - key: PORT
-        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
       - key: DATABASE_URL
         fromDatabase:
           name: manishas-kitchen-db
           property: connectionString
-
-  - type: web
-    name: manishas-kitchen-frontend
-    env: static
-    plan: free
-    rootDir: client
-    buildCommand: npm ci --legacy-peer-deps && npm run build:only
-    publishDir: dist
-    envVars:
-      - key: NODE_VERSION
-        value: 20
-      - key: NODE_ENV
-        value: production
-      - key: CI
-        value: true
 
 databases:
   - name: manishas-kitchen-db

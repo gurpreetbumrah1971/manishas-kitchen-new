@@ -2,35 +2,43 @@ import prisma from './prisma';
 import bcrypt from 'bcryptjs';
 
 async function main() {
-  // Clear existing data
-  await prisma.orderItem.deleteMany();
-  await prisma.order.deleteMany();
-  await prisma.foodItem.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.admin.deleteMany();
+  const existingAdmin = await prisma.admin.findUnique({ where: { username: 'admin' } });
+  if (!existingAdmin) {
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    await prisma.admin.create({
+      data: {
+        username: 'admin',
+        password: hashedPassword,
+      },
+    });
+  }
 
-  // Create Admin
-  const hashedPassword = await bcrypt.hash('admin123', 10);
-  await prisma.admin.create({
-    data: {
-      username: 'admin',
-      password: hashedPassword,
-    },
+  const snacks = await prisma.category.upsert({
+    where: { name: 'Snacks' },
+    update: {},
+    create: { name: 'Snacks', image: '/food/poha.png' },
+  });
+  const meals = await prisma.category.upsert({
+    where: { name: 'Meals' },
+    update: {},
+    create: { name: 'Meals', image: '/food/chole-puri.png' },
+  });
+  const beverages = await prisma.category.upsert({
+    where: { name: 'Beverages' },
+    update: {},
+    create: { name: 'Beverages', image: '/food/iced-tea.png' },
+  });
+  const custom = await prisma.category.upsert({
+    where: { name: 'Custom' },
+    update: {},
+    create: { name: 'Custom', image: 'https://images.unsplash.com/photo-1495195129352-aeb325a55b65?auto=format&fit=crop&q=80&w=400' },
   });
 
-  // Create Categories
-  const snacks = await prisma.category.create({
-    data: { name: 'Snacks', image: '/food/poha.png' },
-  });
-  const meals = await prisma.category.create({
-    data: { name: 'Meals', image: '/food/chole-puri.png' },
-  });
-  const beverages = await prisma.category.create({
-    data: { name: 'Beverages', image: '/food/iced-tea.png' },
-  });
-  const custom = await prisma.category.create({
-    data: { name: 'Custom', image: 'https://images.unsplash.com/photo-1495195129352-aeb325a55b65?auto=format&fit=crop&q=80&w=400' },
-  });
+  const existingFoodItems = await prisma.foodItem.count();
+  if (existingFoodItems > 0) {
+    console.log('Seed skipped: food items already exist');
+    return;
+  }
 
   // Create Food Items
   await prisma.foodItem.createMany({
@@ -85,7 +93,7 @@ async function main() {
     ],
   });
 
-  console.log('Seed data updated with extensive Beverages list successfully');
+  console.log('Seed data created successfully');
 }
 
 main()
