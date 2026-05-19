@@ -17,17 +17,37 @@ A modern, responsive, and full-stack restaurant order booking system for Indian 
   - **Backend:** Node.js (Express), TypeScript, Prisma ORM.
   - **Database:** MySQL.
 
-## Setup Instructions
+## Render Deployment
+
+This repo is ready to deploy on Render's free tier as:
+- one Node web service serving both the API and React app
+- one Render Postgres database
+
+### Steps
+1. Push this repository to GitHub.
+2. In Render, create a new **Blueprint** from the repository.
+3. Render will read `render.yaml` and create:
+   - `manishas-kitchen`
+   - `manishas-kitchen-db`
+4. Open the `manishas-kitchen` URL after deploy. The API health check is available at `/health`.
+
+The first start runs `prisma db push` and seeds the default admin/menu data. The seed is idempotent and will not delete existing orders on later restarts.
+
+### Free Tier Notes
+- Render free web services can spin down after inactivity, so the first request after idle time can be slow.
+- Render free Postgres databases currently expire after 30 days unless upgraded.
+
+## Local Setup
 
 ### Prerequisites
 - Node.js (v18+)
-- MySQL Server (e.g., via XAMPP)
+- PostgreSQL
 
 ### Database Setup
-1. Create a MySQL database named `spice_restaurant`.
+1. Create a PostgreSQL database.
 2. Configure `server/.env` with your database credentials:
    ```env
-   DATABASE_URL="mysql://root:password@localhost:3306/spice_restaurant"
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/spice_restaurant"
    PORT=5000
    JWT_SECRET="your-secret-key"
    ```
