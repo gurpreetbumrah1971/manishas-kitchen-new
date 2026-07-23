@@ -9,7 +9,12 @@ import {
   TrendingUp, 
   Users, 
   CheckCircle, 
-  Clock 
+  Clock,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  MessageCircle
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -23,6 +28,7 @@ import {
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import API_URL from '../utils/api';
+import { buildCustomerOfferMessage, buildOrderConfirmationMessage, buildOrderDeliveryMessage, openWhatsAppMessage } from '../utils/whatsapp';
 
 ChartJS.register(
   CategoryScale,
@@ -34,12 +40,35 @@ ChartJS.register(
   ArcElement
 );
 
+const emptyMenuForm = {
+  name: '',
+  description: '',
+  price: '',
+  image: '',
+  categoryId: '',
+  isVeg: true,
+  isAvailable: true,
+};
+
 const AdminDashboard = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState('all');
+  const [menuForm, setMenuForm] = useState(emptyMenuForm);
+  const [menuImageFile, setMenuImageFile] = useState<File | null>(null);
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [isMenuFormOpen, setIsMenuFormOpen] = useState(false);
+  const [savingMenuItem, setSavingMenuItem] = useState(false);
+  const [selectedCustomerNumbers, setSelectedCustomerNumbers] = useState<string[]>([]);
+  const [bulkMessage, setBulkMessage] = useState('');
+  const [bulkMediaFile, setBulkMediaFile] = useState<File | null>(null);
+  const [bulkMediaUrl, setBulkMediaUrl] = useState('');
+  const [bulkSendingIndex, setBulkSendingIndex] = useState<number | null>(null);
+  const [uploadingBulkMedia, setUploadingBulkMedia] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem('adminToken');
 
@@ -52,12 +81,14 @@ const AdminDashboard = () => {
     const fetchData = async () => {
       try {
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const [ordersRes, menuRes] = await Promise.all([
+        const [ordersRes, menuRes, categoriesRes] = await Promise.all([
           axios.get(`${API_URL}/admin/orders`, config),
-          axios.get(`${API_URL}/menu?admin=true`, config)
+          axios.get(`${API_URL}/menu?admin=true`, config),
+          axios.get(`${API_URL}/categories`, config)
         ]);
         setOrders(ordersRes.data);
         setMenuItems(menuRes.data);
+        setCategories(categoriesRes.data);
       } catch (err) {
         console.error(err);
         localStorage.removeItem('adminToken');
@@ -83,18 +114,192 @@ const AdminDashboard = () => {
     }
   };
 
+  const resetMenuForm = () => {
+    setMenuForm({
+      ...emptyMenuForm,
+      categoryId: selectedCategoryId === 'all' ? '' : selectedCategoryId,
+    });
+    setMenuImageFile(null);
+    setEditingItemId(null);
+    setIsMenuFormOpen(false);
+  };
+
+  const openAddMenuItem = () => {
+    setMenuForm({
+      ...emptyMenuForm,
+      categoryId: selectedCategoryId === 'all' ? (categories[0]?.id?.toString() || '') : selectedCategoryId,
+    });
+    setMenuImageFile(null);
+    setEditingItemId(null);
+    setIsMenuFormOpen(true);
+  };
+
+  const openEditMenuItem = (item: any) => {
+    setMenuForm({
+      name: item.name || '',
+      description: item.description || '',
+      price: item.price?.toString() || '',
+      image: item.image || '',
+      categoryId: item.categoryId?.toString() || '',
+      isVeg: Boolean(item.isVeg),
+      isAvailable: Boolean(item.isAvailable),
+    });
+    setMenuImageFile(null);
+    setEditingItemId(item.id);
+    setIsMenuFormOpen(true);
+  };
+
+  const saveMenuItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!menuForm.categoryId) {
+      alert('Please select a category');
+      return;
+    }
+
+    try {
+      setSavingMenuItem(true);
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      let imageUrl = menuForm.image;
+
+      if (menuImageFile) {
+        const imageData = new FormData();
+        imageData.append('image', menuImageFile);
+        const uploadRes = await axios.post(`${API_URL}/admin/uploads/menu-image`, imageData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          }
+        });
+        imageUrl = uploadRes.data.imageUrl;
+      }
+
+      const payload = {
+        ...menuForm,
+        image: imageUrl,
+        price: Number(menuForm.price),
+        categoryId: Number(menuForm.categoryId),
+      };
+
+      const res = editingItemId
+        ? await axios.put(`${API_URL}/admin/menu/${editingItemId}`, payload, config)
+        : await axios.post(`${API_URL}/admin/menu`, payload, config);
+
+      setMenuItems(items => editingItemId
+        ? items.map(item => item.id === editingItemId ? res.data : item)
+        : [res.data, ...items]
+      );
+      resetMenuForm();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to save menu item');
+    } finally {
+      setSavingMenuItem(false);
+    }
+  };
+
+  const deleteMenuItem = async (item: any) => {
+    if (!window.confirm(`Delete ${item.name}?`)) return;
+
+    try {
+      await axios.delete(`${API_URL}/admin/menu/${item.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMenuItems(items => items.filter(current => current.id !== item.id));
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to delete menu item');
+    }
+  };
+
   const updateStatus = async (id: number, status: string) => {
     try {
       await axios.patch(`${API_URL}/admin/orders/${id}/status`, { status }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      const currentOrder = orders.find(o => o.id === id);
+      const updatedOrder = currentOrder ? { ...currentOrder, status } : null;
       setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
       if (selectedOrder?.id === id) {
         setSelectedOrder({ ...selectedOrder, status });
       }
+      if (status === 'DELIVERED' && updatedOrder) {
+        openWhatsAppMessage(updatedOrder.whatsappNumber || updatedOrder.mobileNumber, buildOrderDeliveryMessage(updatedOrder));
+      }
     } catch (err) {
       alert('Failed to update status');
     }
+  };
+
+  const sendOrderConfirmation = (order: any) => {
+    openWhatsAppMessage(order.whatsappNumber || order.mobileNumber, buildOrderConfirmationMessage(order));
+  };
+
+  const sendOrderDelivery = (order: any) => {
+    openWhatsAppMessage(order.whatsappNumber || order.mobileNumber, buildOrderDeliveryMessage(order));
+  };
+
+  const sendCustomerOffer = (customer: any) => {
+    openWhatsAppMessage(customer.number, buildCustomerOfferMessage(customer));
+  };
+
+  const toggleCustomerSelection = (number: string) => {
+    setSelectedCustomerNumbers(current =>
+      current.includes(number)
+        ? current.filter(item => item !== number)
+        : [...current, number]
+    );
+  };
+
+  const toggleAllCustomers = () => {
+    setSelectedCustomerNumbers(selectedCustomerNumbers.length === customers.length
+      ? []
+      : customers.map((customer: any) => customer.number)
+    );
+  };
+
+  const uploadBulkMedia = async () => {
+    if (!bulkMediaFile) return bulkMediaUrl;
+
+    try {
+      setUploadingBulkMedia(true);
+      const formData = new FormData();
+      formData.append('media', bulkMediaFile);
+      const res = await axios.post(`${API_URL}/admin/uploads/campaign-media`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+      setBulkMediaUrl(res.data.mediaUrl);
+      return res.data.mediaUrl;
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to upload campaign media');
+      return '';
+    } finally {
+      setUploadingBulkMedia(false);
+    }
+  };
+
+  const buildBulkMessage = (customer: any, mediaUrl: string) => {
+    const text = bulkMessage.trim()
+      .replace(/\{name\}/g, customer.name || '')
+      .replace(/\{number\}/g, customer.number || '');
+    return mediaUrl ? `${text}\n\nMedia: ${mediaUrl}` : text;
+  };
+
+  const sendBulkMessageAt = async (index: number) => {
+    if (selectedCustomers.length === 0) return alert('Select at least one customer.');
+    if (!bulkMessage.trim() && !bulkMediaFile && !bulkMediaUrl) return alert('Enter a message or upload media.');
+
+    const mediaUrl = bulkMediaFile && !bulkMediaUrl ? await uploadBulkMedia() : bulkMediaUrl;
+    if (bulkMediaFile && !mediaUrl) return;
+
+    const customer = selectedCustomers[index];
+    if (!customer) {
+      setBulkSendingIndex(null);
+      return;
+    }
+
+    openWhatsAppMessage(customer.number, buildBulkMessage(customer, mediaUrl));
+    setBulkSendingIndex(index + 1 < selectedCustomers.length ? index + 1 : null);
   };
 
   const logout = () => {
@@ -106,6 +311,42 @@ const AdminDashboard = () => {
   const totalRevenue = orders.reduce((sum, o) => sum + Number(o.grandTotal), 0);
   const pendingOrders = orders.filter(o => o.status === 'PENDING').length;
   const completedOrders = orders.filter(o => o.status === 'COMPLETED').length;
+  const visibleMenuItems = selectedCategoryId === 'all'
+    ? menuItems
+    : menuItems.filter(item => item.categoryId?.toString() === selectedCategoryId);
+  const customers: any[] = Object.values(
+    orders.reduce((acc: any, order) => {
+      const number = order.whatsappNumber || order.mobileNumber || 'Unknown';
+      if (!acc[number]) {
+        acc[number] = {
+          name: order.customerName,
+          number,
+          birthday: order.birthday,
+          anniversary: order.anniversary,
+          orders: [],
+          totalSpent: 0,
+          firstOrderAt: order.createdAt,
+          latestOrderAt: order.createdAt,
+        };
+      }
+
+      acc[number].name = order.customerName || acc[number].name;
+      acc[number].birthday = order.birthday || acc[number].birthday;
+      acc[number].anniversary = order.anniversary || acc[number].anniversary;
+      acc[number].orders.push(order);
+      acc[number].totalSpent += Number(order.grandTotal);
+      if (new Date(order.createdAt) < new Date(acc[number].firstOrderAt)) {
+        acc[number].firstOrderAt = order.createdAt;
+      }
+      if (new Date(order.createdAt) > new Date(acc[number].latestOrderAt)) {
+        acc[number].latestOrderAt = order.createdAt;
+      }
+      return acc;
+    }, {})
+  ).sort((a: any, b: any) => new Date(b.latestOrderAt).getTime() - new Date(a.latestOrderAt).getTime());
+  const selectedCustomers = customers.filter((customer: any) => selectedCustomerNumbers.includes(customer.number));
+
+  const formatDate = (date?: string) => date ? new Date(date).toLocaleDateString() : '-';
 
   // Chart Data
   const barData = {
@@ -181,6 +422,7 @@ const AdminDashboard = () => {
                 <option value="PENDING">Pending</option>
                 <option value="PREPARING">Preparing</option>
                 <option value="COMPLETED">Completed</option>
+                <option value="DELIVERED">Delivered</option>
                 <option value="CANCELLED">Cancelled</option>
               </select>
             </div>
@@ -220,17 +462,29 @@ const AdminDashboard = () => {
             </div>
           </div>
           
-          <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+          <div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+            <button 
+              onClick={() => sendOrderConfirmation(selectedOrder)} 
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #25D366', color: '#128C7E', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <MessageCircle size={16} /> Confirmation
+            </button>
+            <button 
+              onClick={() => sendOrderDelivery(selectedOrder)} 
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #25D366', color: '#128C7E', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <MessageCircle size={16} /> Delivery
+            </button>
             <button 
               onClick={() => window.print()} 
-              style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', cursor: 'pointer' }}
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', cursor: 'pointer' }}
             >
               Print Receipt
             </button>
             <button 
               onClick={() => setSelectedOrder(null)} 
               className="btn-primary" 
-              style={{ flex: 1, padding: '10px' }}
+              style={{ padding: '10px' }}
             >
               Close
             </button>
@@ -295,12 +549,12 @@ const AdminDashboard = () => {
                       backgroundColor: 
                         order.status === 'PENDING' ? '#fff3e0' : 
                         order.status === 'PREPARING' ? '#e3f2fd' : 
-                        order.status === 'COMPLETED' ? '#e8f5e9' :
+                        order.status === 'COMPLETED' || order.status === 'DELIVERED' ? '#e8f5e9' :
                         '#ffebee',
                       color:
                         order.status === 'PENDING' ? '#ef6c00' : 
                         order.status === 'PREPARING' ? '#1976d2' : 
-                        order.status === 'COMPLETED' ? '#2e7d32' :
+                        order.status === 'COMPLETED' || order.status === 'DELIVERED' ? '#2e7d32' :
                         '#c62828'
                     }}>
                       {order.status}
@@ -315,8 +569,17 @@ const AdminDashboard = () => {
                       <option value="PENDING">Pending</option>
                       <option value="PREPARING">Preparing</option>
                       <option value="COMPLETED">Completed</option>
+                      <option value="DELIVERED">Delivered</option>
                       <option value="CANCELLED">Cancelled</option>
                     </select>
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '8px', alignItems: 'center' }}>
+                      <button onClick={() => sendOrderConfirmation(order)} title="Send confirmation WhatsApp" style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#128C7E', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                        <MessageCircle size={14} />
+                      </button>
+                      <button onClick={() => sendOrderDelivery(order)} title="Send delivery WhatsApp" style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#128C7E', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600' }}>
+                        Delivery
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -386,6 +649,23 @@ const AdminDashboard = () => {
             }}
           >
             <ShoppingBag size={20} /> Menu
+          </button>
+          <button 
+            onClick={() => setActiveTab('customers')}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px', 
+              padding: '12px 1rem', 
+              borderRadius: '8px', 
+              backgroundColor: activeTab === 'customers' ? 'var(--primary-color)' : 'transparent', 
+              color: activeTab === 'customers' ? '#fff' : '#666', 
+              textAlign: 'left',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <Users size={20} /> LMS
           </button>
           <button 
             onClick={() => setActiveTab('settings')}
@@ -461,9 +741,100 @@ const AdminDashboard = () => {
 
         {activeTab === 'menu' && (
           <>
-            <h1 style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Menu Management</h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: '1.8rem' }}>Menu Management</h1>
+              <button onClick={openAddMenuItem} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Plus size={18} /> Add Item
+              </button>
+            </div>
+
+            <div className="card" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <label style={{ fontWeight: '600' }}>Category</label>
+                <select
+                  value={selectedCategoryId}
+                  onChange={(e) => setSelectedCategoryId(e.target.value)}
+                  style={{ minWidth: '220px', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                >
+                  <option value="all">All Categories</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+                <span style={{ color: '#666', fontSize: '0.9rem' }}>{visibleMenuItems.length} items</span>
+              </div>
+            </div>
+
+            {isMenuFormOpen && (
+              <div className="card" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                  <h3>{editingItemId ? 'Edit Menu Item' : 'Add Menu Item'}</h3>
+                  <button onClick={resetMenuForm} style={{ background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Close form">
+                    <X size={22} />
+                  </button>
+                </div>
+
+                <form onSubmit={saveMenuItem}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>Name</label>
+                      <input value={menuForm.name} onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>Category</label>
+                      <select value={menuForm.categoryId} onChange={(e) => setMenuForm({ ...menuForm, categoryId: e.target.value })} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}>
+                        <option value="">Select Category</option>
+                        {categories.map(category => (
+                          <option key={category.id} value={category.id}>{category.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>Price</label>
+                      <input type="number" min="1" step="0.01" value={menuForm.price} onChange={(e) => setMenuForm({ ...menuForm, price: e.target.value })} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>Image</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setMenuImageFile(e.target.files?.[0] || null)}
+                        style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff' }}
+                      />
+                      {(menuImageFile || menuForm.image) && (
+                        <small style={{ display: 'block', marginTop: '6px', color: '#666' }}>
+                          {menuImageFile ? menuImageFile.name : 'Current image will be kept'}
+                        </small>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>Description</label>
+                    <textarea value={menuForm.description} onChange={(e) => setMenuForm({ ...menuForm, description: e.target.value })} rows={3} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', resize: 'vertical' }} />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
+                      <input type="checkbox" checked={menuForm.isVeg} onChange={(e) => setMenuForm({ ...menuForm, isVeg: e.target.checked })} />
+                      Veg item
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
+                      <input type="checkbox" checked={menuForm.isAvailable} onChange={(e) => setMenuForm({ ...menuForm, isAvailable: e.target.checked })} />
+                      Available
+                    </label>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                    <button type="button" onClick={resetMenuForm} style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', cursor: 'pointer' }}>Cancel</button>
+                    <button type="submit" className="btn-primary" disabled={savingMenuItem}>{savingMenuItem ? 'Saving...' : 'Save Item'}</button>
+                  </div>
+                </form>
+              </div>
+            )}
+
             <div className="card">
-              <div style={{ padding: '1.5rem', borderBottom: '1px solid #eee' }}><h3>Item Availability</h3></div>
+              <div style={{ padding: '1.5rem', borderBottom: '1px solid #eee' }}><h3>Items</h3></div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
@@ -472,15 +843,19 @@ const AdminDashboard = () => {
                       <th style={{ padding: '1rem' }}>Category</th>
                       <th style={{ padding: '1rem' }}>Price</th>
                       <th style={{ padding: '1rem' }}>Availability</th>
+                      <th style={{ padding: '1rem' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {menuItems.map(item => (
+                    {visibleMenuItems.map(item => (
                       <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
                         <td style={{ padding: '1rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <img src={item.image} alt={item.name} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
-                            <span>{item.name}</span>
+                            <div>
+                              <div style={{ fontWeight: '600' }}>{item.name}</div>
+                              <small style={{ color: '#666' }}>{item.isVeg ? 'Veg' : 'Non-Veg'}</small>
+                            </div>
                           </div>
                         </td>
                         <td style={{ padding: '1rem' }}>{item.category?.name}</td>
@@ -500,12 +875,170 @@ const AdminDashboard = () => {
                             </label>
                           </div>
                         </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => openEditMenuItem(item)} title="Edit item" style={{ padding: '8px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', cursor: 'pointer' }}>
+                              <Pencil size={16} />
+                            </button>
+                            <button onClick={() => deleteMenuItem(item)} title="Delete item" style={{ padding: '8px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#c62828', cursor: 'pointer' }}>
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
+                    {visibleMenuItems.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>No menu items found for this category.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
+          </>
+        )}
+
+        {activeTab === 'customers' && (
+          <>
+            <h1 style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Customer LMS</h1>
+            <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                <div>
+                  <h3>Bulk WhatsApp Campaign</h3>
+                  <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '4px' }}>Use {'{name}'} and {'{number}'} in the message for personalization.</p>
+                </div>
+                <span style={{ color: '#666', fontSize: '0.9rem' }}>{selectedCustomers.length} selected</span>
+              </div>
+              <textarea
+                value={bulkMessage}
+                onChange={(e) => setBulkMessage(e.target.value)}
+                placeholder="Enter WhatsApp message text..."
+                rows={4}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', resize: 'vertical', marginBottom: '1rem' }}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '5px', fontWeight: '600' }}>Image / Video</label>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={(e) => {
+                      setBulkMediaFile(e.target.files?.[0] || null);
+                      setBulkMediaUrl('');
+                    }}
+                    style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff' }}
+                  />
+                  {(bulkMediaFile || bulkMediaUrl) && (
+                    <small style={{ display: 'block', color: '#666', marginTop: '5px' }}>
+                      {bulkMediaFile?.name || bulkMediaUrl}
+                    </small>
+                  )}
+                </div>
+                <button
+                  onClick={() => sendBulkMessageAt(0)}
+                  disabled={uploadingBulkMedia || selectedCustomers.length === 0}
+                  className="btn-primary"
+                  style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  <MessageCircle size={18} /> {uploadingBulkMedia ? 'Uploading...' : 'Start Bulk Send'}
+                </button>
+                {bulkSendingIndex !== null && (
+                  <button
+                    onClick={() => sendBulkMessageAt(bulkSendingIndex)}
+                    style={{ padding: '12px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: 'pointer', fontWeight: '700' }}
+                  >
+                    Send Next ({bulkSendingIndex + 1}/{selectedCustomers.length})
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="card">
+              <div style={{ padding: '1.5rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <div>
+                  <h3>Customer Lifecycle</h3>
+                  <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '4px' }}>Order dates are captured from each order timestamp.</p>
+                </div>
+                <span style={{ color: '#666', fontSize: '0.9rem' }}>{customers.length} customers</span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f9f9f9' }}>
+                      <th style={{ padding: '1rem' }}>
+                        <input type="checkbox" checked={customers.length > 0 && selectedCustomerNumbers.length === customers.length} onChange={toggleAllCustomers} />
+                      </th>
+                      <th style={{ padding: '1rem' }}>Name</th>
+                      <th style={{ padding: '1rem' }}>Number</th>
+                      <th style={{ padding: '1rem' }}>Birthday</th>
+                      <th style={{ padding: '1rem' }}>Anniversary</th>
+                      <th style={{ padding: '1rem' }}>Orders</th>
+                      <th style={{ padding: '1rem' }}>Total Spent</th>
+                      <th style={{ padding: '1rem' }}>First Order</th>
+                      <th style={{ padding: '1rem' }}>Last Order</th>
+                      <th style={{ padding: '1rem' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customers.map((customer: any) => (
+                      <React.Fragment key={customer.number}>
+                        <tr style={{ borderBottom: '1px solid #eee' }}>
+                          <td style={{ padding: '1rem' }}>
+                            <input type="checkbox" checked={selectedCustomerNumbers.includes(customer.number)} onChange={() => toggleCustomerSelection(customer.number)} />
+                          </td>
+                          <td style={{ padding: '1rem', fontWeight: '600' }}>{customer.name}</td>
+                          <td style={{ padding: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>{customer.number}</span>
+                              {customer.number !== 'Unknown' && (
+                                <a href={`https://wa.me/91${customer.number}`} target="_blank" rel="noreferrer" style={{ color: '#25D366', fontSize: '0.85rem' }}>WhatsApp</a>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ padding: '1rem' }}>{formatDate(customer.birthday)}</td>
+                          <td style={{ padding: '1rem' }}>{formatDate(customer.anniversary)}</td>
+                          <td style={{ padding: '1rem' }}>{customer.orders.length}</td>
+                          <td style={{ padding: '1rem', fontWeight: '600', color: 'var(--primary-color)' }}>₹{customer.totalSpent}</td>
+                          <td style={{ padding: '1rem' }}>{formatDate(customer.firstOrderAt)}</td>
+                          <td style={{ padding: '1rem' }}>{formatDate(customer.latestOrderAt)}</td>
+                          <td style={{ padding: '1rem' }}>
+                            <button onClick={() => sendCustomerOffer(customer)} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}>
+                              <MessageCircle size={15} /> Offer
+                            </button>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colSpan={10} style={{ padding: '0 1rem 1rem', backgroundColor: '#fcfcfc' }}>
+                            <details>
+                              <summary style={{ cursor: 'pointer', color: 'var(--primary-color)', fontWeight: '600', padding: '0.75rem 0' }}>Order History</summary>
+                              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                                {customer.orders.map((order: any) => (
+                                  <div key={order.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr 1fr 1fr', gap: '1rem', padding: '0.75rem', border: '1px solid #eee', borderRadius: '8px', backgroundColor: '#fff' }}>
+                                    <button onClick={() => setSelectedOrder(order)} style={{ color: 'var(--primary-color)', fontWeight: '700', background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
+                                      {order.orderNumber}
+                                    </button>
+                                    <span>{new Date(order.createdAt).toLocaleString()}</span>
+                                    <span>{order.orderType}</span>
+                                    <span>{order.status}</span>
+                                    <span style={{ fontWeight: '700' }}>₹{order.grandTotal}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </details>
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    ))}
+                    {customers.length === 0 && (
+                      <tr>
+                        <td colSpan={10} style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>No customer data found yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <OrderDetailsModal />
           </>
         )}
 
