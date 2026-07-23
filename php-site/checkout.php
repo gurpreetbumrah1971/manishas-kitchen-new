@@ -9,23 +9,33 @@ $discountTiers = [
     500 => 0.15,
     300 => 0.10,
 ];
-$activeItemIds = array_map('intval', db()->query('SELECT id FROM food_items WHERE is_available = 1')->fetchAll(PDO::FETCH_COLUMN));
+$databaseReady = database_available();
+$availableItems = fetch_menu();
+$activeItemIds = array_map(fn($item) => (int)$item['id'], $availableItems);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $cart = json_decode($_POST['cart_json'] ?? '[]', true);
     if (!is_array($cart) || count($cart) === 0) {
         $error = 'Your cart is empty.';
     } elseif (trim($_POST['customer_name'] ?? '') === '' || trim($_POST['whatsapp_number'] ?? '') === '') {
         $error = 'Name and WhatsApp number are required.';
     } else {
-        $pdo = db();
         $ids = array_map(fn($item) => (int)$item['id'], $cart);
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $stmt = $pdo->prepare("SELECT id, price, name FROM food_items WHERE is_available = 1 AND id IN ($placeholders)");
-        $stmt->execute($ids);
         $prices = [];
-        foreach ($stmt->fetchAll() as $row) {
-            $prices[(int)$row['id']] = $row;
+        if ($databaseReady) {
+            $pdo = db();
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = $pdo->prepare("SELECT id, price, name FROM food_items WHERE is_available = 1 AND id IN ($placeholders)");
+            $stmt->execute($ids);
+            foreach ($stmt->fetchAll() as $row) {
+                $prices[(int)$row['id']] = $row;
+            }
+        } else {
+            foreach ($availableItems as $item) {
+                if (in_array((int)$item['id'], $ids, true)) {
+                    $prices[(int)$item['id']] = $item;
+                }
+            }
         }
 
         $total = 0.0;
@@ -52,35 +62,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $orderType = 'DINE_IN';
             $paymentMethod = in_array($_POST['payment_method'] ?? '', ['CASH', 'UPI', 'CARD'], true) ? $_POST['payment_method'] : 'UPI';
 
-            $pdo->beginTransaction();
-            $stmt = $pdo->prepare('
-                INSERT INTO orders
-                    (order_number, customer_name, mobile_number, whatsapp_number, birthday, anniversary, address, table_number,
-                     order_type, payment_method, total_amount, gst_amount, discount_amount, grand_total)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ');
-            $stmt->execute([
-                $orderNumber,
-                trim($_POST['customer_name']),
-                trim($_POST['whatsapp_number']),
-                trim($_POST['whatsapp_number']),
-                $_POST['birthday'] ?: null,
-                $_POST['anniversary'] ?: null,
-                trim($_POST['address'] ?? '') ?: null,
-                null,
-                $orderType,
-                $paymentMethod,
-                $total,
-                $gstAmount,
-                $discountAmount,
-                $grandTotal,
-            ]);
-            $orderId = (int)$pdo->lastInsertId();
-            $itemStmt = $pdo->prepare('INSERT INTO order_items (order_id, food_item_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)');
-            foreach ($orderItems as $orderItem) {
-                $itemStmt->execute([$orderId, ...$orderItem]);
+            if ($databaseReady) {
+                $pdo->beginTransaction();
+                $stmt = $pdo->prepare('
+                    INSERT INTO orders
+                        (order_number, customer_name, mobile_number, whatsapp_number, birthday, anniversary, address, table_number,
+                         order_type, payment_method, total_amount, gst_amount, discount_amount, grand_total)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ');
+                $stmt->execute([
+                    $orderNumber,
+                    trim($_POST['customer_name']),
+                    trim($_POST['whatsapp_number']),
+                    trim($_POST['whatsapp_number']),
+                    $_POST['birthday'] ?: null,
+                    $_POST['anniversary'] ?: null,
+                    trim($_POST['address'] ?? '') ?: null,
+                    null,
+                    $orderType,
+                    $paymentMethod,
+                    $total,
+                    $gstAmount,
+                    $discountAmount,
+                    $grandTotal,
+                ]);
+                $orderId = (int)$pdo->lastInsertId();
+                $itemStmt = $pdo->prepare('INSERT INTO order_items (order_id, food_item_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)');
+                foreach ($orderItems as $orderItem) {
+                    $itemStmt->execute([$orderId, ...$orderItem]);
+                }
+                $pdo->commit();
             }
-            $pdo->commit();
 
             $successOrder = [
                 'order_number' => $orderNumber,
