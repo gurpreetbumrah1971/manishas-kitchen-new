@@ -3,10 +3,46 @@ declare(strict_types=1);
 
 session_start();
 
-const DB_HOST = '127.0.0.1';
-const DB_NAME = 'spice_restaurant';
-const DB_USER = 'root';
-const DB_PASS = '';
+function env_or_default(string $key, string $default): string
+{
+    $value = getenv($key);
+    return $value === false || $value === '' ? $default : $value;
+}
+
+function database_url_config(): ?array
+{
+    $url = getenv('DATABASE_URL');
+    if ($url === false || $url === '') {
+        return null;
+    }
+
+    $parts = parse_url($url);
+    if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['mysql', 'mariadb'], true)) {
+        return null;
+    }
+
+    return [
+        'host' => $parts['host'] ?? '127.0.0.1',
+        'port' => isset($parts['port']) ? (string)$parts['port'] : '3306',
+        'name' => isset($parts['path']) ? ltrim($parts['path'], '/') : 'spice_restaurant',
+        'user' => isset($parts['user']) ? rawurldecode($parts['user']) : 'root',
+        'pass' => isset($parts['pass']) ? rawurldecode($parts['pass']) : '',
+    ];
+}
+
+$dbConfig = database_url_config() ?? [
+    'host' => env_or_default('DB_HOST', '127.0.0.1'),
+    'port' => env_or_default('DB_PORT', '3306'),
+    'name' => env_or_default('DB_NAME', 'spice_restaurant'),
+    'user' => env_or_default('DB_USER', 'root'),
+    'pass' => env_or_default('DB_PASS', ''),
+];
+
+define('DB_HOST', $dbConfig['host']);
+define('DB_PORT', $dbConfig['port']);
+define('DB_NAME', $dbConfig['name']);
+define('DB_USER', $dbConfig['user']);
+define('DB_PASS', $dbConfig['pass']);
 
 function db(): PDO
 {
@@ -15,13 +51,15 @@ function db(): PDO
         return $pdo;
     }
 
-    $root = new PDO('mysql:host=' . DB_HOST . ';charset=utf8mb4', DB_USER, DB_PASS, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
-    $root->exec('CREATE DATABASE IF NOT EXISTS `' . DB_NAME . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+    if (!getenv('DATABASE_URL') && !getenv('DB_HOST')) {
+        $root = new PDO('mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';charset=utf8mb4', DB_USER, DB_PASS, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+        $root->exec('CREATE DATABASE IF NOT EXISTS `' . DB_NAME . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+    }
 
-    $pdo = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS, [
+    $pdo = new PDO('mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
