@@ -30,6 +30,25 @@ function database_url_config(): ?array
     ];
 }
 
+function database_driver(): string
+{
+    $driver = strtolower(env_or_default('DB_CONNECTION', ''));
+    if (in_array($driver, ['mysql', 'sqlite'], true)) {
+        return $driver;
+    }
+
+    if (database_url_config() !== null || getenv('DB_HOST')) {
+        return 'mysql';
+    }
+
+    return getenv('VERCEL') ? 'sqlite' : 'mysql';
+}
+
+function sqlite_database_path(): string
+{
+    return env_or_default('SQLITE_PATH', getenv('VERCEL') ? '/tmp/manishas-kitchen.sqlite' : __DIR__ . '/../database.sqlite');
+}
+
 $dbConfig = database_url_config() ?? [
     'host' => env_or_default('DB_HOST', '127.0.0.1'),
     'port' => env_or_default('DB_PORT', '3306'),
@@ -38,16 +57,33 @@ $dbConfig = database_url_config() ?? [
     'pass' => env_or_default('DB_PASS', ''),
 ];
 
+define('DB_DRIVER', database_driver());
 define('DB_HOST', $dbConfig['host']);
 define('DB_PORT', $dbConfig['port']);
 define('DB_NAME', $dbConfig['name']);
 define('DB_USER', $dbConfig['user']);
 define('DB_PASS', $dbConfig['pass']);
+define('SQLITE_PATH', sqlite_database_path());
 
 function db(): PDO
 {
     static $pdo = null;
     if ($pdo instanceof PDO) {
+        return $pdo;
+    }
+
+    if (DB_DRIVER === 'sqlite') {
+        $sqliteDir = dirname(SQLITE_PATH);
+        if (!is_dir($sqliteDir)) {
+            mkdir($sqliteDir, 0775, true);
+        }
+
+        $pdo = new PDO('sqlite:' . SQLITE_PATH, null, null, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+        $pdo->exec('PRAGMA foreign_keys = ON');
+        ensure_schema($pdo);
         return $pdo;
     }
 
@@ -72,6 +108,13 @@ function ensure_schema(PDO $pdo): void
 {
     static $ready = false;
     if ($ready) {
+        return;
+    }
+
+    if (DB_DRIVER === 'sqlite') {
+        ensure_sqlite_schema($pdo);
+        seed_data($pdo);
+        $ready = true;
         return;
     }
 
@@ -159,6 +202,84 @@ function ensure_schema(PDO $pdo): void
     $ready = true;
 }
 
+function ensure_sqlite_schema(PDO $pdo): void
+{
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            image TEXT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS food_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT NULL,
+            price REAL NOT NULL,
+            image TEXT NULL,
+            is_veg INTEGER NOT NULL DEFAULT 1,
+            is_available INTEGER NOT NULL DEFAULT 1,
+            category_id INTEGER NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (category_id) REFERENCES categories(id)
+        )
+    ");
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_food_category ON food_items(category_id)');
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_number TEXT NOT NULL UNIQUE,
+            customer_name TEXT NOT NULL,
+            mobile_number TEXT NOT NULL,
+            whatsapp_number TEXT NULL,
+            birthday TEXT NULL,
+            anniversary TEXT NULL,
+            email TEXT NULL,
+            address TEXT NULL,
+            table_number TEXT NULL,
+            order_type TEXT NOT NULL,
+            payment_method TEXT NOT NULL,
+            total_amount REAL NOT NULL,
+            gst_amount REAL NOT NULL DEFAULT 0,
+            discount_amount REAL NOT NULL DEFAULT 0,
+            grand_total REAL NOT NULL,
+            status TEXT NOT NULL DEFAULT 'PENDING',
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS order_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id INTEGER NOT NULL,
+            food_item_id INTEGER NOT NULL,
+            quantity INTEGER NOT NULL,
+            unit_price REAL NOT NULL,
+            subtotal REAL NOT NULL,
+            FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+            FOREIGN KEY (food_item_id) REFERENCES food_items(id)
+        )
+    ");
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_order_items_food ON order_items(food_item_id)');
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+}
+
 function seed_data(PDO $pdo): void
 {
     $imageMap = [
@@ -221,7 +342,10 @@ function seed_data(PDO $pdo): void
 
     $categoryIds = [];
     foreach ($categories as $category) {
-        $stmt = $pdo->prepare('INSERT IGNORE INTO categories (name, image) VALUES (?, ?)');
+        $insertCategorySql = DB_DRIVER === 'sqlite'
+            ? 'INSERT OR IGNORE INTO categories (name, image) VALUES (?, ?)'
+            : 'INSERT IGNORE INTO categories (name, image) VALUES (?, ?)';
+        $stmt = $pdo->prepare($insertCategorySql);
         $stmt->execute($category);
         $idStmt = $pdo->prepare('SELECT id FROM categories WHERE name = ?');
         $idStmt->execute([$category[0]]);

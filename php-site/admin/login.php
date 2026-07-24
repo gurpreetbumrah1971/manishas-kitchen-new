@@ -5,7 +5,7 @@ if (is_admin()) {
 }
 
 $error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $stmt = db()->prepare('SELECT * FROM admins WHERE username = ?');
     $stmt->execute([trim($_POST['username'] ?? '')]);
     $admin = $stmt->fetch();

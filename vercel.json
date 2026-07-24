@@ -5,6 +5,9 @@
       "runtime": "vercel-php@0.9.0"
     }
   },
+  "env": {
+    "DB_CONNECTION": "sqlite"
+  },
   "routes": [
     {
       "src": "/assets/(.*)",
