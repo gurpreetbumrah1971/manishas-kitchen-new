@@ -1,13 +1,14 @@
 <?php
-$pageTitle = 'Checkout';
+$pageTitle = 'Your Order';
+$bodyClass = 'checkout-page';
 require_once __DIR__ . '/includes/header.php';
 $successOrder = null;
 $error = '';
 $gstRate = 0.05;
 $discountTiers = [
     1000 => 0.20,
-    500 => 0.15,
-    300 => 0.10,
+    800 => 0.15,
+    400 => 0.10,
 ];
 $databaseReady = database_available();
 $availableItems = fetch_menu();
@@ -111,7 +112,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             <a class="btn primary" href="index.php">Back Home</a>
         </div>
     <?php else: ?>
-        <h1>Checkout</h1>
+        <h1>Your Order</h1>
         <?php if ($error): ?><div class="alert"><?= e($error) ?></div><?php endif; ?>
         <div class="checkout-grid">
             <section class="card checkout-summary">
@@ -129,8 +130,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 <div class="discount-offer">
                     <strong>Discount offer</strong>
                     <ul>
-                        <li>10% flat discount for orders above Rs. 300</li>
-                        <li>15% flat discount for orders above Rs. 500</li>
+                        <li>10% flat discount for orders above Rs. 400</li>
+                        <li>15% flat discount for orders above Rs. 800</li>
                         <li>20% flat discount for orders above Rs. 1000</li>
                     </ul>
                 </div>
@@ -167,13 +168,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 <?php
 function discount_rate(float $subtotal): float
 {
-    if ($subtotal > 1000) {
+    if ($subtotal >= 1000) {
         return 0.20;
     }
-    if ($subtotal > 500) {
+    if ($subtotal >= 800) {
         return 0.15;
     }
-    if ($subtotal > 300) {
+    if ($subtotal >= 400) {
         return 0.10;
     }
     return 0.0;

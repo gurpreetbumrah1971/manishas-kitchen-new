@@ -1,4 +1,9 @@
 const CART_KEY = 'phpCart';
+const DISCOUNT_TIERS = {
+  400: 0.10,
+  800: 0.15,
+  1000: 0.20,
+};
 
 function getCart() {
   try {
@@ -17,6 +22,12 @@ function saveCart(cart) {
 
 function money(value) {
   return `Rs. ${Number(value || 0).toFixed(2)}`;
+}
+
+function rupeeCompact(value) {
+  return `₹${Number(value || 0).toLocaleString('en-IN', {
+    maximumFractionDigits: 0,
+  })}`;
 }
 
 function updatePaymentQr(amount) {
@@ -44,10 +55,19 @@ function updatePaymentQr(amount) {
 }
 
 function updateCartCount() {
-  const count = getCart().reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const cart = getCart();
+  const count = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
   document.querySelectorAll('[data-cart-count]').forEach((node) => {
-    node.textContent = count;
+    node.textContent = `${count} ${count === 1 ? 'item' : 'items'}`;
   });
+  document.querySelectorAll('[data-cart-total]').forEach((node) => {
+    node.textContent = money(subtotal);
+  });
+  document.querySelectorAll('[data-floating-cart]').forEach((node) => {
+    node.hidden = count <= 0;
+  });
+  updateDiscountNudge(subtotal);
 }
 
 function discountRateForSubtotal(subtotal, tiers) {
@@ -55,7 +75,37 @@ function discountRateForSubtotal(subtotal, tiers) {
     .map(([threshold, rate]) => [Number(threshold), Number(rate)])
     .filter(([threshold, rate]) => Number.isFinite(threshold) && Number.isFinite(rate))
     .sort((a, b) => b[0] - a[0])
-    .find(([threshold]) => subtotal > threshold)?.[1] || 0;
+    .find(([threshold]) => subtotal >= threshold)?.[1] || 0;
+}
+
+function nextDiscountNudge(subtotal, tiers = DISCOUNT_TIERS) {
+  if (subtotal <= 0) return '';
+
+  const nextTier = Object.entries(tiers)
+    .map(([threshold, rate]) => [Number(threshold), Number(rate)])
+    .filter(([threshold, rate]) => Number.isFinite(threshold) && Number.isFinite(rate))
+    .sort((a, b) => a[0] - b[0])
+    .find(([threshold]) => subtotal < threshold);
+
+  if (!nextTier) return '';
+
+  const [threshold, rate] = nextTier;
+  const amountAway = Math.max(0, threshold - subtotal);
+  const savings = threshold * rate;
+  return `You're just ${rupeeCompact(amountAway)} away from saving ${rupeeCompact(savings)}!`;
+}
+
+function updateDiscountNudge(subtotal) {
+  const message = nextDiscountNudge(subtotal);
+  document.querySelectorAll('[data-discount-nudge]').forEach((node) => {
+    const text = node.querySelector('[data-discount-nudge-text]');
+    if (text) {
+      text.textContent = message;
+    } else {
+      node.textContent = message;
+    }
+    node.hidden = message === '';
+  });
 }
 
 function changeQuantity(id, quantity) {
@@ -83,6 +133,15 @@ function renderCartControls() {
     const id = Number(control.dataset.id);
     const found = cart.find((item) => item.id === id);
     if (!found) {
+      if (control.dataset.cartItem) {
+        const button = document.createElement('button');
+        button.className = 'btn primary full';
+        button.type = 'button';
+        button.dataset.addCart = '';
+        button.dataset.item = control.dataset.cartItem;
+        button.textContent = 'Add';
+        control.replaceChildren(button);
+      }
       return;
     }
     control.innerHTML = `
@@ -165,6 +224,21 @@ document.addEventListener('click', (event) => {
   const navToggle = event.target.closest('[data-nav-toggle]');
   if (navToggle) {
     document.querySelector('[data-nav]')?.classList.toggle('open');
+  }
+
+  const menuTab = event.target.closest('[data-menu-tab]');
+  if (menuTab) {
+    const tabGroup = menuTab.closest('[data-menu-tabs]');
+    const activeCategory = menuTab.dataset.menuTab;
+    tabGroup?.querySelectorAll('[data-menu-tab]').forEach((tab) => {
+      const isActive = tab === menuTab;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    tabGroup?.querySelectorAll('[data-menu-panel]').forEach((panel) => {
+      panel.hidden = panel.dataset.menuPanel !== activeCategory;
+    });
+    applyMenuFilters();
   }
 });
 

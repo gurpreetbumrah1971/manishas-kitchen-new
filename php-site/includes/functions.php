@@ -76,6 +76,55 @@ function database_available(): bool
     }
 }
 
+function site_settings_defaults(): array
+{
+    return [
+        'promo_banner_enabled' => '1',
+        'promo_banner_text' => 'Free Home Delivery on Orders Above ₹300 in Kopar Khairane | Save 10% Above ₹400 | 15% Above ₹800 | 20% Above ₹1,000!',
+        'promo_banner_link_label' => '',
+        'promo_banner_link_url' => '',
+    ];
+}
+
+function fetch_site_settings(): array
+{
+    $defaults = site_settings_defaults();
+    if (!database_available()) {
+        return $defaults;
+    }
+
+    try {
+        $rows = db()->query('SELECT setting_key, setting_value FROM app_settings')->fetchAll();
+    } catch (Throwable) {
+        return $defaults;
+    }
+
+    $settings = $defaults;
+    foreach ($rows as $row) {
+        $key = (string)($row['setting_key'] ?? '');
+        if (array_key_exists($key, $settings)) {
+            $settings[$key] = (string)($row['setting_value'] ?? '');
+        }
+    }
+
+    return $settings;
+}
+
+function save_site_settings(array $settings): void
+{
+    $allowed = site_settings_defaults();
+    $pdo = db();
+    $sql = DB_DRIVER === 'sqlite'
+        ? 'INSERT INTO app_settings (setting_key, setting_value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP'
+        : 'INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?)
+           ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)';
+    $stmt = $pdo->prepare($sql);
+    foreach ($allowed as $key => $default) {
+        $stmt->execute([$key, (string)($settings[$key] ?? $default)]);
+    }
+}
+
 function order_confirmation_message(array $order): string
 {
     return implode("\n", [

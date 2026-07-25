@@ -118,6 +118,8 @@ function ensure_schema(PDO $pdo): void
         return;
     }
 
+    ensure_app_settings_schema($pdo);
+
     if (seed_data_exists($pdo)) {
         seed_data($pdo);
         $ready = true;
@@ -199,6 +201,7 @@ function ensure_schema(PDO $pdo): void
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
 
+    ensure_app_settings_schema($pdo);
     seed_data($pdo);
     $ready = true;
 }
@@ -278,6 +281,30 @@ function ensure_sqlite_schema(PDO $pdo): void
             password TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
+    ");
+
+    ensure_app_settings_schema($pdo);
+}
+
+function ensure_app_settings_schema(PDO $pdo): void
+{
+    if (DB_DRIVER === 'sqlite') {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS app_settings (
+                setting_key TEXT PRIMARY KEY,
+                setting_value TEXT NULL,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+        return;
+    }
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS app_settings (
+            setting_key VARCHAR(191) PRIMARY KEY,
+            setting_value TEXT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
 }
 

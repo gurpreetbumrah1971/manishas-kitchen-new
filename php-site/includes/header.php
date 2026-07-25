@@ -1,5 +1,14 @@
 <?php require_once __DIR__ . '/functions.php'; ?>
-<?php $assetBase = in_admin_area() ? '../' : ''; ?>
+<?php
+$assetBase = in_admin_area() ? '../' : '';
+$siteSettings = fetch_site_settings();
+$promoEnabled = ($siteSettings['promo_banner_enabled'] ?? '0') === '1';
+$promoText = trim((string)($siteSettings['promo_banner_text'] ?? ''));
+$promoLinkLabel = trim((string)($siteSettings['promo_banner_link_label'] ?? ''));
+$promoLinkUrl = trim((string)($siteSettings['promo_banner_link_url'] ?? ''));
+$bodyClass = trim((string)($bodyClass ?? ''));
+$bodyClasses = trim(($bodyClass !== '' ? $bodyClass . ' ' : '') . (in_admin_area() ? 'admin-app' : 'order-app'));
+?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -11,7 +20,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= $assetBase ?>assets/style.css">
 </head>
-<body>
+<body class="<?= e($bodyClasses) ?>">
+<?php if (!in_admin_area() && $promoEnabled && $promoText !== ''): ?>
+    <div class="promo-banner">
+        <div class="promo-track">
+            <span><?= e($promoText) ?></span>
+            <?php if ($promoLinkLabel !== '' && $promoLinkUrl !== ''): ?>
+                <a href="<?= e($promoLinkUrl) ?>"><?= e($promoLinkLabel) ?></a>
+            <?php endif; ?>
+        </div>
+    </div>
+<?php endif; ?>
 <header class="site-header">
     <a class="brand" href="<?= $assetBase ?>index.php">
         <img src="<?= $assetBase ?>assets/logo.png" alt="Manisha's Kitchen logo">
@@ -19,10 +38,11 @@
     </a>
     <button class="nav-toggle" type="button" data-nav-toggle>Menu</button>
     <nav class="site-nav" data-nav>
-        <a href="<?= $assetBase ?>index.php">Home</a>
         <a href="<?= $assetBase ?>menu.php">Menu</a>
-        <a href="<?= $assetBase ?>checkout.php">Checkout <span class="cart-count" data-cart-count>0</span></a>
-        <a href="<?= $assetBase ?>admin/login.php">Admin</a>
+        <a class="nav-order-link" href="<?= $assetBase ?>checkout.php">Your Order <span class="cart-count" data-cart-count>0 items</span></a>
+        <?php if (in_admin_area()): ?>
+            <a href="<?= $assetBase ?>admin/login.php">Admin</a>
+        <?php endif; ?>
     </nav>
 </header>
 <main>

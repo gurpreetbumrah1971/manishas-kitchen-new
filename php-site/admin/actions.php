@@ -40,7 +40,7 @@ try {
         $price = (float)($_POST['price'] ?? 0);
         $categoryId = (int)($_POST['category_id'] ?? 0);
         if ($name === '' || $price <= 0 || $categoryId <= 0) {
-            throw new RuntimeException('Name, price and category are required.');
+            throw new RuntimeException('Name, price and menu are required.');
         }
         $image = trim($_POST['image'] ?? '');
         $upload = upload_file('image_file', 'uploads/menu', ['image/']);
@@ -98,6 +98,22 @@ try {
         $stmt = $pdo->prepare('DELETE FROM food_items WHERE id = ?');
         $stmt->execute([(int)$_POST['item_id']]);
         redirect('menu.php');
+    }
+
+    if ($action === 'save_settings') {
+        $promoUrl = trim($_POST['promo_banner_link_url'] ?? '');
+        if ($promoUrl !== '' && preg_match('#^\s*javascript:#i', $promoUrl)) {
+            throw new RuntimeException('Promotion link URL is not allowed.');
+        }
+
+        save_site_settings([
+            'promo_banner_enabled' => isset($_POST['promo_banner_enabled']) ? '1' : '0',
+            'promo_banner_text' => trim($_POST['promo_banner_text'] ?? ''),
+            'promo_banner_link_label' => trim($_POST['promo_banner_link_label'] ?? ''),
+            'promo_banner_link_url' => $promoUrl,
+        ]);
+        $_SESSION['admin_success'] = 'Promotional banner settings saved.';
+        redirect('settings.php');
     }
 
     if ($action === 'upload_campaign') {

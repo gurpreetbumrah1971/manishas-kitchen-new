@@ -24,8 +24,9 @@ $pageTitle = [
     'settings' => 'Settings',
 ][$tab] ?? 'Admin Dashboard';
 $orders = fetch_orders();
-$categories = fetch_categories(true);
+$menuGroups = fetch_categories(true);
 $menuItems = fetch_menu(null, true);
+$siteSettings = fetch_site_settings();
 $editItem = null;
 if (isset($_GET['edit'])) {
     foreach ($menuItems as $item) {
@@ -82,6 +83,9 @@ require_once __DIR__ . '/../includes/header.php';
         <?php if (!empty($_SESSION['admin_error'])): ?>
             <div class="alert"><?= e($_SESSION['admin_error']); unset($_SESSION['admin_error']); ?></div>
         <?php endif; ?>
+        <?php if (!empty($_SESSION['admin_success'])): ?>
+            <div class="alert success-alert"><?= e($_SESSION['admin_success']); unset($_SESSION['admin_success']); ?></div>
+        <?php endif; ?>
 
         <?php if ($tab === 'overview'): ?>
             <h1>Dashboard</h1>
@@ -106,12 +110,12 @@ require_once __DIR__ . '/../includes/header.php';
                 <h2><?= $editItem ? 'Edit Menu Item' : 'Add Menu Item' ?></h2>
                 <div class="form-row">
                     <label>Name<input name="name" required value="<?= e($editItem['name'] ?? '') ?>"></label>
-                    <label>Category
+                    <label>Menu
                         <select name="category_id" required>
-                            <option value="">Select Category</option>
-                            <?php foreach ($categories as $category): ?>
-                                <option value="<?= (int)$category['id'] ?>" <?= ($editItem && (int)$editItem['category_id'] === (int)$category['id']) ? 'selected' : '' ?>>
-                                    <?= e($category['name']) ?>
+                            <option value="">Select Menu</option>
+                            <?php foreach ($menuGroups as $menuGroup): ?>
+                                <option value="<?= (int)$menuGroup['id'] ?>" <?= ($editItem && (int)$editItem['category_id'] === (int)$menuGroup['id']) ? 'selected' : '' ?>>
+                                    <?= e($menuGroup['name']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -131,7 +135,7 @@ require_once __DIR__ . '/../includes/header.php';
             </form>
             <div class="card table-card">
                 <table>
-                    <thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Availability</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>Item</th><th>Menu</th><th>Price</th><th>Availability</th><th>Actions</th></tr></thead>
                     <tbody>
                     <?php foreach ($menuItems as $item): ?>
                         <tr>
@@ -194,7 +198,25 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
         <?php else: ?>
             <h1>Settings</h1>
-            <div class="card form-card"><h2>General Settings</h2><p class="muted">Restaurant information, operating hours and availability preferences can be added here.</p></div>
+            <form class="card form-card" action="actions.php" method="post">
+                <input type="hidden" name="action" value="save_settings">
+                <h2>Promotional Banner</h2>
+                <div class="inline-options">
+                    <label><input type="checkbox" name="promo_banner_enabled" <?= ($siteSettings['promo_banner_enabled'] ?? '0') === '1' ? 'checked' : '' ?>> Show banner in header</label>
+                </div>
+                <label>Banner Message
+                    <input name="promo_banner_text" maxlength="180" value="<?= e($siteSettings['promo_banner_text'] ?? '') ?>" placeholder="Today only: Free chai on orders above Rs. 299">
+                </label>
+                <div class="form-row">
+                    <label>CTA Label
+                        <input name="promo_banner_link_label" maxlength="60" value="<?= e($siteSettings['promo_banner_link_label'] ?? '') ?>" placeholder="Order now">
+                    </label>
+                    <label>CTA URL
+                        <input name="promo_banner_link_url" maxlength="500" value="<?= e($siteSettings['promo_banner_link_url'] ?? '') ?>" placeholder="menu.php">
+                    </label>
+                </div>
+                <button class="btn primary" type="submit">Save Banner</button>
+            </form>
         <?php endif; ?>
     </div>
 </section>
