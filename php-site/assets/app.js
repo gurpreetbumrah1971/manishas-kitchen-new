@@ -81,11 +81,27 @@ function discountRateForSubtotal(subtotal, tiers) {
 function nextDiscountNudge(subtotal, tiers = DISCOUNT_TIERS) {
   if (subtotal <= 0) return '';
 
-  const nextTier = Object.entries(tiers)
+  const orderedTiers = Object.entries(tiers)
     .map(([threshold, rate]) => [Number(threshold), Number(rate)])
     .filter(([threshold, rate]) => Number.isFinite(threshold) && Number.isFinite(rate))
-    .sort((a, b) => a[0] - b[0])
-    .find(([threshold]) => subtotal < threshold);
+    .sort((a, b) => a[0] - b[0]);
+  const currentTier = [...orderedTiers]
+    .reverse()
+    .find(([threshold]) => subtotal >= threshold);
+  const nextTier = orderedTiers.find(([threshold]) => subtotal < threshold);
+
+  if (currentTier && !nextTier) {
+    const currentSavings = subtotal * currentTier[1];
+    return `Thank you! You're saving ${rupeeCompact(currentSavings)} with our highest discount.`;
+  }
+
+  if (currentTier && nextTier) {
+    const currentSavings = subtotal * currentTier[1];
+    const [nextThreshold, nextRate] = nextTier;
+    const amountAway = Math.max(0, nextThreshold - subtotal);
+    const nextSavings = nextThreshold * nextRate;
+    return `Congrats! You're saving ${rupeeCompact(currentSavings)}. Add ${rupeeCompact(amountAway)} more to save ${rupeeCompact(nextSavings)}.`;
+  }
 
   if (!nextTier) return '';
 
