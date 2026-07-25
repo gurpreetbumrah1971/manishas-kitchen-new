@@ -1,42 +1,41 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/*.php": {
-      "runtime": "vercel-php@0.7.4",
-      "includeFiles": "php-site/**/*.php"
-    }
-  },
-  "env": {
-    "DB_CONNECTION": "sqlite"
-  },
   "routes": [
     {
       "src": "/assets/(.*)",
       "dest": "/php-site/assets/$1"
     },
     {
-      "src": "/uploads/(.*)",
-      "dest": "/php-site/uploads/$1"
+      "src": "/index\\.php",
+      "dest": "/index.html"
     },
     {
-      "src": "/_runtime",
-      "dest": "/api/health.php"
+      "src": "/index\\.html",
+      "dest": "/index.html"
     },
     {
-      "src": "/admin/(.*\\.php)",
-      "dest": "/api/index.php?path=admin/$1"
+      "src": "/menu\\.php",
+      "dest": "/menu.html"
     },
     {
-      "src": "/(index|menu|checkout)\\.php",
-      "dest": "/api/index.php?path=$1.php"
+      "src": "/menu\\.html",
+      "dest": "/menu.html"
+    },
+    {
+      "src": "/checkout\\.php",
+      "dest": "/checkout.html"
+    },
+    {
+      "src": "/checkout\\.html",
+      "dest": "/checkout.html"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "/index.html"
     },
     {
       "src": "/",
-      "dest": "/api/index.php?path=index.php"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.php?path=$1"
+      "dest": "/index.html"
     }
   ]
 }

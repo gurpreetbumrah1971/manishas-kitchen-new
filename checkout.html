@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Checkout | Manisha's Kitchen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="site-header">
+    <a class="brand" href="/">
+        <img src="/assets/logo.png" alt="Manisha's Kitchen logo">
+        <span>Manisha's Kitchen</span>
+    </a>
+    <button class="nav-toggle" type="button" data-nav-toggle>Menu</button>
+    <nav class="site-nav" data-nav>
+        <a href="/">Home</a>
+        <a href="/menu.html">Menu</a>
+        <a href="/checkout.html">Checkout <span class="cart-count" data-cart-count>0</span></a>
+    </nav>
+</header>
+<main>
+    <section class="section compact">
+        <h1>Checkout</h1>
+        <div class="checkout-grid">
+            <section class="card checkout-summary">
+                <h2>Order Summary</h2>
+                <div data-checkout-items data-active-item-ids="[]" data-gst-rate="0.05" data-discount-tiers='{"1000":0.20,"500":0.15,"300":0.10}'></div>
+                <div class="invoice-totals">
+                    <div><span>Food Subtotal</span><strong data-checkout-subtotal>Rs. 0.00</strong></div>
+                    <div><span>GST (5%)</span><strong data-checkout-gst>Rs. 0.00</strong></div>
+                    <div><span>Discount</span><strong data-checkout-discount>Rs. 0.00</strong></div>
+                </div>
+                <div class="total-row grand">
+                    <span>Grand Total</span>
+                    <strong data-checkout-total>Rs. 0.00</strong>
+                </div>
+                <div class="discount-offer">
+                    <strong>Discount offer</strong>
+                    <ul>
+                        <li>10% flat discount for orders above Rs. 300</li>
+                        <li>15% flat discount for orders above Rs. 500</li>
+                        <li>20% flat discount for orders above Rs. 1000</li>
+                    </ul>
+                </div>
+                <a class="btn secondary full" href="/menu.html">Add More Items</a>
+            </section>
+            <form class="card form-card" data-checkout-form data-static-checkout>
+                <input type="hidden" name="cart_json" data-cart-json>
+                <label>Full Name *<input name="customer_name" required placeholder="Enter your name"></label>
+                <label>WhatsApp Number *<input name="whatsapp_number" required inputmode="tel" placeholder="10-digit number"></label>
+                <label>For home delivery, please enter address<textarea name="address" rows="3" placeholder="House / flat, street, landmark"></textarea></label>
+                <label>Birthday Date<input type="date" name="birthday"></label>
+                <label>Anniversary Date<input type="date" name="anniversary"></label>
+                <label>Payment Method
+                    <select name="payment_method" data-payment-method>
+                        <option value="CASH">Cash</option>
+                        <option value="UPI">UPI</option>
+                    </select>
+                </label>
+                <div class="payment-box" data-payment-box>
+                    <img class="qr" src="/assets/payment/mk-qrcode.jpg" alt="UPI payment QR code" data-payment-qr data-static-src="/assets/payment/mk-qrcode.jpg" data-upi-id="manishaskitchen2026@okaxis" data-payee-name="Manisha Chavan" data-upi-aid="uGICAgNCIlbShSw">
+                    <p>Scan QR / use UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
+                    <p>Amount: <strong data-upi-total>Rs. 0.00</strong></p>
+                </div>
+                <button class="btn primary full" type="submit">Book Order</button>
+            </form>
+        </div>
+    </section>
+</main>
+<footer class="site-footer">
+    <div>Manisha's Kitchen Order Booking System</div>
+    <div>Dine-in, takeaway and delivery ordering with WhatsApp updates.</div>
+</footer>
+<script src="/assets/static-site.js"></script>
+<script src="/assets/app.js"></script>
+</body>
+</html>

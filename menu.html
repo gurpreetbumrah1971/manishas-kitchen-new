@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Menu | Manisha's Kitchen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="site-header">
+    <a class="brand" href="/">
+        <img src="/assets/logo.png" alt="Manisha's Kitchen logo">
+        <span>Manisha's Kitchen</span>
+    </a>
+    <button class="nav-toggle" type="button" data-nav-toggle>Menu</button>
+    <nav class="site-nav" data-nav>
+        <a href="/">Home</a>
+        <a href="/menu.html">Menu</a>
+        <a href="/checkout.html">Checkout <span class="cart-count" data-cart-count>0</span></a>
+    </nav>
+</header>
+<main>
+    <section class="section compact">
+        <div class="toolbar">
+            <div>
+                <h1>Our Menu</h1>
+                <p>Search, filter, and add dishes to your cart.</p>
+            </div>
+            <label class="search-box">
+                <span>Search</span>
+                <input type="search" data-menu-search placeholder="Search for dishes...">
+            </label>
+        </div>
+        <div class="chips" data-static-chips></div>
+        <div class="menu-grid" data-static-menu></div>
+    </section>
+</main>
+<footer class="site-footer">
+    <div>Manisha's Kitchen Order Booking System</div>
+    <div>Dine-in, takeaway and delivery ordering with WhatsApp updates.</div>
+</footer>
+<script src="/assets/static-site.js"></script>
+<script src="/assets/app.js"></script>
+</body>
+</html>

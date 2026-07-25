@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manisha's Kitchen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+<header class="site-header">
+    <a class="brand" href="/">
+        <img src="/assets/logo.png" alt="Manisha's Kitchen logo">
+        <span>Manisha's Kitchen</span>
+    </a>
+    <button class="nav-toggle" type="button" data-nav-toggle>Menu</button>
+    <nav class="site-nav" data-nav>
+        <a href="/">Home</a>
+        <a href="/menu.html">Menu</a>
+        <a href="/checkout.html">Checkout <span class="cart-count" data-cart-count>0</span></a>
+        <a href="/menu.html">Order</a>
+    </nav>
+</header>
+<main>
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Savor the Authentic Flavors of Manisha's Kitchen</h1>
+            <p>Experience Indian cuisine crafted with care, fresh ingredients, and traditional recipes.</p>
+            <a class="btn primary" href="/menu.html">Order Now</a>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-title">
+            <h2>Explore Our Categories</h2>
+            <p>Pick a category and start building your order.</p>
+        </div>
+        <div class="category-grid" data-static-categories></div>
+    </section>
+
+    <section class="section split">
+        <div>
+            <h2>Why Manisha's Kitchen?</h2>
+            <ul class="check-list">
+                <li>Authentic traditional recipes</li>
+                <li>Fresh and high-quality ingredients</li>
+                <li>Fast dine-in, takeaway and delivery service</li>
+                <li>WhatsApp order confirmations</li>
+            </ul>
+        </div>
+        <img class="feature-image" src="/assets/food/optimized/generated/pav-bhaji-realistic.jpg" alt="Pav bhaji">
+    </section>
+</main>
+<footer class="site-footer">
+    <div>Manisha's Kitchen Order Booking System</div>
+    <div>Dine-in, takeaway and delivery ordering with WhatsApp updates.</div>
+</footer>
+<script src="/assets/static-site.js"></script>
+<script src="/assets/app.js"></script>
+</body>
+</html>

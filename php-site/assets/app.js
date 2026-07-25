@@ -199,9 +199,34 @@ document.querySelectorAll('[data-date-group]').forEach((group) => {
 
 document.querySelector('[data-checkout-form]')?.addEventListener('submit', (event) => {
   const cartJson = document.querySelector('[data-cart-json]')?.value || '[]';
-  if (!JSON.parse(cartJson).length) {
+  const cart = JSON.parse(cartJson);
+  if (!cart.length) {
     event.preventDefault();
     alert('Your cart is empty.');
+    return;
+  }
+
+  const form = event.target;
+  if (form?.hasAttribute('data-static-checkout')) {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const orderNumber = `ORD-${Date.now()}`;
+    const total = document.querySelector('[data-checkout-total]')?.textContent || 'Rs. 0.00';
+    const items = cart.map((item) => `${item.name} x ${item.quantity}`).join(', ');
+    const number = String(formData.get('whatsapp_number') || '').replace(/\D+/g, '');
+    const normalizedNumber = number.length === 10 ? `91${number}` : number;
+    const message = [
+      'Order Confirmed!',
+      `Order ID: ${orderNumber}`,
+      `Customer: ${formData.get('customer_name') || ''}`,
+      `Items: ${items}`,
+      `Total: ${total}`,
+      '',
+      "Thank you for ordering from Manisha's Kitchen.",
+    ].join('\n');
+    localStorage.removeItem(CART_KEY);
+    window.open(`https://wa.me/${normalizedNumber}?text=${encodeURIComponent(message)}`, '_blank');
+    window.location.href = '/';
   }
 });
 
