@@ -290,19 +290,21 @@ textarea {
 
 .chip,
 .category-tab {
-    border: 1px solid var(--line);
-    background: #fff;
+    color: #fff;
+    border: 1px solid var(--primary);
+    background: var(--primary);
     border-radius: 999px;
     padding: 9px 18px;
     white-space: nowrap;
     font-weight: 700;
+    box-shadow: 0 8px 18px rgba(198, 40, 40, 0.18);
 }
 
 .chip.active,
 .category-tab.active {
     color: #fff;
-    background: var(--primary);
-    border-color: var(--primary);
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
 }
 
 .category-accordion {
@@ -315,7 +317,8 @@ textarea {
 
 .category-accordion summary {
     padding: 12px 14px;
-    color: var(--primary-dark);
+    color: #fff;
+    background: var(--primary);
     font-weight: 900;
     cursor: pointer;
 }
@@ -327,14 +330,17 @@ textarea {
 }
 
 .category-accordion a {
+    color: #fff;
+    background: var(--primary);
     padding: 10px 12px;
     border-radius: 8px;
     font-weight: 800;
+    box-shadow: 0 8px 18px rgba(198, 40, 40, 0.16);
 }
 
 .category-accordion a.active {
     color: #fff;
-    background: var(--primary);
+    background: var(--primary-dark);
 }
 
 .menu-card {
