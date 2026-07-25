@@ -1,6 +1,6 @@
 const STATIC_CATEGORIES = [
   { id: 1, name: 'Beverages', image: '/assets/food/optimized/iced-tea.jpg', count: 12 },
-  { id: 2, name: 'Biryanis', image: '/assets/food/optimized/generated/custom-party-box-realistic.jpg', count: 2 },
+  { id: 2, name: 'Biryanis', image: '/assets/food/optimized/generated/custom-party-box-realistic.jpg', count: 4 },
   { id: 3, name: 'Egg Dishes', image: '/assets/food/optimized/generated/egg-omelet-realistic.jpg', count: 4 },
   { id: 4, name: 'Frankies', image: '/assets/food/optimized/generated/paneer-paratha-realistic.jpg', count: 2 },
   { id: 5, name: 'Pakodas', image: '/assets/food/optimized/generated/wada-realistic.jpg', count: 4 },
@@ -23,6 +23,8 @@ const STATIC_MENU = [
   [12, 'Mango Milkshake', 'Creamy shake made with fresh mangoes.', 120, 1, true, '/assets/food/optimized/generated/mango-milkshake-realistic.jpg'],
   [13, 'Veg Biryani', 'Fragrant rice layered with spiced vegetables.', 140, 2, true, '/assets/food/optimized/generated/custom-party-box-realistic.jpg'],
   [14, 'Egg Biryani', 'Fragrant rice layered with masala eggs.', 160, 2, false, '/assets/food/optimized/generated/egg-burji-realistic.jpg'],
+  [43, 'Chicken Dum Biryani', 'Slow-cooked dum biryani with tender chicken and aromatic rice.', 225, 2, false, '/assets/food/optimized/generated/custom-party-box-realistic.jpg'],
+  [44, 'Paneer Biryani', 'Aromatic biryani layered with spiced paneer and basmati rice.', 225, 2, true, '/assets/food/optimized/generated/paneer-paratha-realistic.jpg'],
   [15, 'Egg Burji + 2 Pav (Single)', 'Spiced scrambled eggs served with 2 pav.', 40, 3, false, '/assets/food/optimized/generated/egg-burji-realistic.jpg'],
   [16, 'Egg Burji + 2 Pav (Double)', 'Double portion spiced scrambled eggs with 2 pav.', 80, 3, false, '/assets/food/optimized/generated/egg-burji-realistic.jpg'],
   [17, 'Egg Omelet + 2 Pav (Single)', 'Classic spiced omelet served with 2 pav.', 40, 3, false, '/assets/food/optimized/generated/egg-omelet-realistic.jpg'],

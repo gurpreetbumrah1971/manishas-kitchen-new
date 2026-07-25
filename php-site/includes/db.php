@@ -372,6 +372,8 @@ function seed_data(PDO $pdo): void
         ['Mango Milkshake', 'Creamy shake made with fresh mangoes.', 120, 'Beverages', true, 'assets/food/generated/mango-milkshake-realistic.png'],
         ['Veg Biryani', 'Fragrant rice layered with spiced vegetables.', 140, 'Biryanis', true, 'assets/food/generated/custom-party-box-realistic.png'],
         ['Egg Biryani', 'Fragrant rice layered with masala eggs.', 160, 'Biryanis', false, 'assets/food/generated/egg-burji-realistic.png'],
+        ['Chicken Dum Biryani', 'Slow-cooked dum biryani with tender chicken and aromatic rice.', 225, 'Biryanis', false, 'assets/food/generated/custom-party-box-realistic.png'],
+        ['Paneer Biryani', 'Aromatic biryani layered with spiced paneer and basmati rice.', 225, 'Biryanis', true, 'assets/food/generated/paneer-paratha-realistic.png'],
         ['Egg Burji + 2 Pav (Single)', 'Spiced scrambled eggs served with 2 pav.', 40, 'Egg Dishes', false, 'assets/food/generated/egg-burji-realistic.png'],
         ['Egg Burji + 2 Pav (Double)', 'Double portion spiced scrambled eggs with 2 pav.', 80, 'Egg Dishes', false, 'assets/food/generated/egg-burji-realistic.png'],
         ['Egg Omelet + 2 Pav (Single)', 'Classic spiced omelet served with 2 pav.', 40, 'Egg Dishes', false, 'assets/food/generated/egg-omelet-realistic.png'],

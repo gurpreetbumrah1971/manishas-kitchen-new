@@ -180,7 +180,7 @@ function sample_categories(): array
 {
     return [
         ['id' => 1, 'name' => 'Beverages', 'image' => 'assets/food/iced-tea.png', 'food_count' => 12],
-        ['id' => 2, 'name' => 'Biryanis', 'image' => 'assets/food/generated/custom-party-box-realistic.png', 'food_count' => 2],
+        ['id' => 2, 'name' => 'Biryanis', 'image' => 'assets/food/generated/custom-party-box-realistic.png', 'food_count' => 4],
         ['id' => 3, 'name' => 'Egg Dishes', 'image' => 'assets/food/generated/egg-omelet-realistic.png', 'food_count' => 4],
         ['id' => 4, 'name' => 'Frankies', 'image' => 'assets/food/generated/paneer-paratha-realistic.png', 'food_count' => 2],
         ['id' => 5, 'name' => 'Pakodas', 'image' => 'assets/food/generated/wada-realistic.png', 'food_count' => 4],
@@ -206,6 +206,8 @@ function sample_menu(): array
         [12, 'Mango Milkshake', 'Creamy shake made with fresh mangoes.', 120, 1, 'Beverages', 'assets/food/generated/mango-milkshake-realistic.png'],
         [13, 'Veg Biryani', 'Fragrant rice layered with spiced vegetables.', 140, 2, 'Biryanis', 'assets/food/generated/custom-party-box-realistic.png'],
         [14, 'Egg Biryani', 'Fragrant rice layered with masala eggs.', 160, 2, 'Biryanis', 'assets/food/generated/egg-burji-realistic.png', false],
+        [43, 'Chicken Dum Biryani', 'Slow-cooked dum biryani with tender chicken and aromatic rice.', 225, 2, 'Biryanis', 'assets/food/generated/custom-party-box-realistic.png', false],
+        [44, 'Paneer Biryani', 'Aromatic biryani layered with spiced paneer and basmati rice.', 225, 2, 'Biryanis', 'assets/food/generated/paneer-paratha-realistic.png'],
         [15, 'Egg Burji + 2 Pav (Single)', 'Spiced scrambled eggs served with 2 pav.', 40, 3, 'Egg Dishes', 'assets/food/generated/egg-burji-realistic.png', false],
         [16, 'Egg Burji + 2 Pav (Double)', 'Double portion spiced scrambled eggs with 2 pav.', 80, 3, 'Egg Dishes', 'assets/food/generated/egg-burji-realistic.png', false],
         [17, 'Egg Omelet + 2 Pav (Single)', 'Classic spiced omelet served with 2 pav.', 40, 3, 'Egg Dishes', 'assets/food/generated/egg-omelet-realistic.png', false],
