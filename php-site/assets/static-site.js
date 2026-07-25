@@ -1,51 +1,56 @@
 const STATIC_CATEGORIES = [
-  { id: 1, name: 'Snacks', image: '/assets/food/optimized/poha.jpg', count: 10 },
-  { id: 2, name: 'Meals', image: '/assets/food/optimized/chole-puri.jpg', count: 17 },
-  { id: 3, name: 'Beverages', image: '/assets/food/optimized/iced-tea.jpg', count: 12 },
-  { id: 4, name: 'Custom', image: '/assets/food/optimized/generated/custom-party-box-realistic.jpg', count: 1 },
+  { id: 1, name: 'Beverages', image: '/assets/food/optimized/iced-tea.jpg', count: 12 },
+  { id: 2, name: 'Biryanis', image: '/assets/food/optimized/generated/custom-party-box-realistic.jpg', count: 2 },
+  { id: 3, name: 'Egg Dishes', image: '/assets/food/optimized/generated/egg-omelet-realistic.jpg', count: 4 },
+  { id: 4, name: 'Frankies', image: '/assets/food/optimized/generated/paneer-paratha-realistic.jpg', count: 2 },
+  { id: 5, name: 'Pakodas', image: '/assets/food/optimized/generated/wada-realistic.jpg', count: 4 },
+  { id: 6, name: 'Parathas', image: '/assets/food/optimized/generated/aloo-paratha-realistic.jpg', count: 5 },
+  { id: 7, name: 'Snacks', image: '/assets/food/optimized/poha.jpg', count: 13 },
 ];
 
 const STATIC_MENU = [
-  [1, 'Poha', 'Flattened rice seasoned with spices.', 30, 1, true, '/assets/food/optimized/generated/poha-realistic.jpg'],
-  [2, 'Poha Usal', 'Poha served with spicy bean curry.', 40, 1, true, '/assets/food/optimized/generated/poha-usal-realistic.jpg'],
-  [3, 'Upma', 'Savory semolina porridge.', 30, 1, true, '/assets/food/optimized/generated/upma-realistic.jpg'],
-  [4, 'Uttapam', 'Thick rice pancake with toppings.', 60, 1, true, '/assets/food/optimized/generated/uttapam-realistic.jpg'],
-  [5, 'Dhokla (Half)', 'Steamed gram flour cake (4 pieces).', 40, 1, true, '/assets/food/optimized/dhokla.jpg'],
-  [6, 'Dhokla (Full)', 'Steamed gram flour cake (8 pieces).', 70, 1, true, '/assets/food/optimized/dhokla.jpg'],
-  [7, 'Wada Pav', 'Spicy potato fritter in a bun.', 20, 1, true, '/assets/food/optimized/generated/wada-pav-realistic.jpg'],
-  [8, 'Wada', 'Single spicy potato fritter.', 15, 1, true, '/assets/food/optimized/generated/wada-realistic.jpg'],
-  [9, 'Pav', 'Single bread bun.', 5, 1, true, '/assets/food/optimized/generated/pav-realistic.jpg'],
-  [10, 'Pav Bhaji', 'Spiced vegetable mash with buns.', 150, 1, true, '/assets/food/optimized/generated/pav-bhaji-realistic.jpg'],
-  [11, 'Misal Pav', 'Spicy sprout curry topped with farsan, served with pav.', 80, 2, true, '/assets/food/optimized/misal-pav.jpg'],
-  [12, 'Wada Usal Pav', 'Wada served with spicy sprout curry and pav.', 80, 2, true, '/assets/food/optimized/generated/wada-usal-pav-realistic.jpg'],
-  [13, 'Aloo Paratha', 'Wheat flatbread stuffed with spiced potatoes.', 50, 2, true, '/assets/food/optimized/generated/aloo-paratha-realistic.jpg'],
-  [14, 'Gobi Paratha', 'Wheat flatbread stuffed with spiced cauliflower.', 50, 2, true, '/assets/food/optimized/generated/gobi-paratha-realistic.jpg'],
-  [15, 'Paneer Paratha', 'Wheat flatbread stuffed with spiced cottage cheese.', 80, 2, true, '/assets/food/optimized/generated/paneer-paratha-realistic.jpg'],
-  [16, 'Methi Paratha', 'Wheat flatbread with fresh fenugreek leaves.', 50, 2, true, '/assets/food/optimized/generated/methi-paratha-realistic.jpg'],
-  [17, 'Plain Paratha', 'Simple layered wheat flatbread.', 15, 2, true, '/assets/food/optimized/generated/plain-paratha-realistic.jpg'],
-  [18, 'Chole Puri', 'Spicy chickpeas served with 4 fluffy fried puris.', 110, 2, true, '/assets/food/optimized/generated/chole-puri-realistic.jpg'],
-  [19, 'Chole Bhature', 'Spicy chickpeas served with 2 large bhaturas.', 150, 2, true, '/assets/food/optimized/generated/chole-bhature-realistic.jpg'],
-  [20, 'Chole Plate', 'A plate of spicy chickpeas (Chole only).', 80, 2, true, '/assets/food/optimized/generated/chole-plate-realistic.jpg'],
-  [21, 'Puri Plate', 'A plate of 4 fluffy fried puris.', 40, 2, true, '/assets/food/optimized/generated/puri-plate-realistic.jpg'],
-  [22, 'Bhatura', 'Single large fluffy fried bread.', 40, 2, true, '/assets/food/optimized/generated/bhatura-realistic.jpg'],
-  [23, 'Egg Burji + 2 Pav (Single)', 'Spiced scrambled eggs served with 2 pav.', 40, 2, false, '/assets/food/optimized/generated/egg-burji-realistic.jpg'],
-  [24, 'Egg Burji + 2 Pav (Double)', 'Double portion spiced scrambled eggs with 2 pav.', 80, 2, false, '/assets/food/optimized/generated/egg-burji-realistic.jpg'],
-  [25, 'Egg Omelet + 2 Pav (Single)', 'Classic spiced omelet served with 2 pav.', 40, 2, false, '/assets/food/optimized/generated/egg-omelet-realistic.jpg'],
-  [26, 'Egg Omelet + 2 Pav (Double)', 'Double portion spiced omelet with 2 pav.', 80, 2, false, '/assets/food/optimized/generated/egg-omelet-realistic.jpg'],
-  [27, 'Butter Pav', 'Single pav toasted with generous butter.', 10, 2, true, '/assets/food/optimized/generated/butter-pav-realistic.jpg'],
-  [28, 'Tea', 'Hot traditional Indian masala chai.', 15, 3, true, '/assets/food/optimized/tea-realistic.jpg'],
-  [29, 'Hot Coffee', 'Freshly brewed hot coffee.', 30, 3, true, '/assets/food/optimized/generated/hot-coffee-realistic.jpg'],
-  [30, 'Chaas', 'Refreshing spiced buttermilk.', 20, 3, true, '/assets/food/optimized/generated/chaas-realistic.jpg'],
-  [31, 'Nimbu Pani', 'Classic fresh lime water.', 20, 3, true, '/assets/food/optimized/generated/nimbu-pani-realistic.jpg'],
-  [32, 'Lemon Tea', 'Refreshing hot lemon tea.', 25, 3, true, '/assets/food/optimized/lemon-tea.jpg'],
-  [33, 'Green Tea', 'Healthy and soothing hot green tea.', 25, 3, true, '/assets/food/optimized/generated/green-tea-realistic.jpg'],
-  [34, 'Iced Tea', 'Chilled lemon infused iced tea.', 40, 3, true, '/assets/food/optimized/iced-tea.jpg'],
-  [35, 'Watermelon Juice', 'Freshly squeezed watermelon juice.', 50, 3, true, '/assets/food/optimized/generated/watermelon-juice-realistic.jpg'],
-  [36, 'Cold Coffee', 'Chilled creamy cold coffee.', 60, 3, true, '/assets/food/optimized/generated/cold-coffee-realistic.jpg'],
-  [37, 'Chikoo Milkshake', 'Thick and creamy sapota shake.', 60, 3, true, '/assets/food/optimized/generated/chikoo-milkshake-realistic.jpg'],
-  [38, 'Chocolate Milkshake', 'Rich and indulgent chocolate shake.', 90, 3, true, '/assets/food/optimized/generated/chocolate-milkshake-realistic.jpg'],
-  [39, 'Mango Milkshake', 'Creamy shake made with fresh mangoes.', 120, 3, true, '/assets/food/optimized/generated/mango-milkshake-realistic.jpg'],
-  [40, 'Custom Party Box', 'Your selection of snacks and sweets.', 999, 4, true, '/assets/food/optimized/generated/custom-party-box-realistic.jpg'],
+  [1, 'Tea', 'Hot traditional Indian masala chai.', 15, 1, true, '/assets/food/optimized/tea-realistic.jpg'],
+  [2, 'Hot Coffee', 'Freshly brewed hot coffee.', 30, 1, true, '/assets/food/optimized/generated/hot-coffee-realistic.jpg'],
+  [3, 'Chaas', 'Refreshing spiced buttermilk.', 20, 1, true, '/assets/food/optimized/generated/chaas-realistic.jpg'],
+  [4, 'Nimbu Pani', 'Classic fresh lime water.', 20, 1, true, '/assets/food/optimized/generated/nimbu-pani-realistic.jpg'],
+  [5, 'Lemon Tea', 'Refreshing hot lemon tea.', 25, 1, true, '/assets/food/optimized/lemon-tea.jpg'],
+  [6, 'Green Tea', 'Healthy and soothing hot green tea.', 25, 1, true, '/assets/food/optimized/generated/green-tea-realistic.jpg'],
+  [7, 'Iced Tea', 'Chilled lemon infused iced tea.', 40, 1, true, '/assets/food/optimized/iced-tea.jpg'],
+  [8, 'Watermelon Juice', 'Freshly squeezed watermelon juice.', 50, 1, true, '/assets/food/optimized/generated/watermelon-juice-realistic.jpg'],
+  [9, 'Cold Coffee', 'Chilled creamy cold coffee.', 60, 1, true, '/assets/food/optimized/generated/cold-coffee-realistic.jpg'],
+  [10, 'Chikoo Milkshake', 'Thick and creamy sapota shake.', 60, 1, true, '/assets/food/optimized/generated/chikoo-milkshake-realistic.jpg'],
+  [11, 'Chocolate Milkshake', 'Rich and indulgent chocolate shake.', 90, 1, true, '/assets/food/optimized/generated/chocolate-milkshake-realistic.jpg'],
+  [12, 'Mango Milkshake', 'Creamy shake made with fresh mangoes.', 120, 1, true, '/assets/food/optimized/generated/mango-milkshake-realistic.jpg'],
+  [13, 'Veg Biryani', 'Fragrant rice layered with spiced vegetables.', 140, 2, true, '/assets/food/optimized/generated/custom-party-box-realistic.jpg'],
+  [14, 'Egg Biryani', 'Fragrant rice layered with masala eggs.', 160, 2, false, '/assets/food/optimized/generated/egg-burji-realistic.jpg'],
+  [15, 'Egg Burji + 2 Pav (Single)', 'Spiced scrambled eggs served with 2 pav.', 40, 3, false, '/assets/food/optimized/generated/egg-burji-realistic.jpg'],
+  [16, 'Egg Burji + 2 Pav (Double)', 'Double portion spiced scrambled eggs with 2 pav.', 80, 3, false, '/assets/food/optimized/generated/egg-burji-realistic.jpg'],
+  [17, 'Egg Omelet + 2 Pav (Single)', 'Classic spiced omelet served with 2 pav.', 40, 3, false, '/assets/food/optimized/generated/egg-omelet-realistic.jpg'],
+  [18, 'Egg Omelet + 2 Pav (Double)', 'Double portion spiced omelet with 2 pav.', 80, 3, false, '/assets/food/optimized/generated/egg-omelet-realistic.jpg'],
+  [19, 'Aloo Frankie', 'Soft roll filled with spiced potato and chutney.', 60, 4, true, '/assets/food/optimized/generated/aloo-paratha-realistic.jpg'],
+  [20, 'Paneer Frankie', 'Soft roll filled with spiced paneer and onions.', 90, 4, true, '/assets/food/optimized/generated/paneer-paratha-realistic.jpg'],
+  [21, 'Wada', 'Single spicy potato fritter.', 15, 5, true, '/assets/food/optimized/generated/wada-realistic.jpg'],
+  [22, 'Wada Pav', 'Spicy potato fritter in a bun.', 20, 5, true, '/assets/food/optimized/generated/wada-pav-realistic.jpg'],
+  [23, 'Onion Pakoda', 'Crisp onion fritters with house masala.', 50, 5, true, '/assets/food/optimized/generated/wada-realistic.jpg'],
+  [24, 'Mix Pakoda', 'Assorted vegetable fritters fried crisp.', 70, 5, true, '/assets/food/optimized/generated/custom-party-box-realistic.jpg'],
+  [25, 'Aloo Paratha', 'Wheat flatbread stuffed with spiced potatoes.', 50, 6, true, '/assets/food/optimized/generated/aloo-paratha-realistic.jpg'],
+  [26, 'Gobi Paratha', 'Wheat flatbread stuffed with spiced cauliflower.', 50, 6, true, '/assets/food/optimized/generated/gobi-paratha-realistic.jpg'],
+  [27, 'Paneer Paratha', 'Wheat flatbread stuffed with spiced cottage cheese.', 80, 6, true, '/assets/food/optimized/generated/paneer-paratha-realistic.jpg'],
+  [28, 'Methi Paratha', 'Wheat flatbread with fresh fenugreek leaves.', 50, 6, true, '/assets/food/optimized/generated/methi-paratha-realistic.jpg'],
+  [29, 'Plain Paratha', 'Simple layered wheat flatbread.', 15, 6, true, '/assets/food/optimized/generated/plain-paratha-realistic.jpg'],
+  [30, 'Poha', 'Flattened rice seasoned with spices.', 30, 7, true, '/assets/food/optimized/generated/poha-realistic.jpg'],
+  [31, 'Poha Usal', 'Poha served with spicy bean curry.', 40, 7, true, '/assets/food/optimized/generated/poha-usal-realistic.jpg'],
+  [32, 'Upma', 'Savory semolina porridge.', 30, 7, true, '/assets/food/optimized/generated/upma-realistic.jpg'],
+  [33, 'Uttapam', 'Thick rice pancake with toppings.', 60, 7, true, '/assets/food/optimized/generated/uttapam-realistic.jpg'],
+  [34, 'Dhokla (Half)', 'Steamed gram flour cake (4 pieces).', 40, 7, true, '/assets/food/optimized/dhokla.jpg'],
+  [35, 'Dhokla (Full)', 'Steamed gram flour cake (8 pieces).', 70, 7, true, '/assets/food/optimized/dhokla.jpg'],
+  [36, 'Pav', 'Single bread bun.', 5, 7, true, '/assets/food/optimized/generated/pav-realistic.jpg'],
+  [37, 'Pav Bhaji', 'Spiced vegetable mash with buns.', 150, 7, true, '/assets/food/optimized/generated/pav-bhaji-realistic.jpg'],
+  [38, 'Misal Pav', 'Spicy sprout curry topped with farsan, served with pav.', 80, 7, true, '/assets/food/optimized/misal-pav.jpg'],
+  [39, 'Wada Usal Pav', 'Wada served with spicy sprout curry and pav.', 80, 7, true, '/assets/food/optimized/generated/wada-usal-pav-realistic.jpg'],
+  [40, 'Chole Puri', 'Spicy chickpeas served with 4 fluffy fried puris.', 110, 7, true, '/assets/food/optimized/generated/chole-puri-realistic.jpg'],
+  [41, 'Chole Bhature', 'Spicy chickpeas served with 2 large bhaturas.', 150, 7, true, '/assets/food/optimized/generated/chole-bhature-realistic.jpg'],
+  [42, 'Chole Plate', 'A plate of spicy chickpeas (Chole only).', 80, 7, true, '/assets/food/optimized/generated/chole-plate-realistic.jpg'],
 ].map(([id, name, description, price, categoryId, isVeg, image]) => ({ id, name, description, price, categoryId, isVeg, image }));
 
 function escapeHtml(value) {
@@ -60,7 +65,7 @@ function escapeHtml(value) {
 
 function currentCategoryId() {
   const value = new URLSearchParams(window.location.search).get('category');
-  return value ? Number(value) : 0;
+  return value ? Number(value) : STATIC_CATEGORIES[0].id;
 }
 
 function renderStaticCategories() {
@@ -78,16 +83,24 @@ function renderStaticCategories() {
   `).join('');
 }
 
-function renderStaticChips() {
-  const target = document.querySelector('[data-static-chips]');
-  if (!target) return;
-
+function categoryLinks(className = '') {
   const activeId = currentCategoryId();
-  target.innerHTML = `<a class="chip ${activeId ? '' : 'active'}" href="/menu.html">All</a>` + STATIC_CATEGORIES.map((category) => `
-    <a class="chip ${activeId === category.id ? 'active' : ''}" href="/menu.html?category=${category.id}">
+  return STATIC_CATEGORIES.map((category) => `
+    <a class="${className} ${activeId === category.id ? 'active' : ''}" href="/menu.html?category=${category.id}">
       ${escapeHtml(category.name)}
     </a>
   `).join('');
+}
+
+function renderStaticCategoryNav() {
+  const tabs = document.querySelector('[data-static-tabs]');
+  const accordion = document.querySelector('[data-static-accordion]');
+  if (tabs) {
+    tabs.innerHTML = categoryLinks('category-tab');
+  }
+  if (accordion) {
+    accordion.innerHTML = categoryLinks();
+  }
 }
 
 function renderStaticMenu() {
@@ -132,6 +145,6 @@ function hydrateStaticCheckout() {
 }
 
 renderStaticCategories();
-renderStaticChips();
+renderStaticCategoryNav();
 renderStaticMenu();
 hydrateStaticCheckout();

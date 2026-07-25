@@ -279,7 +279,8 @@ textarea {
     background: #fff;
 }
 
-.chips {
+.chips,
+.category-tabs {
     display: flex;
     gap: 0.75rem;
     overflow-x: auto;
@@ -287,7 +288,8 @@ textarea {
     margin-bottom: 1.3rem;
 }
 
-.chip {
+.chip,
+.category-tab {
     border: 1px solid var(--line);
     background: #fff;
     border-radius: 999px;
@@ -296,10 +298,43 @@ textarea {
     font-weight: 700;
 }
 
-.chip.active {
+.chip.active,
+.category-tab.active {
     color: #fff;
     background: var(--primary);
     border-color: var(--primary);
+}
+
+.category-accordion {
+    display: none;
+    margin-bottom: 1.3rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.category-accordion summary {
+    padding: 12px 14px;
+    color: var(--primary-dark);
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.category-accordion nav {
+    display: grid;
+    gap: 6px;
+    padding: 0 12px 12px;
+}
+
+.category-accordion a {
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-weight: 800;
+}
+
+.category-accordion a.active {
+    color: #fff;
+    background: var(--primary);
 }
 
 .menu-card {
@@ -908,6 +943,14 @@ th {
 
     .search-box {
         min-width: 100%;
+    }
+
+    .category-tabs {
+        display: none;
+    }
+
+    .category-accordion {
+        display: block;
     }
 
     .veg-filter {

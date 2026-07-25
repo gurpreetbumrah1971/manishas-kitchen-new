@@ -3,6 +3,7 @@ $pageTitle = 'Menu';
 require_once __DIR__ . '/includes/header.php';
 $categoryId = isset($_GET['category']) ? max(0, (int)$_GET['category']) : null;
 $categories = fetch_categories();
+$categoryId = $categoryId ?: (int)($categories[0]['id'] ?? 0);
 $items = fetch_menu($categoryId ?: null);
 ?>
 <section class="section compact">
@@ -22,15 +23,24 @@ $items = fetch_menu($categoryId ?: null);
         </div>
     </div>
 
-    <div class="chips">
-        <a class="chip <?= !$categoryId ? 'active' : '' ?>" href="menu.php">All</a>
+    <nav class="category-tabs" aria-label="Menu categories">
         <?php foreach ($categories as $category): ?>
-            <?php if ((int)$category['food_count'] === 0) continue; ?>
-            <a class="chip <?= $categoryId === (int)$category['id'] ? 'active' : '' ?>" href="menu.php?category=<?= (int)$category['id'] ?>">
+            <a class="category-tab <?= $categoryId === (int)$category['id'] ? 'active' : '' ?>" href="menu.php?category=<?= (int)$category['id'] ?>">
                 <?= e($category['name']) ?>
             </a>
         <?php endforeach; ?>
-    </div>
+    </nav>
+
+    <details class="category-accordion">
+        <summary>Categories</summary>
+        <nav aria-label="Mobile menu categories">
+            <?php foreach ($categories as $category): ?>
+                <a class="<?= $categoryId === (int)$category['id'] ? 'active' : '' ?>" href="menu.php?category=<?= (int)$category['id'] ?>">
+                    <?= e($category['name']) ?>
+                </a>
+            <?php endforeach; ?>
+        </nav>
+    </details>
 
     <div class="menu-grid">
         <?php foreach ($items as $item): ?>
