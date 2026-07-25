@@ -350,13 +350,6 @@ function seed_data(PDO $pdo): void
         $categoryIds[$category[0]] = (int)$idStmt->fetchColumn();
     }
 
-    $itemCount = (int)$pdo->query('SELECT COUNT(*) FROM food_items')->fetchColumn();
-    if ($itemCount > 0) {
-        sync_menu_images($pdo, $imageMap);
-        sync_menu_categories($pdo, $categoryIds);
-        return;
-    }
-
     $items = [
         ['Tea', 'Hot traditional Indian masala chai.', 15, 'Beverages', true, 'assets/food/tea-realistic.png'],
         ['Hot Coffee', 'Freshly brewed hot coffee.', 30, 'Beverages', true, 'assets/food/generated/hot-coffee-realistic.png'],
@@ -404,6 +397,14 @@ function seed_data(PDO $pdo): void
         ['Chole Plate', 'A plate of spicy chickpeas (Chole only).', 80, 'Snacks', true, 'assets/food/generated/chole-plate-realistic.png'],
     ];
 
+    $itemCount = (int)$pdo->query('SELECT COUNT(*) FROM food_items')->fetchColumn();
+    if ($itemCount > 0) {
+        sync_menu_images($pdo, $imageMap);
+        sync_menu_categories($pdo, $categoryIds);
+        insert_missing_menu_items($pdo, $items, $categoryIds);
+        return;
+    }
+
     $stmt = $pdo->prepare('
         INSERT INTO food_items (name, description, price, image, is_veg, is_available, category_id)
         VALUES (?, ?, ?, ?, ?, 1, ?)
@@ -444,6 +445,29 @@ function sync_menu_images(PDO $pdo, array $imageMap): void
     $stmt = $pdo->prepare('UPDATE food_items SET image = ? WHERE name = ?');
     foreach ($imageMap as $name => $image) {
         $stmt->execute([$image, $name]);
+    }
+}
+
+function insert_missing_menu_items(PDO $pdo, array $items, array $categoryIds): void
+{
+    $existsStmt = $pdo->prepare('SELECT COUNT(*) FROM food_items WHERE name = ?');
+    $insertStmt = $pdo->prepare('
+        INSERT INTO food_items (name, description, price, image, is_veg, is_available, category_id)
+        VALUES (?, ?, ?, ?, ?, 1, ?)
+    ');
+
+    foreach ($items as $item) {
+        $existsStmt->execute([$item[0]]);
+        if ((int)$existsStmt->fetchColumn() > 0) {
+            continue;
+        }
+
+        $categoryId = $categoryIds[$item[3]] ?? null;
+        if ($categoryId === null) {
+            continue;
+        }
+
+        $insertStmt->execute([$item[0], $item[1], $item[2], $item[5], $item[4] ? 1 : 0, $categoryId]);
     }
 }
 
