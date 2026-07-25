@@ -297,6 +297,9 @@ function seed_data(PDO $pdo): void
         'Gobi Paratha' => 'assets/food/generated/gobi-paratha-realistic.png',
         'Paneer Paratha' => 'assets/food/generated/paneer-paratha-realistic.png',
         'Methi Paratha' => 'assets/food/generated/methi-paratha-realistic.png',
+        'Palak Paratha' => 'assets/food/generated/methi-paratha-realistic.png',
+        'Cabbage Paratha' => 'assets/food/generated/gobi-paratha-realistic.png',
+        'Moong Daal Chilla' => 'assets/food/generated/uttapam-realistic.png',
         'Plain Paratha' => 'assets/food/generated/plain-paratha-realistic.png',
         'Chole Puri' => 'assets/food/generated/chole-puri-realistic.png',
         'Chole Bhature' => 'assets/food/generated/chole-bhature-realistic.png',
@@ -377,11 +380,14 @@ function seed_data(PDO $pdo): void
         ['Wada Pav', 'Spicy potato fritter in a bun.', 20, 'Pakodas', true, 'assets/food/generated/wada-pav-realistic.png'],
         ['Onion Pakoda', 'Crisp onion fritters with house masala.', 50, 'Pakodas', true, 'assets/food/generated/wada-realistic.png'],
         ['Mix Pakoda', 'Assorted vegetable fritters fried crisp.', 70, 'Pakodas', true, 'assets/food/generated/custom-party-box-realistic.png'],
-        ['Aloo Paratha', 'Wheat flatbread stuffed with spiced potatoes.', 50, 'Parathas', true, 'assets/food/generated/aloo-paratha-realistic.png'],
-        ['Gobi Paratha', 'Wheat flatbread stuffed with spiced cauliflower.', 50, 'Parathas', true, 'assets/food/generated/gobi-paratha-realistic.png'],
-        ['Paneer Paratha', 'Wheat flatbread stuffed with spiced cottage cheese.', 80, 'Parathas', true, 'assets/food/generated/paneer-paratha-realistic.png'],
-        ['Methi Paratha', 'Wheat flatbread with fresh fenugreek leaves.', 50, 'Parathas', true, 'assets/food/generated/methi-paratha-realistic.png'],
-        ['Plain Paratha', 'Simple layered wheat flatbread.', 15, 'Parathas', true, 'assets/food/generated/plain-paratha-realistic.png'],
+        ['Aloo Paratha', 'Wheat flatbread stuffed with spiced potatoes.', 60, 'Parathas', true, 'assets/food/generated/aloo-paratha-realistic.png'],
+        ['Gobi Paratha', 'Wheat flatbread stuffed with spiced cauliflower.', 60, 'Parathas', true, 'assets/food/generated/gobi-paratha-realistic.png'],
+        ['Paneer Paratha', 'Wheat flatbread stuffed with spiced cottage cheese.', 100, 'Parathas', true, 'assets/food/generated/paneer-paratha-realistic.png'],
+        ['Methi Paratha', 'Wheat flatbread with fresh fenugreek leaves.', 60, 'Parathas', true, 'assets/food/generated/methi-paratha-realistic.png'],
+        ['Palak Paratha', 'Wheat flatbread layered with spiced spinach.', 60, 'Parathas', true, 'assets/food/generated/methi-paratha-realistic.png'],
+        ['Cabbage Paratha', 'Wheat flatbread stuffed with seasoned cabbage.', 60, 'Parathas', true, 'assets/food/generated/gobi-paratha-realistic.png'],
+        ['Moong Daal Chilla', 'Savory moong dal pancake with mild spices.', 65, 'Parathas', true, 'assets/food/generated/uttapam-realistic.png'],
+        ['Plain Paratha', 'Simple layered wheat flatbread.', 20, 'Parathas', true, 'assets/food/generated/plain-paratha-realistic.png'],
         ['Poha', 'Flattened rice seasoned with spices.', 30, 'Snacks', true, 'assets/food/generated/poha-realistic.png'],
         ['Poha Usal', 'Poha served with spicy bean curry.', 40, 'Snacks', true, 'assets/food/generated/poha-usal-realistic.png'],
         ['Upma', 'Savory semolina porridge.', 30, 'Snacks', true, 'assets/food/generated/upma-realistic.png'],
@@ -401,7 +407,7 @@ function seed_data(PDO $pdo): void
     if ($itemCount > 0) {
         sync_menu_images($pdo, $imageMap);
         sync_menu_categories($pdo, $categoryIds);
-        insert_missing_menu_items($pdo, $items, $categoryIds);
+        sync_menu_items($pdo, $items, $categoryIds);
         return;
     }
 
@@ -448,9 +454,14 @@ function sync_menu_images(PDO $pdo, array $imageMap): void
     }
 }
 
-function insert_missing_menu_items(PDO $pdo, array $items, array $categoryIds): void
+function sync_menu_items(PDO $pdo, array $items, array $categoryIds): void
 {
     $existsStmt = $pdo->prepare('SELECT COUNT(*) FROM food_items WHERE name = ?');
+    $updateStmt = $pdo->prepare('
+        UPDATE food_items
+        SET description = ?, price = ?, image = ?, is_veg = ?, category_id = ?
+        WHERE name = ?
+    ');
     $insertStmt = $pdo->prepare('
         INSERT INTO food_items (name, description, price, image, is_veg, is_available, category_id)
         VALUES (?, ?, ?, ?, ?, 1, ?)
@@ -458,12 +469,15 @@ function insert_missing_menu_items(PDO $pdo, array $items, array $categoryIds): 
 
     foreach ($items as $item) {
         $existsStmt->execute([$item[0]]);
-        if ((int)$existsStmt->fetchColumn() > 0) {
-            continue;
-        }
+        $exists = (int)$existsStmt->fetchColumn() > 0;
 
         $categoryId = $categoryIds[$item[3]] ?? null;
         if ($categoryId === null) {
+            continue;
+        }
+
+        if ($exists) {
+            $updateStmt->execute([$item[1], $item[2], $item[5], $item[4] ? 1 : 0, $categoryId, $item[0]]);
             continue;
         }
 
@@ -496,6 +510,9 @@ function sync_menu_categories(PDO $pdo, array $categoryIds): void
         'Gobi Paratha' => 'Parathas',
         'Paneer Paratha' => 'Parathas',
         'Methi Paratha' => 'Parathas',
+        'Palak Paratha' => 'Parathas',
+        'Cabbage Paratha' => 'Parathas',
+        'Moong Daal Chilla' => 'Parathas',
         'Plain Paratha' => 'Parathas',
         'Poha' => 'Snacks',
         'Poha Usal' => 'Snacks',

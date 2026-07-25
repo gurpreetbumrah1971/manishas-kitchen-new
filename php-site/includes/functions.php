@@ -132,7 +132,7 @@ function fetch_menu(?int $categoryId = null, bool $admin = false): array
         if ($categoryId) {
             $items = array_values(array_filter($items, fn($item) => (int)$item['category_id'] === $categoryId));
         }
-        return $items;
+        return sort_menu_items($items);
     }
 
     $sql = '
@@ -152,7 +152,38 @@ function fetch_menu(?int $categoryId = null, bool $admin = false): array
     $sql .= ' ORDER BY f.id';
     $stmt = db()->prepare($sql);
     $stmt->execute($params);
-    return $stmt->fetchAll();
+    return sort_menu_items($stmt->fetchAll());
+}
+
+function sort_menu_items(array $items): array
+{
+    $order = [
+        'Aloo Paratha' => 1,
+        'Gobi Paratha' => 2,
+        'Paneer Paratha' => 3,
+        'Methi Paratha' => 4,
+        'Palak Paratha' => 5,
+        'Cabbage Paratha' => 6,
+        'Moong Daal Chilla' => 7,
+        'Plain Paratha' => 8,
+    ];
+
+    usort($items, function (array $a, array $b) use ($order): int {
+        $categoryCompare = strcmp((string)($a['category_name'] ?? ''), (string)($b['category_name'] ?? ''));
+        if ($categoryCompare !== 0) {
+            return $categoryCompare;
+        }
+
+        $aOrder = $order[$a['name'] ?? ''] ?? PHP_INT_MAX;
+        $bOrder = $order[$b['name'] ?? ''] ?? PHP_INT_MAX;
+        if ($aOrder !== $bOrder) {
+            return $aOrder <=> $bOrder;
+        }
+
+        return ((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0));
+    });
+
+    return $items;
 }
 
 function fetch_orders(): array
@@ -184,7 +215,7 @@ function sample_categories(): array
         ['id' => 3, 'name' => 'Egg Dishes', 'image' => 'assets/food/generated/egg-omelet-realistic.png', 'food_count' => 4],
         ['id' => 4, 'name' => 'Frankies', 'image' => 'assets/food/generated/paneer-paratha-realistic.png', 'food_count' => 2],
         ['id' => 5, 'name' => 'Pakodas', 'image' => 'assets/food/generated/wada-realistic.png', 'food_count' => 4],
-        ['id' => 6, 'name' => 'Parathas', 'image' => 'assets/food/generated/aloo-paratha-realistic.png', 'food_count' => 5],
+        ['id' => 6, 'name' => 'Parathas', 'image' => 'assets/food/generated/aloo-paratha-realistic.png', 'food_count' => 8],
         ['id' => 7, 'name' => 'Snacks', 'image' => 'assets/food/poha.png', 'food_count' => 13],
     ];
 }
@@ -218,11 +249,14 @@ function sample_menu(): array
         [22, 'Wada Pav', 'Spicy potato fritter in a bun.', 20, 5, 'Pakodas', 'assets/food/generated/wada-pav-realistic.png'],
         [23, 'Onion Pakoda', 'Crisp onion fritters with house masala.', 50, 5, 'Pakodas', 'assets/food/generated/wada-realistic.png'],
         [24, 'Mix Pakoda', 'Assorted vegetable fritters fried crisp.', 70, 5, 'Pakodas', 'assets/food/generated/custom-party-box-realistic.png'],
-        [25, 'Aloo Paratha', 'Wheat flatbread stuffed with spiced potatoes.', 50, 6, 'Parathas', 'assets/food/generated/aloo-paratha-realistic.png'],
-        [26, 'Gobi Paratha', 'Wheat flatbread stuffed with spiced cauliflower.', 50, 6, 'Parathas', 'assets/food/generated/gobi-paratha-realistic.png'],
-        [27, 'Paneer Paratha', 'Wheat flatbread stuffed with spiced cottage cheese.', 80, 6, 'Parathas', 'assets/food/generated/paneer-paratha-realistic.png'],
-        [28, 'Methi Paratha', 'Wheat flatbread with fresh fenugreek leaves.', 50, 6, 'Parathas', 'assets/food/generated/methi-paratha-realistic.png'],
-        [29, 'Plain Paratha', 'Simple layered wheat flatbread.', 15, 6, 'Parathas', 'assets/food/generated/plain-paratha-realistic.png'],
+        [25, 'Aloo Paratha', 'Wheat flatbread stuffed with spiced potatoes.', 60, 6, 'Parathas', 'assets/food/generated/aloo-paratha-realistic.png'],
+        [26, 'Gobi Paratha', 'Wheat flatbread stuffed with spiced cauliflower.', 60, 6, 'Parathas', 'assets/food/generated/gobi-paratha-realistic.png'],
+        [27, 'Paneer Paratha', 'Wheat flatbread stuffed with spiced cottage cheese.', 100, 6, 'Parathas', 'assets/food/generated/paneer-paratha-realistic.png'],
+        [28, 'Methi Paratha', 'Wheat flatbread with fresh fenugreek leaves.', 60, 6, 'Parathas', 'assets/food/generated/methi-paratha-realistic.png'],
+        [45, 'Palak Paratha', 'Wheat flatbread layered with spiced spinach.', 60, 6, 'Parathas', 'assets/food/generated/methi-paratha-realistic.png'],
+        [46, 'Cabbage Paratha', 'Wheat flatbread stuffed with seasoned cabbage.', 60, 6, 'Parathas', 'assets/food/generated/gobi-paratha-realistic.png'],
+        [47, 'Moong Daal Chilla', 'Savory moong dal pancake with mild spices.', 65, 6, 'Parathas', 'assets/food/generated/uttapam-realistic.png'],
+        [29, 'Plain Paratha', 'Simple layered wheat flatbread.', 20, 6, 'Parathas', 'assets/food/generated/plain-paratha-realistic.png'],
         [30, 'Poha', 'Flattened rice seasoned with spices.', 30, 7, 'Snacks', 'assets/food/generated/poha-realistic.png'],
         [31, 'Poha Usal', 'Poha served with spicy bean curry.', 40, 7, 'Snacks', 'assets/food/generated/poha-usal-realistic.png'],
         [32, 'Upma', 'Savory semolina porridge.', 30, 7, 'Snacks', 'assets/food/generated/upma-realistic.png'],
