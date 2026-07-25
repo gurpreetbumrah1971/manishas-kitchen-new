@@ -244,6 +244,31 @@ button {
     font-weight: 700;
 }
 
+.veg-filter {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+}
+
+.veg-filter button {
+    min-height: 38px;
+    padding: 0 14px;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    font-weight: 800;
+}
+
+.veg-filter button.active {
+    color: #fff;
+    background: var(--primary);
+}
+
 input,
 select,
 textarea {
@@ -883,6 +908,14 @@ th {
 
     .search-box {
         min-width: 100%;
+    }
+
+    .veg-filter {
+        width: 100%;
+    }
+
+    .veg-filter button {
+        flex: 1;
     }
 
     .admin-sidebar {

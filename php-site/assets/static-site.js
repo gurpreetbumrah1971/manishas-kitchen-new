@@ -104,7 +104,7 @@ function renderStaticMenu() {
       image: item.image,
     });
     return `
-      <article class="card menu-card" data-menu-item data-name="${escapeHtml(`${item.name} ${item.description}`.toLowerCase())}">
+      <article class="card menu-card" data-menu-item data-name="${escapeHtml(`${item.name} ${item.description}`.toLowerCase())}" data-veg="${item.isVeg ? 'veg' : 'nonveg'}">
         <div class="image-wrap">
           <img src="${item.image}" alt="${escapeHtml(item.name)}">
           <span class="badge ${item.isVeg ? 'veg' : 'nonveg'}">${item.isVeg ? 'Veg' : 'Non-Veg'}</span>

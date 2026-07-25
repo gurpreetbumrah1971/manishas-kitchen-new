@@ -168,11 +168,26 @@ document.addEventListener('click', (event) => {
   }
 });
 
-document.querySelector('[data-menu-search]')?.addEventListener('input', (event) => {
-  const query = event.target.value.toLowerCase();
+function applyMenuFilters() {
+  const query = document.querySelector('[data-menu-search]')?.value.toLowerCase() || '';
+  const vegMode = document.querySelector('[data-veg-filter] .active')?.dataset.vegValue || 'all';
   document.querySelectorAll('[data-menu-item]').forEach((item) => {
-    item.hidden = !item.dataset.name.includes(query);
+    const matchesSearch = item.dataset.name.includes(query);
+    const matchesVeg = vegMode === 'all' || item.dataset.veg === vegMode;
+    item.hidden = !matchesSearch || !matchesVeg;
   });
+}
+
+document.querySelector('[data-menu-search]')?.addEventListener('input', applyMenuFilters);
+
+document.querySelector('[data-veg-filter]')?.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-veg-value]');
+  if (!button) return;
+
+  document.querySelectorAll('[data-veg-filter] [data-veg-value]').forEach((node) => {
+    node.classList.toggle('active', node === button);
+  });
+  applyMenuFilters();
 });
 
 document.querySelector('[data-payment-method]')?.addEventListener('change', (event) => {

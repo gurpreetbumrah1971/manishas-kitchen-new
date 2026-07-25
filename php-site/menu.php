@@ -15,6 +15,11 @@ $items = fetch_menu($categoryId ?: null);
             <span>Search</span>
             <input type="search" data-menu-search placeholder="Search for dishes...">
         </label>
+        <div class="veg-filter" data-veg-filter>
+            <button class="active" type="button" data-veg-value="all">All</button>
+            <button type="button" data-veg-value="veg">Veg</button>
+            <button type="button" data-veg-value="nonveg">Non-Veg</button>
+        </div>
     </div>
 
     <div class="chips">
@@ -29,7 +34,7 @@ $items = fetch_menu($categoryId ?: null);
 
     <div class="menu-grid">
         <?php foreach ($items as $item): ?>
-            <article class="card menu-card" data-menu-item data-name="<?= e(strtolower($item['name'] . ' ' . $item['description'])) ?>">
+            <article class="card menu-card" data-menu-item data-name="<?= e(strtolower($item['name'] . ' ' . $item['description'])) ?>" data-veg="<?= $item['is_veg'] ? 'veg' : 'nonveg' ?>">
                 <div class="image-wrap">
                     <img src="<?= e(media_url($item['image'])) ?>" alt="<?= e($item['name']) ?>">
                     <span class="badge <?= $item['is_veg'] ? 'veg' : 'nonveg' ?>"><?= $item['is_veg'] ? 'Veg' : 'Non-Veg' ?></span>
