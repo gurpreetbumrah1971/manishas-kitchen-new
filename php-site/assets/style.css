@@ -1756,4 +1756,179 @@ th {
         left: 0.85rem;
         padding: 0.72rem 0.8rem;
     }
+
+    .checkout-page .section.compact {
+        padding: 0;
+    }
+
+    .checkout-page .section.compact > h1 {
+        padding: 0.8rem 1rem;
+        font-size: 1.02rem;
+        line-height: 1.2;
+    }
+
+    .checkout-page .checkout-grid {
+        gap: 0.65rem;
+        padding: 0.65rem;
+    }
+
+    .checkout-page .checkout-summary,
+    .checkout-page .form-card,
+    .checkout-page .success-panel {
+        padding: 0.9rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 14px rgba(20, 20, 20, 0.06);
+    }
+
+    .checkout-page .checkout-summary h2 {
+        margin: 0 0 0.35rem;
+        font-size: 0.92rem;
+        line-height: 1.2;
+    }
+
+    .checkout-page .checkout-item {
+        grid-template-columns: 44px minmax(0, 1fr) auto;
+        gap: 0.55rem;
+        padding: 0.55rem 0;
+    }
+
+    .checkout-page .checkout-item img {
+        width: 44px;
+        height: 44px;
+        border-radius: 6px;
+    }
+
+    .checkout-page .checkout-item strong {
+        font-size: 0.86rem;
+        line-height: 1.25;
+    }
+
+    .checkout-page .checkout-item p {
+        margin: 0.15rem 0 0;
+        color: var(--muted);
+        font-size: 0.76rem;
+    }
+
+    .checkout-page .checkout-actions {
+        gap: 0.15rem;
+    }
+
+    .checkout-page .checkout-actions .icon-remove {
+        width: 28px;
+        height: 28px;
+    }
+
+    .checkout-page .checkout-actions .icon-remove svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .checkout-page .invoice-totals {
+        gap: 0.35rem;
+        padding-top: 0.65rem;
+        margin-top: 0.55rem;
+        font-size: 0.82rem;
+    }
+
+    .checkout-page .total-row {
+        padding: 0.72rem 0;
+        margin-top: 0.45rem;
+        font-size: 0.94rem;
+    }
+
+    .checkout-page .total-row.grand {
+        padding: 0.72rem;
+        font-size: 0.98rem;
+    }
+
+    .checkout-page .discount-offer {
+        margin: 0.55rem 0 0.75rem;
+        padding: 0.65rem;
+        font-size: 0.78rem;
+        line-height: 1.35;
+    }
+
+    .checkout-page .discount-offer ul {
+        gap: 0.18rem;
+        margin-top: 0.28rem;
+    }
+
+    .checkout-page .btn {
+        min-height: 38px;
+        padding: 8px 12px;
+        border-radius: 7px;
+        font-size: 0.82rem;
+    }
+
+    .checkout-page .form-card {
+        gap: 0.7rem;
+    }
+
+    .checkout-page .form-card label,
+    .checkout-page .date-select-group legend {
+        gap: 4px;
+        color: #343434;
+        font-size: 0.82rem;
+        line-height: 1.25;
+    }
+
+    .checkout-page .form-card input,
+    .checkout-page .form-card textarea,
+    .checkout-page .form-card select {
+        min-height: 38px;
+        border-radius: 7px;
+        padding: 8px 10px;
+        font-size: 0.82rem;
+    }
+
+    .checkout-page .form-card textarea {
+        min-height: 72px;
+    }
+
+    .checkout-page .special-day-fields {
+        gap: 0.55rem;
+    }
+
+    .checkout-page .special-day-fields p {
+        font-size: 0.78rem;
+        line-height: 1.35;
+    }
+
+    .checkout-page .form-row {
+        gap: 0.65rem;
+    }
+
+    .checkout-page .date-select-group {
+        grid-template-columns: 58px minmax(86px, 1fr) 70px;
+        gap: 0.35rem;
+    }
+
+    .checkout-page .date-select-group select {
+        min-height: 36px;
+        padding: 6px 7px;
+        font-size: 0.78rem;
+    }
+
+    .checkout-page .payment-box {
+        padding: 0.7rem;
+        font-size: 0.8rem;
+        line-height: 1.35;
+    }
+
+    .checkout-page .payment-box p {
+        margin: 0.35rem 0;
+    }
+
+    .checkout-page .qr {
+        width: 118px;
+        height: 118px;
+        margin-bottom: 0.55rem;
+        border-radius: 7px;
+    }
+
+    .checkout-page .form-card .btn.primary {
+        min-height: 42px;
+        font-size: 0.86rem;
+        box-shadow: 0 6px 16px rgba(197, 32, 49, 0.2);
+    }
 }
