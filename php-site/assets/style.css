@@ -583,8 +583,11 @@ textarea {
     grid-template-columns: 58px 1fr auto;
     gap: 0.8rem;
     align-items: center;
-    padding: 0.85rem 0;
-    border-bottom: 1px solid var(--line);
+    margin-bottom: 0.55rem;
+    padding: 0.75rem;
+    border: 1px solid #eeeeee;
+    border-radius: 8px;
+    background: #f7f7f7;
 }
 
 .checkout-item img,
@@ -1608,8 +1611,9 @@ th {
 .checkout-page .checkout-item {
     grid-template-columns: 58px minmax(0, 1fr) auto;
     gap: 0.75rem;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #eeeeee;
+    padding: 0.75rem;
+    border: 1px solid #eeeeee;
+    background: #f7f7f7;
 }
 
 .checkout-page .checkout-item img {
@@ -1791,7 +1795,9 @@ th {
     .checkout-page .checkout-item {
         grid-template-columns: 44px minmax(0, 1fr) auto;
         gap: 0.55rem;
-        padding: 0.55rem 0;
+        margin-bottom: 0.45rem;
+        padding: 0.55rem;
+        border-radius: 7px;
     }
 
     .checkout-page .checkout-item img {
