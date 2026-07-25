@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/*.php": {
-      "runtime": "vercel-php@0.9.0",
+      "runtime": "vercel-php@0.7.4",
       "includeFiles": "php-site/**/*.php"
     }
   },
@@ -17,6 +17,10 @@
     {
       "src": "/uploads/(.*)",
       "dest": "/php-site/uploads/$1"
+    },
+    {
+      "src": "/_runtime",
+      "dest": "/api/health.php"
     },
     {
       "src": "/admin/(.*\\.php)",
