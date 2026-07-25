@@ -65,12 +65,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
             if ($databaseReady) {
                 $pdo->beginTransaction();
-                $stmt = $pdo->prepare('
+                $orderSql = '
                     INSERT INTO orders
                         (order_number, customer_name, mobile_number, whatsapp_number, birthday, anniversary, address, table_number,
                          order_type, payment_method, total_amount, gst_amount, discount_amount, grand_total)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ');
+                ';
+                if (DB_DRIVER === 'pgsql') {
+                    $orderSql .= ' RETURNING id';
+                }
+                $stmt = $pdo->prepare($orderSql);
                 $stmt->execute([
                     $orderNumber,
                     trim($_POST['customer_name']),
@@ -87,7 +91,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     $discountAmount,
                     $grandTotal,
                 ]);
-                $orderId = (int)$pdo->lastInsertId();
+                $orderId = DB_DRIVER === 'pgsql' ? (int)$stmt->fetchColumn() : (int)$pdo->lastInsertId();
                 $itemStmt = $pdo->prepare('INSERT INTO order_items (order_id, food_item_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)');
                 foreach ($orderItems as $orderItem) {
                     $itemStmt->execute([$orderId, ...$orderItem]);

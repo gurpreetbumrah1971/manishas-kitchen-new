@@ -97,7 +97,10 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
             <?php render_orders_table(array_slice($orders, 0, 6), true); ?>
         <?php elseif ($tab === 'orders'): ?>
-            <h1>All Orders</h1>
+            <div class="toolbar">
+                <div><h1>All Orders</h1></div>
+                <a class="btn secondary" href="export.php?type=orders">Export Orders CSV</a>
+            </div>
             <?php render_orders_table($orders, false); ?>
         <?php elseif ($tab === 'menu'): ?>
             <div class="toolbar">
@@ -164,7 +167,10 @@ require_once __DIR__ . '/../includes/header.php';
                 </table>
             </div>
         <?php elseif ($tab === 'customers'): ?>
-            <h1>Customer LMS</h1>
+            <div class="toolbar">
+                <div><h1>Customer LMS</h1></div>
+                <a class="btn secondary" href="export.php?type=customers">Export Customers CSV</a>
+            </div>
             <form class="card form-card" action="actions.php" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="upload_campaign">
                 <h2>Bulk WhatsApp Campaign</h2>

@@ -114,11 +114,12 @@ function save_site_settings(array $settings): void
 {
     $allowed = site_settings_defaults();
     $pdo = db();
-    $sql = DB_DRIVER === 'sqlite'
-        ? 'INSERT INTO app_settings (setting_key, setting_value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
-           ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP'
-        : 'INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?)
-           ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)';
+    $sql = match (DB_DRIVER) {
+        'sqlite', 'pgsql' => 'INSERT INTO app_settings (setting_key, setting_value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP',
+        default => 'INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?)
+           ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+    };
     $stmt = $pdo->prepare($sql);
     foreach ($allowed as $key => $default) {
         $stmt->execute([$key, (string)($settings[$key] ?? $default)]);

@@ -17,7 +17,7 @@ function database_url_config(): ?array
     }
 
     $parts = parse_url($url);
-    if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['mysql', 'mariadb'], true)) {
+    if (!is_array($parts) || !in_array($parts['scheme'] ?? '', ['mysql', 'mariadb', 'postgres', 'postgresql'], true)) {
         return null;
     }
 
@@ -33,8 +33,16 @@ function database_url_config(): ?array
 function database_driver(): string
 {
     $driver = strtolower(env_or_default('DB_CONNECTION', ''));
-    if (in_array($driver, ['mysql', 'sqlite'], true)) {
+    if ($driver === 'postgres') {
+        return 'pgsql';
+    }
+    if (in_array($driver, ['mysql', 'sqlite', 'pgsql'], true)) {
         return $driver;
+    }
+
+    $url = getenv('DATABASE_URL');
+    if ($url !== false && preg_match('#^postgres(?:ql)?://#i', $url)) {
+        return 'pgsql';
     }
 
     if (database_url_config() !== null || getenv('DB_HOST')) {
@@ -87,6 +95,15 @@ function db(): PDO
         return $pdo;
     }
 
+    if (DB_DRIVER === 'pgsql') {
+        $pdo = new PDO('pgsql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';sslmode=require', DB_USER, DB_PASS, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+        ensure_schema($pdo);
+        return $pdo;
+    }
+
     if (!getenv('DATABASE_URL') && !getenv('DB_HOST')) {
         $root = new PDO('mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';charset=utf8mb4', DB_USER, DB_PASS, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -113,6 +130,13 @@ function ensure_schema(PDO $pdo): void
 
     if (DB_DRIVER === 'sqlite') {
         ensure_sqlite_schema($pdo);
+        seed_data($pdo);
+        $ready = true;
+        return;
+    }
+
+    if (DB_DRIVER === 'pgsql') {
+        ensure_postgres_schema($pdo);
         seed_data($pdo);
         $ready = true;
         return;
@@ -206,6 +230,83 @@ function ensure_schema(PDO $pdo): void
     $ready = true;
 }
 
+function ensure_postgres_schema(PDO $pdo): void
+{
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS categories (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(191) NOT NULL UNIQUE,
+            image VARCHAR(500) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS food_items (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(191) NOT NULL,
+            description TEXT NULL,
+            price NUMERIC(10,2) NOT NULL,
+            image VARCHAR(500) NULL,
+            is_veg SMALLINT NOT NULL DEFAULT 1,
+            is_available SMALLINT NOT NULL DEFAULT 1,
+            category_id INT NOT NULL REFERENCES categories(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_food_category ON food_items(category_id)');
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS orders (
+            id SERIAL PRIMARY KEY,
+            order_number VARCHAR(64) NOT NULL UNIQUE,
+            customer_name VARCHAR(191) NOT NULL,
+            mobile_number VARCHAR(30) NOT NULL,
+            whatsapp_number VARCHAR(30) NULL,
+            birthday DATE NULL,
+            anniversary DATE NULL,
+            email VARCHAR(191) NULL,
+            address TEXT NULL,
+            table_number VARCHAR(30) NULL,
+            order_type VARCHAR(20) NOT NULL,
+            payment_method VARCHAR(20) NOT NULL,
+            total_amount NUMERIC(10,2) NOT NULL,
+            gst_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+            discount_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+            grand_total NUMERIC(10,2) NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS order_items (
+            id SERIAL PRIMARY KEY,
+            order_id INT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+            food_item_id INT NOT NULL REFERENCES food_items(id),
+            quantity INT NOT NULL,
+            unit_price NUMERIC(10,2) NOT NULL,
+            subtotal NUMERIC(10,2) NOT NULL
+        )
+    ");
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_order_items_food ON order_items(food_item_id)');
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS admins (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(191) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+
+    ensure_app_settings_schema($pdo);
+}
+
 function ensure_sqlite_schema(PDO $pdo): void
 {
     $pdo->exec("
@@ -288,12 +389,12 @@ function ensure_sqlite_schema(PDO $pdo): void
 
 function ensure_app_settings_schema(PDO $pdo): void
 {
-    if (DB_DRIVER === 'sqlite') {
+    if (DB_DRIVER === 'sqlite' || DB_DRIVER === 'pgsql') {
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS app_settings (
-                setting_key TEXT PRIMARY KEY,
+                setting_key VARCHAR(191) PRIMARY KEY,
                 setting_value TEXT NULL,
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ");
         return;
@@ -370,9 +471,11 @@ function seed_data(PDO $pdo): void
 
     $categoryIds = [];
     foreach ($categories as $category) {
-        $insertCategorySql = DB_DRIVER === 'sqlite'
-            ? 'INSERT OR IGNORE INTO categories (name, image) VALUES (?, ?)'
-            : 'INSERT IGNORE INTO categories (name, image) VALUES (?, ?)';
+        $insertCategorySql = match (DB_DRIVER) {
+            'sqlite' => 'INSERT OR IGNORE INTO categories (name, image) VALUES (?, ?)',
+            'pgsql' => 'INSERT INTO categories (name, image) VALUES (?, ?) ON CONFLICT (name) DO NOTHING',
+            default => 'INSERT IGNORE INTO categories (name, image) VALUES (?, ?)',
+        };
         $stmt = $pdo->prepare($insertCategorySql);
         $stmt->execute($category);
         $idStmt = $pdo->prepare('SELECT id FROM categories WHERE name = ?');
