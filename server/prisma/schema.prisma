@@ -54,7 +54,7 @@ model Order {
   preparationMinutes       Int?
   readyAt                  DateTime?
   deliveredAt              DateTime?
-  customerSessionToken     String?       @unique
+  customerSessionToken     String?
   customerSessionExpiresAt DateTime?
   orderItems               OrderItem[]
   createdAt                DateTime      @default(now())
