@@ -1,41 +1,28 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "routes": [
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "rewrites": [
     {
-      "src": "/assets/(.*)",
-      "dest": "/php-site/assets/$1"
+      "source": "/index.php",
+      "destination": "/index.html"
     },
     {
-      "src": "/index\\.php",
-      "dest": "/index.html"
+      "source": "/menu.php",
+      "destination": "/menu.html"
     },
     {
-      "src": "/index\\.html",
-      "dest": "/index.html"
+      "source": "/checkout.php",
+      "destination": "/checkout.html"
     },
     {
-      "src": "/menu\\.php",
-      "dest": "/menu.html"
+      "source": "/admin/:path*",
+      "destination": "/index.html"
     },
     {
-      "src": "/menu\\.html",
-      "dest": "/menu.html"
-    },
-    {
-      "src": "/checkout\\.php",
-      "dest": "/checkout.html"
-    },
-    {
-      "src": "/checkout\\.html",
-      "dest": "/checkout.html"
-    },
-    {
-      "src": "/admin/(.*)",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/",
-      "dest": "/index.html"
+      "source": "/",
+      "destination": "/index.html"
     }
   ]
 }
