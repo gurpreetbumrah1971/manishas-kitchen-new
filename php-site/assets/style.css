@@ -907,6 +907,12 @@ textarea {
     font-weight: 900;
 }
 
+.order-status-meta {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
 .auth-section {
     display: grid;
     place-items: center;

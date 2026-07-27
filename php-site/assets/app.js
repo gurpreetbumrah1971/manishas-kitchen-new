@@ -378,11 +378,17 @@ function updateOrderStatusPanel(status) {
   const label = document.querySelector('[data-order-status-label]');
   const message = document.querySelector('[data-order-status-message]');
   const countdown = document.querySelector('[data-order-countdown]');
+  const updated = document.querySelector('[data-order-status-updated]');
   if (!label || !message || !countdown) return;
 
   label.textContent = status?.statusLabel || 'PENDING';
   label.dataset.status = status?.statusLabel || 'PENDING';
   message.textContent = statusMessage(status);
+  if (updated) {
+    updated.textContent = status
+      ? `Updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+      : 'Checking status...';
+  }
 
   if (status?.statusLabel === 'PREPARING' && status.preparationEndsAt) {
     const remaining = new Date(status.preparationEndsAt).getTime() - Date.now();
@@ -421,7 +427,7 @@ function startOrderStatusTracking(session) {
   clearOrderStatusTimers();
   updateOrderStatusPanel(null);
   fetchOrderStatus(session);
-  orderStatusPollTimer = setInterval(() => fetchOrderStatus(session), 30000);
+  orderStatusPollTimer = setInterval(() => fetchOrderStatus(session), 5000);
   orderCountdownTimer = setInterval(() => {
     if (latestOrderStatus) updateOrderStatusPanel(latestOrderStatus);
   }, 1000);
@@ -448,6 +454,7 @@ function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl, session }) 
         <span class="status-pill" data-order-status-label data-status="PENDING">PENDING</span>
         <strong data-order-status-message>Waiting for kitchen confirmation.</strong>
         <span class="order-countdown" data-order-countdown hidden></span>
+        <span class="order-status-meta" data-order-status-updated>Checking status...</span>
       </div>
       <a class="btn primary" href="${escapeHtml(whatsappUrl)}" target="_blank" rel="noopener">Send WhatsApp Confirmation</a>
       <a class="btn secondary" href="/menu.html">Back to Menu</a>
