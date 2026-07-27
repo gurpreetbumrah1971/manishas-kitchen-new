@@ -830,6 +830,37 @@ textarea {
     box-shadow: var(--shadow);
 }
 
+.checkout-thank-you {
+    display: grid;
+    gap: 1rem;
+    justify-items: center;
+}
+
+.thank-you-total {
+    display: grid;
+    gap: 0.25rem;
+    width: min(100%, 280px);
+    padding: 1rem;
+    border-radius: 8px;
+    background: #3c3c3c;
+    color: #fff;
+}
+
+.thank-you-total span {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.thank-you-total strong {
+    color: var(--accent);
+    font-size: 1.55rem;
+}
+
+.thank-you-payment {
+    width: min(100%, 340px);
+}
+
 .auth-section {
     display: grid;
     place-items: center;

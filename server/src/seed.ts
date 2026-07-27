@@ -2,157 +2,149 @@ import prisma from './prisma';
 import bcrypt from 'bcryptjs';
 import { generatedMenuAssetUrl } from './utils/menuImages';
 
-const menuImages: Record<string, string> = {
-  'Poha': '/food/poha.png',
-  'Poha Usal': generatedMenuAssetUrl('Poha Usal'),
-  'Upma': generatedMenuAssetUrl('Upma'),
-  'Uttapam': generatedMenuAssetUrl('Uttapam'),
-  'Dhokla (Half)': '/food/dhokla.jpeg',
-  'Dhokla (Full)': '/food/dhokla.jpeg',
-  'Wada Pav': generatedMenuAssetUrl('Wada Pav'),
-  'Wada': generatedMenuAssetUrl('Wada'),
-  'Pav': generatedMenuAssetUrl('Pav'),
-  'Pav Bhaji': generatedMenuAssetUrl('Pav Bhaji'),
-  'Misal Pav': '/food/misal-pav.png',
-  'Wada Usal Pav': generatedMenuAssetUrl('Wada Usal Pav'),
-  'Aloo Paratha': generatedMenuAssetUrl('Aloo Paratha'),
-  'Gobi Paratha': generatedMenuAssetUrl('Gobi Paratha'),
-  'Paneer Paratha': generatedMenuAssetUrl('Paneer Paratha'),
-  'Methi Paratha': generatedMenuAssetUrl('Methi Paratha'),
-  'Plain Paratha': generatedMenuAssetUrl('Plain Paratha'),
-  'Chole Puri': '/food/chole-puri.png',
-  'Chole Bhature': generatedMenuAssetUrl('Chole Bhature'),
-  'Chole Plate': generatedMenuAssetUrl('Chole Plate'),
-  'Puri Plate': generatedMenuAssetUrl('Puri Plate'),
-  'Bhatura': generatedMenuAssetUrl('Bhatura'),
-  'Egg Burji + 2 Pav (Single)': generatedMenuAssetUrl('Egg Burji + 2 Pav (Single)'),
-  'Egg Burji + 2 Pav (Double)': generatedMenuAssetUrl('Egg Burji + 2 Pav (Double)'),
-  'Egg Omelet + 2 Pav (Single)': generatedMenuAssetUrl('Egg Omelet + 2 Pav (Single)'),
-  'Egg Omelet + 2 Pav (Double)': generatedMenuAssetUrl('Egg Omelet + 2 Pav (Double)'),
-  'Butter Pav': generatedMenuAssetUrl('Butter Pav'),
-  'Tea': '/food/tea.png',
-  'Hot Coffee': generatedMenuAssetUrl('Hot Coffee'),
-  'Chaas': generatedMenuAssetUrl('Chaas'),
-  'Nimbu Pani': generatedMenuAssetUrl('Nimbu Pani'),
-  'Lemon Tea': '/food/lemon-tea.png',
-  'Green Tea': generatedMenuAssetUrl('Green Tea'),
-  'Iced Tea': '/food/iced-tea.png',
-  'Watermelon Juice': generatedMenuAssetUrl('Watermelon Juice'),
-  'Cold Coffee': generatedMenuAssetUrl('Cold Coffee'),
-  'Chikoo Milkshake': generatedMenuAssetUrl('Chikoo Milkshake'),
-  'Chocolate Milkshake': generatedMenuAssetUrl('Chocolate Milkshake'),
-  'Mango Milkshake': generatedMenuAssetUrl('Mango Milkshake'),
-  'Custom Party Box': generatedMenuAssetUrl('Custom Party Box'),
+type CategorySeed = {
+  name: string;
+  image: string;
 };
 
-const imageFor = (name: string) => menuImages[name] || generatedMenuAssetUrl(name);
+type MenuItemSeed = {
+  name: string;
+  description: string;
+  price: number;
+  categoryName: string;
+  isVeg: boolean;
+  image: string;
+};
 
-async function syncMenuImages() {
-  await Promise.all(
-    Object.entries(menuImages).map(([name, image]) =>
-      prisma.foodItem.updateMany({
-        where: { name },
-        data: { image },
-      })
-    )
-  );
+const categories: CategorySeed[] = [
+  { name: 'Beverages', image: '/food/iced-tea.png' },
+  { name: 'Biryanis', image: generatedMenuAssetUrl('Veg Biryani') },
+  { name: 'Egg Dishes', image: generatedMenuAssetUrl('Egg Omelet + 2 Pav (Single)') },
+  { name: 'Frankies', image: generatedMenuAssetUrl('Paneer Frankie') },
+  { name: 'Pakodas', image: generatedMenuAssetUrl('Onion Pakoda') },
+  { name: 'Parathas', image: generatedMenuAssetUrl('Aloo Paratha') },
+  { name: 'Snacks', image: '/food/poha.png' },
+  { name: 'Custom', image: generatedMenuAssetUrl('Custom Party Box') },
+];
+
+const menuItems: MenuItemSeed[] = [
+  { name: 'Tea', description: 'Hot traditional Indian masala chai.', price: 15, categoryName: 'Beverages', isVeg: true, image: '/food/tea-realistic.png' },
+  { name: 'Hot Coffee', description: 'Freshly brewed hot coffee.', price: 30, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Hot Coffee') },
+  { name: 'Chaas', description: 'Refreshing spiced buttermilk.', price: 20, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Chaas') },
+  { name: 'Nimbu Pani', description: 'Classic fresh lime water.', price: 20, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Nimbu Pani') },
+  { name: 'Lemon Tea', description: 'Refreshing hot lemon tea.', price: 25, categoryName: 'Beverages', isVeg: true, image: '/food/lemon-tea.png' },
+  { name: 'Green Tea', description: 'Healthy and soothing hot green tea.', price: 25, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Green Tea') },
+  { name: 'Iced Tea', description: 'Chilled lemon infused iced tea.', price: 40, categoryName: 'Beverages', isVeg: true, image: '/food/iced-tea.png' },
+  { name: 'Watermelon Juice', description: 'Freshly squeezed watermelon juice.', price: 50, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Watermelon Juice') },
+  { name: 'Cold Coffee', description: 'Chilled creamy cold coffee.', price: 60, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Cold Coffee') },
+  { name: 'Chikoo Milkshake', description: 'Thick and creamy sapota shake.', price: 60, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Chikoo Milkshake') },
+  { name: 'Chocolate Milkshake', description: 'Rich and indulgent chocolate shake.', price: 90, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Chocolate Milkshake') },
+  { name: 'Mango Milkshake', description: 'Creamy shake made with fresh mangoes.', price: 120, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Mango Milkshake') },
+  { name: 'Veg Biryani', description: 'Fragrant rice layered with spiced vegetables.', price: 140, categoryName: 'Biryanis', isVeg: true, image: generatedMenuAssetUrl('Veg Biryani') },
+  { name: 'Egg Biryani', description: 'Fragrant rice layered with masala eggs.', price: 160, categoryName: 'Biryanis', isVeg: false, image: generatedMenuAssetUrl('Egg Biryani') },
+  { name: 'Chicken Dum Biryani', description: 'Slow-cooked dum biryani with tender chicken and aromatic rice.', price: 225, categoryName: 'Biryanis', isVeg: false, image: generatedMenuAssetUrl('Chicken Dum Biryani') },
+  { name: 'Paneer Biryani', description: 'Aromatic biryani layered with spiced paneer and basmati rice.', price: 225, categoryName: 'Biryanis', isVeg: true, image: generatedMenuAssetUrl('Paneer Biryani') },
+  { name: 'Egg Burji + 2 Pav (Single)', description: 'Spiced scrambled eggs served with 2 pav.', price: 40, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Egg Burji + 2 Pav (Single)') },
+  { name: 'Egg Burji + 2 Pav (Double)', description: 'Double portion spiced scrambled eggs with 2 pav.', price: 80, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Egg Burji + 2 Pav (Double)') },
+  { name: 'Egg Omelet + 2 Pav (Single)', description: 'Classic spiced omelet served with 2 pav.', price: 40, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Egg Omelet + 2 Pav (Single)') },
+  { name: 'Egg Omelet + 2 Pav (Double)', description: 'Double portion spiced omelet with 2 pav.', price: 80, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Egg Omelet + 2 Pav (Double)') },
+  { name: 'Aloo Frankie', description: 'Soft roll filled with spiced potato and chutney.', price: 60, categoryName: 'Frankies', isVeg: true, image: generatedMenuAssetUrl('Aloo Frankie') },
+  { name: 'Paneer Frankie', description: 'Soft roll filled with spiced paneer and onions.', price: 90, categoryName: 'Frankies', isVeg: true, image: generatedMenuAssetUrl('Paneer Frankie') },
+  { name: 'Wada', description: 'Single spicy potato fritter.', price: 15, categoryName: 'Pakodas', isVeg: true, image: generatedMenuAssetUrl('Wada') },
+  { name: 'Wada Pav', description: 'Spicy potato fritter in a bun.', price: 20, categoryName: 'Pakodas', isVeg: true, image: generatedMenuAssetUrl('Wada Pav') },
+  { name: 'Onion Pakoda', description: 'Crisp onion fritters with house masala.', price: 50, categoryName: 'Pakodas', isVeg: true, image: generatedMenuAssetUrl('Onion Pakoda') },
+  { name: 'Mix Pakoda', description: 'Assorted vegetable fritters fried crisp.', price: 70, categoryName: 'Pakodas', isVeg: true, image: generatedMenuAssetUrl('Mix Pakoda') },
+  { name: 'Aloo Paratha', description: 'Wheat flatbread stuffed with spiced potatoes.', price: 60, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Aloo Paratha') },
+  { name: 'Gobi Paratha', description: 'Wheat flatbread stuffed with spiced cauliflower.', price: 60, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Gobi Paratha') },
+  { name: 'Paneer Paratha', description: 'Wheat flatbread stuffed with spiced cottage cheese.', price: 100, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Paneer Paratha') },
+  { name: 'Methi Paratha', description: 'Wheat flatbread with fresh fenugreek leaves.', price: 60, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Methi Paratha') },
+  { name: 'Palak Paratha', description: 'Wheat flatbread layered with spiced spinach.', price: 60, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Palak Paratha') },
+  { name: 'Cabbage Paratha', description: 'Wheat flatbread stuffed with seasoned cabbage.', price: 60, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Cabbage Paratha') },
+  { name: 'Moong Daal Chilla', description: 'Savory moong dal pancake with mild spices.', price: 65, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Moong Daal Chilla') },
+  { name: 'Plain Paratha', description: 'Simple layered wheat flatbread.', price: 20, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Plain Paratha') },
+  { name: 'Poha', description: 'Flattened rice seasoned with spices.', price: 30, categoryName: 'Snacks', isVeg: true, image: '/food/poha.png' },
+  { name: 'Poha Usal', description: 'Poha served with spicy bean curry.', price: 40, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Poha Usal') },
+  { name: 'Upma', description: 'Savory semolina porridge.', price: 30, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Upma') },
+  { name: 'Uttapam', description: 'Thick rice pancake with toppings.', price: 60, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Uttapam') },
+  { name: 'Dhokla (Half)', description: 'Steamed gram flour cake (4 pieces).', price: 40, categoryName: 'Snacks', isVeg: true, image: '/food/dhokla.jpeg' },
+  { name: 'Dhokla (Full)', description: 'Steamed gram flour cake (8 pieces).', price: 70, categoryName: 'Snacks', isVeg: true, image: '/food/dhokla.jpeg' },
+  { name: 'Pav', description: 'Single bread bun.', price: 5, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Pav') },
+  { name: 'Pav Bhaji', description: 'Spiced vegetable mash with buns.', price: 150, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Pav Bhaji') },
+  { name: 'Misal Pav', description: 'Spicy sprout curry topped with farsan, served with pav.', price: 80, categoryName: 'Snacks', isVeg: true, image: '/food/misal-pav.png' },
+  { name: 'Wada Usal Pav', description: 'Wada served with spicy sprout curry and pav.', price: 80, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Wada Usal Pav') },
+  { name: 'Chole Puri', description: 'Spicy chickpeas served with 4 fluffy fried puris.', price: 110, categoryName: 'Snacks', isVeg: true, image: '/food/chole-puri.png' },
+  { name: 'Chole Bhature', description: 'Spicy chickpeas served with 2 large bhaturas.', price: 150, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Chole Bhature') },
+  { name: 'Chole Plate', description: 'A plate of spicy chickpeas (Chole only).', price: 80, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Chole Plate') },
+  { name: 'Custom Party Box', description: 'Your selection of snacks and sweets.', price: 999, categoryName: 'Custom', isVeg: true, image: generatedMenuAssetUrl('Custom Party Box') },
+];
+
+async function seedAdmin() {
+  const existingAdmin = await prisma.admin.findUnique({ where: { username: 'admin' } });
+  if (existingAdmin) return;
+
+  const hashedPassword = await bcrypt.hash('admin123', 10);
+  await prisma.admin.create({
+    data: {
+      username: 'admin',
+      password: hashedPassword,
+    },
+  });
+}
+
+async function syncCategories() {
+  const categoryByName = new Map<string, { id: number }>();
+
+  for (const category of categories) {
+    const savedCategory = await prisma.category.upsert({
+      where: { name: category.name },
+      update: { image: category.image },
+      create: category,
+      select: { id: true, name: true },
+    });
+    categoryByName.set(savedCategory.name, { id: savedCategory.id });
+  }
+
+  return categoryByName;
+}
+
+async function syncMenuItems(categoryByName: Map<string, { id: number }>) {
+  for (const item of menuItems) {
+    const category = categoryByName.get(item.categoryName);
+    if (!category) {
+      throw new Error(`Missing category for menu item: ${item.name}`);
+    }
+
+    const data = {
+      description: item.description,
+      price: item.price,
+      image: item.image,
+      isVeg: item.isVeg,
+      categoryId: category.id,
+    };
+
+    const updated = await prisma.foodItem.updateMany({
+      where: { name: item.name },
+      data,
+    });
+
+    if (updated.count === 0) {
+      await prisma.foodItem.create({
+        data: {
+          name: item.name,
+          isAvailable: true,
+          ...data,
+        },
+      });
+    }
+  }
 }
 
 async function main() {
-  const existingAdmin = await prisma.admin.findUnique({ where: { username: 'admin' } });
-  if (!existingAdmin) {
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    await prisma.admin.create({
-      data: {
-        username: 'admin',
-        password: hashedPassword,
-      },
-    });
-  }
+  await seedAdmin();
+  const categoryByName = await syncCategories();
+  await syncMenuItems(categoryByName);
 
-  const snacks = await prisma.category.upsert({
-    where: { name: 'Snacks' },
-    update: {},
-    create: { name: 'Snacks', image: '/food/poha.png' },
-  });
-  const meals = await prisma.category.upsert({
-    where: { name: 'Meals' },
-    update: {},
-    create: { name: 'Meals', image: '/food/chole-puri.png' },
-  });
-  const beverages = await prisma.category.upsert({
-    where: { name: 'Beverages' },
-    update: {},
-    create: { name: 'Beverages', image: '/food/iced-tea.png' },
-  });
-  const custom = await prisma.category.upsert({
-    where: { name: 'Custom' },
-    update: {},
-    create: { name: 'Custom', image: 'https://images.unsplash.com/photo-1495195129352-aeb325a55b65?auto=format&fit=crop&q=80&w=400' },
-  });
-
-  const existingFoodItems = await prisma.foodItem.count();
-  if (existingFoodItems > 0) {
-    await syncMenuImages();
-    console.log('Seed skipped: food items already exist');
-    console.log('Menu item images synchronized successfully');
-    return;
-  }
-
-  // Create Food Items
-  await prisma.foodItem.createMany({
-    data: [
-      // Snacks
-      { name: 'Poha', description: 'Flattened rice seasoned with spices.', price: 30, categoryId: snacks.id, isVeg: true, image: imageFor('Poha') },
-      { name: 'Poha Usal', description: 'Poha served with spicy bean curry.', price: 40, categoryId: snacks.id, isVeg: true, image: imageFor('Poha Usal') },
-      { name: 'Upma', description: 'Savory semolina porridge.', price: 30, categoryId: snacks.id, isVeg: true, image: imageFor('Upma') },
-      { name: 'Uttapam', description: 'Thick rice pancake with toppings.', price: 60, categoryId: snacks.id, isVeg: true, image: imageFor('Uttapam') },
-      { name: 'Dhokla (Half)', description: 'Steamed gram flour cake (4 pieces).', price: 40, categoryId: snacks.id, isVeg: true, image: imageFor('Dhokla (Half)') },
-      { name: 'Dhokla (Full)', description: 'Steamed gram flour cake (8 pieces).', price: 70, categoryId: snacks.id, isVeg: true, image: imageFor('Dhokla (Full)') },
-      { name: 'Wada Pav', description: 'Spicy potato fritter in a bun.', price: 20, categoryId: snacks.id, isVeg: true, image: imageFor('Wada Pav') },
-      { name: 'Wada', description: 'Single spicy potato fritter.', price: 15, categoryId: snacks.id, isVeg: true, image: imageFor('Wada') },
-      { name: 'Pav', description: 'Single bread bun.', price: 5, categoryId: snacks.id, isVeg: true, image: imageFor('Pav') },
-      { name: 'Pav Bhaji', description: 'Spiced vegetable mash with buns.', price: 150, categoryId: snacks.id, isVeg: true, image: imageFor('Pav Bhaji') },
-
-      // Meals
-      { name: 'Misal Pav', description: 'Spicy sprout curry topped with farsan, served with pav.', price: 80, categoryId: meals.id, isVeg: true, image: imageFor('Misal Pav') },
-      { name: 'Wada Usal Pav', description: 'Wada served with spicy sprout curry and pav.', price: 80, categoryId: meals.id, isVeg: true, image: imageFor('Wada Usal Pav') },
-      { name: 'Aloo Paratha', description: 'Wheat flatbread stuffed with spiced potatoes.', price: 50, categoryId: meals.id, isVeg: true, image: imageFor('Aloo Paratha') },
-      { name: 'Gobi Paratha', description: 'Wheat flatbread stuffed with spiced cauliflower.', price: 50, categoryId: meals.id, isVeg: true, image: imageFor('Gobi Paratha') },
-      { name: 'Paneer Paratha', description: 'Wheat flatbread stuffed with spiced cottage cheese.', price: 80, categoryId: meals.id, isVeg: true, image: imageFor('Paneer Paratha') },
-      { name: 'Methi Paratha', description: 'Wheat flatbread with fresh fenugreek leaves.', price: 50, categoryId: meals.id, isVeg: true, image: imageFor('Methi Paratha') },
-      { name: 'Plain Paratha', description: 'Simple layered wheat flatbread.', price: 15, categoryId: meals.id, isVeg: true, image: imageFor('Plain Paratha') },
-      { name: 'Chole Puri', description: 'Spicy chickpeas served with 4 fluffy fried puris.', price: 110, categoryId: meals.id, isVeg: true, image: imageFor('Chole Puri') },
-      { name: 'Chole Bhature', description: 'Spicy chickpeas served with 2 large bhaturas.', price: 150, categoryId: meals.id, isVeg: true, image: imageFor('Chole Bhature') },
-      { name: 'Chole Plate', description: 'A plate of spicy chickpeas (Chole only).', price: 80, categoryId: meals.id, isVeg: true, image: imageFor('Chole Plate') },
-      { name: 'Puri Plate', description: 'A plate of 4 fluffy fried puris.', price: 40, categoryId: meals.id, isVeg: true, image: imageFor('Puri Plate') },
-      { name: 'Bhatura', description: 'Single large fluffy fried bread.', price: 40, categoryId: meals.id, isVeg: true, image: imageFor('Bhatura') },
-      { name: 'Egg Burji + 2 Pav (Single)', description: 'Spiced scrambled eggs served with 2 pav.', price: 40, categoryId: meals.id, isVeg: false, image: imageFor('Egg Burji + 2 Pav (Single)') },
-      { name: 'Egg Burji + 2 Pav (Double)', description: 'Double portion spiced scrambled eggs with 2 pav.', price: 80, categoryId: meals.id, isVeg: false, image: imageFor('Egg Burji + 2 Pav (Double)') },
-      { name: 'Egg Omelet + 2 Pav (Single)', description: 'Classic spiced omelet served with 2 pav.', price: 40, categoryId: meals.id, isVeg: false, image: imageFor('Egg Omelet + 2 Pav (Single)') },
-      { name: 'Egg Omelet + 2 Pav (Double)', description: 'Double portion spiced omelet with 2 pav.', price: 80, categoryId: meals.id, isVeg: false, image: imageFor('Egg Omelet + 2 Pav (Double)') },
-      { name: 'Butter Pav', description: 'Single pav toasted with generous butter.', price: 10, categoryId: meals.id, isVeg: true, image: imageFor('Butter Pav') },
-
-      // Beverages
-      { name: 'Tea', description: 'Hot traditional Indian masala chai.', price: 15, categoryId: beverages.id, isVeg: true, image: imageFor('Tea') },
-      { name: 'Hot Coffee', description: 'Freshly brewed hot coffee.', price: 30, categoryId: beverages.id, isVeg: true, image: imageFor('Hot Coffee') },
-      { name: 'Chaas', description: 'Refreshing spiced buttermilk.', price: 20, categoryId: beverages.id, isVeg: true, image: imageFor('Chaas') },
-      { name: 'Nimbu Pani', description: 'Classic fresh lime water.', price: 20, categoryId: beverages.id, isVeg: true, image: imageFor('Nimbu Pani') },
-      { name: 'Lemon Tea', description: 'Refreshing hot lemon tea.', price: 25, categoryId: beverages.id, isVeg: true, image: imageFor('Lemon Tea') },
-      { name: 'Green Tea', description: 'Healthy and soothing hot green tea.', price: 25, categoryId: beverages.id, isVeg: true, image: imageFor('Green Tea') },
-      { name: 'Iced Tea', description: 'Chilled lemon infused iced tea.', price: 40, categoryId: beverages.id, isVeg: true, image: imageFor('Iced Tea') },
-      { name: 'Watermelon Juice', description: 'Freshly squeezed watermelon juice.', price: 50, categoryId: beverages.id, isVeg: true, image: imageFor('Watermelon Juice') },
-      { name: 'Cold Coffee', description: 'Chilled creamy cold coffee.', price: 60, categoryId: beverages.id, isVeg: true, image: imageFor('Cold Coffee') },
-      { name: 'Chikoo Milkshake', description: 'Thick and creamy sapota (chikoo) shake.', price: 60, categoryId: beverages.id, isVeg: true, image: imageFor('Chikoo Milkshake') },
-      { name: 'Chocolate Milkshake', description: 'Rich and indulgent chocolate shake.', price: 90, categoryId: beverages.id, isVeg: true, image: imageFor('Chocolate Milkshake') },
-      { name: 'Mango Milkshake', description: 'Creamy shake made with fresh mangoes.', price: 120, categoryId: beverages.id, isVeg: true, image: imageFor('Mango Milkshake') },
-
-      // Custom
-      { name: 'Custom Party Box', description: 'Your selection of snacks and sweets.', price: 999, categoryId: custom.id, isVeg: true, image: imageFor('Custom Party Box') },
-    ],
-  });
-
-  console.log('Seed data created successfully');
+  console.log('Seed data synchronized successfully');
 }
 
 main()

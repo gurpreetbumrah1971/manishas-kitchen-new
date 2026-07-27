@@ -64,6 +64,11 @@ function updatePaymentQr(amount) {
   qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUrl)}`;
 }
 
+function parseMoney(value) {
+  const amount = String(value || '').replace(/[^\d.]/g, '');
+  return Number(amount || 0);
+}
+
 function updateCartCount() {
   const cart = getCart();
   const count = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
@@ -316,7 +321,30 @@ document.querySelectorAll('[data-date-group]').forEach((group) => {
   syncDateGroup(group);
 });
 
-document.querySelector('[data-checkout-form]')?.addEventListener('submit', (event) => {
+function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl }) {
+  const section = document.querySelector('.checkout-page .section.compact');
+  if (!section) return;
+
+  section.innerHTML = `
+    <div class="success-panel checkout-thank-you">
+      <h1>Thank you for your order!</h1>
+      <p>Your order has been received.</p>
+      <div class="thank-you-total">
+        <span>Total Amount</span>
+        <strong>${escapeHtml(total)}</strong>
+      </div>
+      <div class="payment-box thank-you-payment">
+        <img class="qr" src="${escapeHtml(qrSrc)}" alt="UPI payment QR code">
+        <p>Scan QR / use UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
+        <p>Order ID: <strong>${escapeHtml(order.orderNumber || order.order_number || '')}</strong></p>
+      </div>
+      <a class="btn primary" href="${escapeHtml(whatsappUrl)}" target="_blank" rel="noopener">Send WhatsApp Confirmation</a>
+      <a class="btn secondary" href="/menu.html">Back to Menu</a>
+    </div>
+  `;
+}
+
+document.querySelector('[data-checkout-form]')?.addEventListener('submit', async (event) => {
   const cartJson = document.querySelector('[data-cart-json]')?.value || '[]';
   const cart = JSON.parse(cartJson);
   if (!cart.length) {
@@ -328,24 +356,80 @@ document.querySelector('[data-checkout-form]')?.addEventListener('submit', (even
   const form = event.target;
   if (form?.hasAttribute('data-static-checkout')) {
     event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton?.textContent || 'Book Order';
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Placing Order...';
+    }
+
     const formData = new FormData(form);
-    const orderNumber = `ORD-${Date.now()}`;
-    const total = document.querySelector('[data-checkout-total]')?.textContent || 'Rs. 0.00';
+    const subtotal = parseMoney(document.querySelector('[data-checkout-subtotal]')?.textContent);
+    const gstAmount = parseMoney(document.querySelector('[data-checkout-gst]')?.textContent);
+    const discountAmount = parseMoney(document.querySelector('[data-checkout-discount]')?.textContent);
+    const grandTotal = parseMoney(document.querySelector('[data-checkout-total]')?.textContent);
+    const total = document.querySelector('[data-checkout-total]')?.textContent || money(grandTotal);
     const items = cart.map((item) => `${item.name} x ${item.quantity}`).join(', ');
     const number = String(formData.get('whatsapp_number') || '').replace(/\D+/g, '');
     const normalizedNumber = number.length === 10 ? `91${number}` : number;
-    const message = [
-      'Order Confirmed!',
-      `Order ID: ${orderNumber}`,
-      `Customer: ${formData.get('customer_name') || ''}`,
-      `Items: ${items}`,
-      `Total: ${total}`,
-      '',
-      "Thank you for ordering from Manisha's Kitchen.",
-    ].join('\n');
-    localStorage.removeItem(CART_KEY);
-    window.open(`https://wa.me/${normalizedNumber}?text=${encodeURIComponent(message)}`, '_blank');
-    window.location.href = '/';
+    const orderPayload = {
+      customerName: String(formData.get('customer_name') || '').trim(),
+      mobileNumber: String(formData.get('whatsapp_number') || '').trim(),
+      whatsappNumber: String(formData.get('whatsapp_number') || '').trim(),
+      birthday: formData.get('birthday') || null,
+      anniversary: formData.get('anniversary') || null,
+      address: String(formData.get('address') || '').trim() || null,
+      orderType: 'DINE_IN',
+      paymentMethod: formData.get('payment_method') || 'UPI',
+      totalAmount: subtotal,
+      gstAmount,
+      discountAmount,
+      grandTotal,
+      items: cart.map((item) => ({
+        foodItemId: Number(item.id),
+        name: item.name,
+        quantity: Number(item.quantity || 1),
+        unitPrice: Number(item.price || 0),
+        subtotal: Number(item.price || 0) * Number(item.quantity || 1),
+      })),
+    };
+
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(orderPayload),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to place order.');
+      }
+
+      const orderNumber = result.orderNumber || result.order_number || `ORD-${Date.now()}`;
+      const qrSrc = document.querySelector('[data-payment-qr]')?.src || 'assets/payment/mk-qrcode.jpg';
+      const whatsappUrl = `https://wa.me/${normalizedNumber}?text=${encodeURIComponent([
+        'Order Confirmed!',
+        `Order ID: ${orderNumber}`,
+        `Customer: ${orderPayload.customerName}`,
+        `Items: ${items}`,
+        `Total: ${total}`,
+        '',
+        "Thank you for ordering from Manisha's Kitchen.",
+      ].join('\n'))}`;
+
+      localStorage.removeItem(CART_KEY);
+      updateCartCount();
+      showStaticOrderThankYou({ order: result, total, qrSrc, whatsappUrl });
+    } catch (error) {
+      alert(error.message || 'Failed to place order. Please try again.');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+      }
+    }
   }
 });
 
