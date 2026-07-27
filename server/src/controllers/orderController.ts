@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { randomBytes } from 'crypto';
 import prisma from '../prisma';
+import { sendAdminOrderWhatsApp } from '../services/whatsappService';
 
 const ORDER_SESSION_MINUTES = 30;
 
@@ -131,6 +132,10 @@ export const createOrder = async (req: Request, res: Response) => {
         }
       },
       include: orderInclude
+    });
+
+    sendAdminOrderWhatsApp(order).catch((error) => {
+      console.error('WhatsApp admin notification error:', error);
     });
 
     res.status(201).json(order);

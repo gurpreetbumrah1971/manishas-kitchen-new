@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -50,12 +50,44 @@ const emptyMenuForm = {
   isAvailable: true,
 };
 
+const adminSections = [
+  { id: 'orders', label: 'Orders', path: '/admin/orders', icon: ShoppingBag },
+  { id: 'menu', label: 'Menu', path: '/admin/menu', icon: ShoppingBag },
+  { id: 'customers', label: 'LMS', path: '/admin/lms', icon: Users },
+  { id: 'settings', label: 'Settings', path: '/admin/settings', icon: Settings },
+  { id: 'overview', label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+];
+
+const adminPathToTab: Record<string, string> = {
+  '/admin': 'orders',
+  '/admin/': 'orders',
+  '/admin/orders': 'orders',
+  '/admin/menu': 'menu',
+  '/admin/lms': 'customers',
+  '/admin/customers': 'customers',
+  '/admin/settings': 'settings',
+  '/admin/dashboard': 'overview',
+};
+
+const adminNavStyle = (isActive: boolean): React.CSSProperties => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  padding: '12px 1rem',
+  borderRadius: '8px',
+  backgroundColor: isActive ? 'var(--primary-color)' : 'transparent',
+  color: isActive ? '#fff' : '#666',
+  textAlign: 'left',
+  border: 'none',
+  cursor: 'pointer',
+  textDecoration: 'none',
+});
+
 const AdminDashboard = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState('all');
   const [menuForm, setMenuForm] = useState(emptyMenuForm);
@@ -75,8 +107,22 @@ const AdminDashboard = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const ringtoneTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const normalizedPath = location.pathname.replace(/\/+$/, '') || '/admin';
+  const activeTab = adminPathToTab[normalizedPath] || 'orders';
   const token = localStorage.getItem('adminToken');
   const adminSessionExpiresAt = localStorage.getItem('adminSessionExpiresAt');
+
+  useEffect(() => {
+    if (normalizedPath === '/admin') {
+      navigate('/admin/orders', { replace: true });
+      return;
+    }
+
+    if (!adminPathToTab[normalizedPath]) {
+      navigate('/admin/orders', { replace: true });
+    }
+  }, [normalizedPath, navigate]);
 
   const stopRingtone = useCallback(() => {
     if (ringtoneTimerRef.current) {
@@ -692,7 +738,7 @@ const AdminDashboard = () => {
       <div className="card">
         <div style={{ padding: '1.5rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3>{limit ? 'Recent Orders' : 'All Orders'}</h3>
-          {limit && <button onClick={() => setActiveTab('orders')} style={{ color: 'var(--primary-color)', fontWeight: '600', background: 'none' }}>View All</button>}
+          {limit && <button onClick={() => navigate('/admin/orders')} style={{ color: 'var(--primary-color)', fontWeight: '600', background: 'none' }}>View All</button>}
         </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -765,91 +811,14 @@ const AdminDashboard = () => {
       <div style={{ width: '260px', backgroundColor: '#fff', borderRight: '1px solid #ddd', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary-color)', padding: '0 1rem' }}>Admin Panel</h2>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <button 
-            onClick={() => setActiveTab('overview')}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px', 
-              padding: '12px 1rem', 
-              borderRadius: '8px', 
-              backgroundColor: activeTab === 'overview' ? 'var(--primary-color)' : 'transparent', 
-              color: activeTab === 'overview' ? '#fff' : '#666', 
-              textAlign: 'left',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <LayoutDashboard size={20} /> Dashboard
-          </button>
-          <button 
-            onClick={() => setActiveTab('orders')}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px', 
-              padding: '12px 1rem', 
-              borderRadius: '8px', 
-              backgroundColor: activeTab === 'orders' ? 'var(--primary-color)' : 'transparent', 
-              color: activeTab === 'orders' ? '#fff' : '#666', 
-              textAlign: 'left',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <ShoppingBag size={20} /> Orders
-          </button>
-          <button 
-            onClick={() => setActiveTab('menu')}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px', 
-              padding: '12px 1rem', 
-              borderRadius: '8px', 
-              backgroundColor: activeTab === 'menu' ? 'var(--primary-color)' : 'transparent', 
-              color: activeTab === 'menu' ? '#fff' : '#666', 
-              textAlign: 'left',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <ShoppingBag size={20} /> Menu
-          </button>
-          <button 
-            onClick={() => setActiveTab('customers')}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px', 
-              padding: '12px 1rem', 
-              borderRadius: '8px', 
-              backgroundColor: activeTab === 'customers' ? 'var(--primary-color)' : 'transparent', 
-              color: activeTab === 'customers' ? '#fff' : '#666', 
-              textAlign: 'left',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <Users size={20} /> LMS
-          </button>
-          <button 
-            onClick={() => setActiveTab('settings')}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '10px', 
-              padding: '12px 1rem', 
-              borderRadius: '8px', 
-              backgroundColor: activeTab === 'settings' ? 'var(--primary-color)' : 'transparent', 
-              color: activeTab === 'settings' ? '#fff' : '#666', 
-              textAlign: 'left',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <Settings size={20} /> Settings
-          </button>
+          {adminSections.map(section => {
+            const Icon = section.icon;
+            return (
+              <Link key={section.id} to={section.path} style={adminNavStyle(activeTab === section.id)}>
+                <Icon size={20} /> {section.label}
+              </Link>
+            );
+          })}
         </nav>
         <button onClick={logout} style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 1rem', borderRadius: '8px', color: '#f44336', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>
           <LogOut size={20} /> Logout

@@ -74,4 +74,22 @@ The first start runs `prisma db push` and seeds the default admin/menu data. The
 - **Password:** `admin123`
 
 ## WhatsApp Integration
-The system uses the WhatsApp Click-to-Chat API. Upon successful order placement, a WhatsApp window will automatically open with a pre-filled message containing the order details.
+The customer checkout still uses WhatsApp Click-to-Chat as a manual fallback, and the backend can also send automatic admin notifications through the WhatsApp Cloud API when a new order is placed.
+
+Set these environment variables on Render for automatic admin order messages:
+
+```env
+WHATSAPP_PHONE_NUMBER_ID="your_meta_phone_number_id"
+WHATSAPP_ACCESS_TOKEN="your_meta_whatsapp_access_token"
+WHATSAPP_ADMIN_NUMBER="919819068372"
+WHATSAPP_API_VERSION="v23.0"
+```
+
+Optional, but recommended for production-initiated WhatsApp messages:
+
+```env
+WHATSAPP_ADMIN_ORDER_TEMPLATE="your_approved_template_name"
+WHATSAPP_TEMPLATE_LANGUAGE="en_US"
+```
+
+If the WhatsApp credentials are missing or invalid, order creation continues and the server logs the notification failure.
