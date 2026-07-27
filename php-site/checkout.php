@@ -147,7 +147,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 <label>WhatsApp Number *<input name="whatsapp_number" required inputmode="tel" placeholder="10-digit number"></label>
                 <label>For home delivery, please enter address<textarea name="address" rows="3" placeholder="House / flat, street, landmark"></textarea></label>
                 <div class="special-day-fields">
-                    <p>Your special day deserves more than just wishes! Let us know your birthday and anniversary and get a personalized surprise from us.</p>
+                    <p><strong>Your special day deserves more than just wishes!</strong><br><span>Let us know your birthday and anniversary and get a personalized surprise from us.</span></p>
                     <div class="form-row">
                         <?php render_date_dropdowns('birthday', 'Birthday Date'); ?>
                         <?php render_date_dropdowns('anniversary', 'Anniversary Date'); ?>

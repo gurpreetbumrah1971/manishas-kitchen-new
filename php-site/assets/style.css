@@ -580,7 +580,7 @@ textarea {
 
 .checkout-item {
     display: grid;
-    grid-template-columns: 58px 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
     gap: 0.8rem;
     align-items: center;
     margin-bottom: 0.55rem;
@@ -590,7 +590,6 @@ textarea {
     background: #f7f7f7;
 }
 
-.checkout-item img,
 .item-cell img {
     width: 52px;
     height: 52px;
@@ -598,15 +597,30 @@ textarea {
     object-fit: cover;
 }
 
-.checkout-actions {
-    display: flex;
-    align-items: center;
-    justify-items: end;
-    justify-content: flex-end;
-    gap: 0.35rem;
+.checkout-item-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.checkout-actions .icon-remove {
+.checkout-qty-control {
+    grid-template-columns: 30px 34px 30px;
+    gap: 4px;
+    padding: 4px;
+}
+
+.checkout-qty-control button {
+    min-height: 28px;
+}
+
+.checkout-line-price {
+    min-width: 78px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.checkout-item .icon-remove {
     display: inline-grid;
     place-items: center;
     width: 34px;
@@ -618,12 +632,12 @@ textarea {
     cursor: pointer;
 }
 
-.checkout-actions .icon-remove:hover,
-.checkout-actions .icon-remove:focus-visible {
+.checkout-item .icon-remove:hover,
+.checkout-item .icon-remove:focus-visible {
     background: rgba(183, 28, 28, 0.1);
 }
 
-.checkout-actions .icon-remove svg {
+.checkout-item .icon-remove svg {
     width: 19px;
     height: 19px;
     fill: none;
@@ -667,28 +681,30 @@ textarea {
 
 .discount-offer {
     margin: 0.75rem 0 1rem;
-    color: var(--primary);
     font-weight: 700;
     line-height: 1.45;
+    text-align: center;
 }
 
 .discount-offer ul {
     display: grid;
-    gap: 0.25rem;
-    margin: 0.35rem 0 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 0.5rem 0 0;
     padding: 0;
     list-style: none;
 }
 
 .discount-offer li {
-    position: relative;
-    padding-left: 1.2rem;
-}
-
-.discount-offer li::before {
-    content: "->";
-    position: absolute;
-    left: 0;
+    display: grid;
+    place-items: center;
+    min-height: 74px;
+    padding: 0.7rem;
+    border-radius: 8px;
+    background: #3c3c3c;
+    color: #fff;
+    font-size: 0.88rem;
+    line-height: 1.35;
 }
 
 .form-card {
@@ -716,9 +732,27 @@ textarea {
 
 .special-day-fields p {
     margin: 0;
-    color: var(--primary);
-    font-weight: 700;
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    background: #3c3c3c;
+    color: #fff;
+    font-family: "Bebas Neue", "Arial Narrow", Arial, sans-serif;
+    font-weight: 400;
     line-height: 1.5;
+    text-align: center;
+}
+
+.special-day-fields p strong {
+    display: inline-block;
+    margin-bottom: 0.35rem;
+    color: var(--accent);
+    font-size: calc(1em + 3pt);
+    font-weight: 400;
+    line-height: 1.15;
+}
+
+.special-day-fields p span {
+    font-family: "Inter", Arial, Helvetica, sans-serif;
 }
 
 .date-select-group {
@@ -1609,17 +1643,11 @@ th {
 }
 
 .checkout-page .checkout-item {
-    grid-template-columns: 58px minmax(0, 1fr) auto;
-    gap: 0.75rem;
-    padding: 0.75rem;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    gap: 0.65rem;
+    padding: 0.65rem 0.7rem;
     border: 1px solid #eeeeee;
     background: #f7f7f7;
-}
-
-.checkout-page .checkout-item img {
-    width: 58px;
-    height: 58px;
-    border-radius: 8px;
 }
 
 .checkout-page .invoice-totals {
@@ -1793,17 +1821,11 @@ th {
     }
 
     .checkout-page .checkout-item {
-        grid-template-columns: 44px minmax(0, 1fr) auto;
-        gap: 0.55rem;
+        grid-template-columns: minmax(90px, 1fr) auto auto auto;
+        gap: 0.38rem;
         margin-bottom: 0.45rem;
-        padding: 0.55rem;
+        padding: 0.52rem;
         border-radius: 7px;
-    }
-
-    .checkout-page .checkout-item img {
-        width: 44px;
-        height: 44px;
-        border-radius: 6px;
     }
 
     .checkout-page .checkout-item strong {
@@ -1817,18 +1839,26 @@ th {
         font-size: 0.76rem;
     }
 
-    .checkout-page .checkout-actions {
-        gap: 0.18rem;
-        align-self: start;
-        padding-top: 0.05rem;
+    .checkout-page .checkout-qty-control {
+        grid-template-columns: 26px 28px 26px;
+        gap: 3px;
+        padding: 3px;
     }
 
-    .checkout-page .checkout-actions .icon-remove {
+    .checkout-page .checkout-qty-control button {
+        min-height: 26px;
+    }
+
+    .checkout-page .checkout-line-price {
+        min-width: 64px;
+    }
+
+    .checkout-page .checkout-item .icon-remove {
         width: 28px;
         height: 28px;
     }
 
-    .checkout-page .checkout-actions .icon-remove svg {
+    .checkout-page .checkout-item .icon-remove svg {
         width: 16px;
         height: 16px;
     }
@@ -1859,8 +1889,15 @@ th {
     }
 
     .checkout-page .discount-offer ul {
-        gap: 0.18rem;
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
         margin-top: 0.28rem;
+    }
+
+    .checkout-page .discount-offer li {
+        min-height: 48px;
+        padding: 0.55rem;
+        font-size: 0.76rem;
     }
 
     .checkout-page .btn {
@@ -1900,6 +1937,7 @@ th {
     }
 
     .checkout-page .special-day-fields p {
+        padding: 0.65rem;
         font-size: 0.78rem;
         line-height: 1.35;
     }

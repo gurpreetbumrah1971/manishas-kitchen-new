@@ -24,6 +24,16 @@ function money(value) {
   return `Rs. ${Number(value || 0).toFixed(2)}`;
 }
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  })[char]);
+}
+
 function rupeeCompact(value) {
   return `₹${Number(value || 0).toLocaleString('en-IN', {
     maximumFractionDigits: 0,
@@ -198,27 +208,31 @@ function renderCheckout() {
     return;
   }
 
-  target.innerHTML = `${removedCount ? '<p class="alert">Some inactive items were removed from checkout.</p>' : ''}${visibleCart.map((item) => `
+  target.innerHTML = `${removedCount ? '<p class="alert">Some inactive items were removed from checkout.</p>' : ''}${visibleCart.map((item) => {
+    const itemId = Number(item.id);
+    const itemName = escapeHtml(item.name);
+    const quantity = Number(item.quantity || 0);
+    return `
     <div class="checkout-item">
-      <img src="${item.image}" alt="">
-      <div>
-        <strong>${item.name}</strong>
-        <p>${money(item.price)} x ${item.quantity}</p>
+      <strong class="checkout-item-name">${itemName}</strong>
+      <div class="qty-control checkout-qty-control" aria-label="Quantity for ${itemName}">
+        <button type="button" data-qty="${itemId}" data-value="${quantity - 1}" aria-label="Decrease ${itemName} quantity">-</button>
+        <strong>${quantity}</strong>
+        <button type="button" data-qty="${itemId}" data-value="${quantity + 1}" aria-label="Increase ${itemName} quantity">+</button>
       </div>
-      <div class="checkout-actions">
-        <strong>${money(item.price * item.quantity)}</strong>
-        <button class="icon-remove" type="button" data-remove="${item.id}" aria-label="Remove ${item.name} from cart" title="Remove">
-          <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-            <path d="M3 6h18"></path>
-            <path d="M8 6V4h8v2"></path>
-            <path d="M6 6l1 18h10l1-18"></path>
-            <path d="M10 11v6"></path>
-            <path d="M14 11v6"></path>
-          </svg>
-        </button>
-      </div>
+      <strong class="checkout-line-price">${money(item.price * quantity)}</strong>
+      <button class="icon-remove" type="button" data-remove="${itemId}" aria-label="Remove ${itemName} from cart" title="Remove">
+        <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+          <path d="M3 6h18"></path>
+          <path d="M8 6V4h8v2"></path>
+          <path d="M6 6l1 18h10l1-18"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+        </svg>
+      </button>
     </div>
-  `).join('')}`;
+  `;
+  }).join('')}`;
 }
 
 document.addEventListener('click', (event) => {
