@@ -23,7 +23,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Manisha\'s Kitchen API is running' });
 });
 
-if (process.env.NODE_ENV === 'production' && fs.existsSync(clientDistPath)) {
+if (fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));
 
   app.get(/^(?!\/api|\/health).*/, (req, res) => {
