@@ -3,7 +3,7 @@ services:
     name: manishas-kitchen
     runtime: node
     plan: free
-    buildCommand: npm --prefix server ci --legacy-peer-deps && npm --prefix client ci --legacy-peer-deps && npm --prefix client run build:only && npm --prefix server run build
+    buildCommand: npm --prefix server ci --legacy-peer-deps --production=false && npm --prefix client ci --legacy-peer-deps --production=false && npm --prefix client run build:only && npm --prefix server run build
     startCommand: npm --prefix server run deploy && npm --prefix server start
     envVars:
       - key: NODE_VERSION
