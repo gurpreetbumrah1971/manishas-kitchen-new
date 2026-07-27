@@ -69,11 +69,15 @@ const AdminDashboard = () => {
   const [bulkMediaUrl, setBulkMediaUrl] = useState('');
   const [bulkSendingIndex, setBulkSendingIndex] = useState<number | null>(null);
   const [uploadingBulkMedia, setUploadingBulkMedia] = useState(false);
+  const [preparationMinutesByOrder, setPreparationMinutesByOrder] = useState<Record<number, string>>({});
   const navigate = useNavigate();
   const token = localStorage.getItem('adminToken');
+  const adminSessionExpiresAt = localStorage.getItem('adminSessionExpiresAt');
 
   useEffect(() => {
-    if (!token) {
+    if (!token || (adminSessionExpiresAt && Date.now() > new Date(adminSessionExpiresAt).getTime())) {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminSessionExpiresAt');
       navigate('/admin/login');
       return;
     }
@@ -99,7 +103,7 @@ const AdminDashboard = () => {
     };
 
     fetchData();
-  }, [token, navigate]);
+  }, [token, adminSessionExpiresAt, navigate]);
 
   const toggleAvailability = async (id: number, currentStatus: boolean) => {
     try {
@@ -209,23 +213,98 @@ const AdminDashboard = () => {
     }
   };
 
-  const updateStatus = async (id: number, status: string) => {
+  const replaceOrder = (updatedOrder: any) => {
+    setOrders(current => current.map(order => order.id === updatedOrder.id ? updatedOrder : order));
+    if (selectedOrder?.id === updatedOrder.id) {
+      setSelectedOrder(updatedOrder);
+    }
+  };
+
+  const orderStatusLabel = (order: any) => {
+    if (order.status === 'DELIVERED') return 'DELIVERED';
+    if (order.status === 'COMPLETED') return 'READY';
+    if (order.status === 'PREPARING') return 'PREPARING';
+    if (order.confirmedAt) return 'CONFIRMED';
+    return order.status;
+  };
+
+  const orderStatusStyle = (order: any) => {
+    const label = orderStatusLabel(order);
+    if (label === 'PENDING') return { backgroundColor: '#fff3e0', color: '#ef6c00' };
+    if (label === 'CONFIRMED') return { backgroundColor: '#fff8e1', color: '#8a5a00' };
+    if (label === 'PREPARING') return { backgroundColor: '#e3f2fd', color: '#1976d2' };
+    if (label === 'READY' || label === 'DELIVERED') return { backgroundColor: '#e8f5e9', color: '#2e7d32' };
+    return { backgroundColor: '#ffebee', color: '#c62828' };
+  };
+
+  const updateOrderAction = async (order: any, action: string) => {
     try {
-      await axios.patch(`${API_URL}/admin/orders/${id}/status`, { status }, {
+      const payload: any = { action };
+      if (action === 'PREPARING') {
+        const minutes = Number(preparationMinutesByOrder[order.id] || order.preparationMinutes || 20);
+        if (!Number.isFinite(minutes) || minutes < 1) {
+          alert('Enter preparation time in minutes.');
+          return;
+        }
+        payload.preparationMinutes = minutes;
+      }
+
+      const res = await axios.patch(`${API_URL}/admin/orders/${order.id}/status`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const currentOrder = orders.find(o => o.id === id);
-      const updatedOrder = currentOrder ? { ...currentOrder, status } : null;
-      setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
-      if (selectedOrder?.id === id) {
-        setSelectedOrder({ ...selectedOrder, status });
+      replaceOrder(res.data);
+
+      if (action === 'CONFIRM') {
+        openWhatsAppMessage(res.data.whatsappNumber || res.data.mobileNumber, buildOrderConfirmationMessage(res.data));
       }
-      if (status === 'DELIVERED' && updatedOrder) {
-        openWhatsAppMessage(updatedOrder.whatsappNumber || updatedOrder.mobileNumber, buildOrderDeliveryMessage(updatedOrder));
+      if (action === 'DELIVERED') {
+        openWhatsAppMessage(res.data.whatsappNumber || res.data.mobileNumber, buildOrderDeliveryMessage(res.data));
       }
-    } catch (err) {
-      alert('Failed to update status');
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to update order');
     }
+  };
+
+  const renderOrderActions = (order: any) => {
+    const statusLabel = orderStatusLabel(order);
+    const minutesValue = preparationMinutesByOrder[order.id] ?? String(order.preparationMinutes || 20);
+    const terminal = order.status === 'DELIVERED' || order.status === 'CANCELLED';
+
+    return (
+      <div style={{ display: 'grid', gap: '8px', minWidth: '230px' }}>
+        {statusLabel === 'PENDING' && (
+          <button onClick={() => updateOrderAction(order, 'CONFIRM')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700 }}>
+            <MessageCircle size={15} /> Confirm
+          </button>
+        )}
+        {!terminal && order.status !== 'COMPLETED' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '72px minmax(110px, 1fr)', gap: '6px', alignItems: 'center' }}>
+            <input
+              type="number"
+              min="1"
+              max="180"
+              value={minutesValue}
+              onChange={(event) => setPreparationMinutesByOrder(current => ({ ...current, [order.id]: event.target.value }))}
+              aria-label={`Preparation minutes for ${order.orderNumber}`}
+              style={{ padding: '8px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '0.82rem' }}
+            />
+            <button onClick={() => updateOrderAction(order, 'PREPARING')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #1976d2', backgroundColor: '#fff', color: '#1976d2', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700 }}>
+              <Clock size={15} /> Preparing
+            </button>
+          </div>
+        )}
+        {order.status === 'PREPARING' && (
+          <button onClick={() => updateOrderAction(order, 'READY')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#fff', color: '#2e7d32', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700 }}>
+            <CheckCircle size={15} /> Ready
+          </button>
+        )}
+        {order.status === 'COMPLETED' && (
+          <button onClick={() => updateOrderAction(order, 'DELIVERED')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#2e7d32', color: '#fff', cursor: 'pointer', fontWeight: 700 }}>
+            Delivered
+          </button>
+        )}
+      </div>
+    );
   };
 
   const sendOrderConfirmation = (order: any) => {
@@ -304,13 +383,14 @@ const AdminDashboard = () => {
 
   const logout = () => {
     localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminSessionExpiresAt');
     navigate('/admin/login');
   };
 
   // Stats
   const totalRevenue = orders.reduce((sum, o) => sum + Number(o.grandTotal), 0);
   const pendingOrders = orders.filter(o => o.status === 'PENDING').length;
-  const completedOrders = orders.filter(o => o.status === 'COMPLETED').length;
+  const completedOrders = orders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED').length;
   const visibleMenuItems = selectedCategoryId === 'all'
     ? menuItems
     : menuItems.filter(item => item.categoryId?.toString() === selectedCategoryId);
@@ -414,22 +494,25 @@ const AdminDashboard = () => {
             )}
             <div>
               <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '2px' }}>Order Status</p>
-              <select 
-                value={selectedOrder.status} 
-                onChange={(e) => updateStatus(selectedOrder.id, e.target.value)}
-                style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8rem', fontWeight: '600' }}
-              >
-                <option value="PENDING">Pending</option>
-                <option value="PREPARING">Preparing</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="DELIVERED">Delivered</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
+              <span style={{
+                fontSize: '0.8rem',
+                padding: '4px 10px',
+                borderRadius: '12px',
+                fontWeight: 700,
+                ...orderStatusStyle(selectedOrder)
+              }}>
+                {orderStatusLabel(selectedOrder)}
+              </span>
             </div>
             <div>
               <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '2px' }}>Date & Time</p>
               <p style={{ fontWeight: '600' }}>{new Date(selectedOrder.createdAt).toLocaleString()}</p>
             </div>
+          </div>
+
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Order Actions</h3>
+            {renderOrderActions(selectedOrder)}
           </div>
 
           <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Items</h3>
@@ -467,7 +550,7 @@ const AdminDashboard = () => {
               onClick={() => sendOrderConfirmation(selectedOrder)} 
               style={{ padding: '10px', borderRadius: '8px', border: '1px solid #25D366', color: '#128C7E', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
             >
-              <MessageCircle size={16} /> Confirmation
+              <MessageCircle size={16} /> WhatsApp
             </button>
             <button 
               onClick={() => sendOrderDelivery(selectedOrder)} 
@@ -542,44 +625,18 @@ const AdminDashboard = () => {
                   <td style={{ padding: '1rem' }}>₹{order.grandTotal}</td>
                   <td style={{ padding: '1rem' }}><span style={{ fontSize: '0.8rem', padding: '2px 8px', borderRadius: '12px', backgroundColor: '#eee' }}>{order.orderType}</span></td>
                   <td style={{ padding: '1rem' }}>
-                    <span style={{ 
-                      fontSize: '0.8rem', 
-                      padding: '4px 10px', 
-                      borderRadius: '12px', 
-                      backgroundColor: 
-                        order.status === 'PENDING' ? '#fff3e0' : 
-                        order.status === 'PREPARING' ? '#e3f2fd' : 
-                        order.status === 'COMPLETED' || order.status === 'DELIVERED' ? '#e8f5e9' :
-                        '#ffebee',
-                      color:
-                        order.status === 'PENDING' ? '#ef6c00' : 
-                        order.status === 'PREPARING' ? '#1976d2' : 
-                        order.status === 'COMPLETED' || order.status === 'DELIVERED' ? '#2e7d32' :
-                        '#c62828'
+                    <span style={{
+                      fontSize: '0.8rem',
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      fontWeight: 700,
+                      ...orderStatusStyle(order)
                     }}>
-                      {order.status}
+                      {orderStatusLabel(order)}
                     </span>
                   </td>
                   <td style={{ padding: '1rem' }}>
-                    <select 
-                      value={order.status} 
-                      onChange={(e) => updateStatus(order.id, e.target.value)}
-                      style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '0.8rem' }}
-                    >
-                      <option value="PENDING">Pending</option>
-                      <option value="PREPARING">Preparing</option>
-                      <option value="COMPLETED">Completed</option>
-                      <option value="DELIVERED">Delivered</option>
-                      <option value="CANCELLED">Cancelled</option>
-                    </select>
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '8px', alignItems: 'center' }}>
-                      <button onClick={() => sendOrderConfirmation(order)} title="Send confirmation WhatsApp" style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#128C7E', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                        <MessageCircle size={14} />
-                      </button>
-                      <button onClick={() => sendOrderDelivery(order)} title="Send delivery WhatsApp" style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#128C7E', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '600' }}>
-                        Delivery
-                      </button>
-                    </div>
+                    {renderOrderActions(order)}
                   </td>
                 </tr>
               ))}
@@ -1019,7 +1076,7 @@ const AdminDashboard = () => {
                                     </button>
                                     <span>{new Date(order.createdAt).toLocaleString()}</span>
                                     <span>{order.orderType}</span>
-                                    <span>{order.status}</span>
+                                    <span>{orderStatusLabel(order)}</span>
                                     <span style={{ fontWeight: '700' }}>₹{order.grandTotal}</span>
                                   </div>
                                 ))}

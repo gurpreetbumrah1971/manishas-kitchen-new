@@ -53,7 +53,10 @@ const Navbar = () => {
 
 const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('adminToken');
-  if (!token) {
+  const expiresAt = localStorage.getItem('adminSessionExpiresAt');
+  if (!token || (expiresAt && Date.now() > new Date(expiresAt).getTime())) {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminSessionExpiresAt');
     return <Navigate to="/admin/login" replace />;
   }
   return <>{children}</>;

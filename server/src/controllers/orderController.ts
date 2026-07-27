@@ -1,5 +1,45 @@
 import { Request, Response } from 'express';
+import { randomBytes } from 'crypto';
 import prisma from '../prisma';
+
+const ORDER_SESSION_MINUTES = 30;
+
+const orderInclude = {
+  orderItems: {
+    include: { foodItem: true }
+  }
+};
+
+const orderSessionExpiry = () => new Date(Date.now() + ORDER_SESSION_MINUTES * 60 * 1000);
+
+const publicStatusLabel = (order: any) => {
+  if (order.status === 'DELIVERED') return 'DELIVERED';
+  if (order.status === 'COMPLETED') return 'READY';
+  if (order.status === 'PREPARING') return 'PREPARING';
+  if (order.confirmedAt) return 'CONFIRMED';
+  return 'PENDING';
+};
+
+const publicOrderStatus = (order: any) => {
+  const preparationEndsAt = order.preparationStartedAt && order.preparationMinutes
+    ? new Date(new Date(order.preparationStartedAt).getTime() + Number(order.preparationMinutes) * 60 * 1000)
+    : null;
+
+  return {
+    orderNumber: order.orderNumber,
+    status: order.status,
+    statusLabel: publicStatusLabel(order),
+    confirmedAt: order.confirmedAt,
+    preparationStartedAt: order.preparationStartedAt,
+    preparationMinutes: order.preparationMinutes,
+    preparationEndsAt,
+    readyAt: order.readyAt,
+    deliveredAt: order.deliveredAt,
+    grandTotal: order.grandTotal,
+    paymentMethod: order.paymentMethod,
+    customerSessionExpiresAt: order.customerSessionExpiresAt,
+  };
+};
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -65,6 +105,7 @@ export const createOrder = async (req: Request, res: Response) => {
       };
     });
     const orderNumber = `ORD-${Date.now()}`;
+    const customerSessionToken = randomBytes(24).toString('hex');
 
     const order = await prisma.order.create({
       data: {
@@ -83,19 +124,15 @@ export const createOrder = async (req: Request, res: Response) => {
         gstAmount: Number(gstAmount) || 0,
         discountAmount: Number(discountAmount) || 0,
         grandTotal: Number(grandTotal) || orderItems.reduce((sum, item) => sum + item.subtotal, 0),
+        customerSessionToken,
+        customerSessionExpiresAt: orderSessionExpiry(),
         orderItems: {
           create: orderItems
         }
       },
-      include: {
-        orderItems: {
-          include: { foodItem: true }
-        }
-      }
+      include: orderInclude
     });
 
-    // TODO: Send WhatsApp notification
-    
     res.status(201).json(order);
   } catch (error: any) {
     console.error('Order creation error:', error);
@@ -109,11 +146,7 @@ export const createOrder = async (req: Request, res: Response) => {
 export const getOrders = async (req: Request, res: Response) => {
   try {
     const orders = await prisma.order.findMany({
-      include: {
-        orderItems: {
-          include: { foodItem: true }
-        }
-      },
+      include: orderInclude,
       orderBy: { createdAt: 'desc' }
     });
     res.json(orders);
@@ -125,13 +158,78 @@ export const getOrders = async (req: Request, res: Response) => {
 export const updateOrderStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, action, preparationMinutes } = req.body;
+    const orderId = Number(id);
+    const existingOrder = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!existingOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const now = new Date();
+    const requestedAction = String(action || status || '').toUpperCase();
+    const data: any = {};
+
+    if (requestedAction === 'CONFIRM' || requestedAction === 'CONFIRMED') {
+      data.confirmedAt = existingOrder.confirmedAt || now;
+    } else if (requestedAction === 'PREPARING') {
+      const minutes = Math.max(1, Math.min(180, Number(preparationMinutes) || 0));
+      if (!Number.isFinite(minutes) || minutes < 1) {
+        return res.status(400).json({ error: 'Preparation time must be at least 1 minute' });
+      }
+      data.status = 'PREPARING';
+      data.confirmedAt = existingOrder.confirmedAt || now;
+      data.preparationStartedAt = now;
+      data.preparationMinutes = minutes;
+      data.readyAt = null;
+      data.deliveredAt = null;
+    } else if (requestedAction === 'READY' || requestedAction === 'COMPLETED') {
+      data.status = 'COMPLETED';
+      data.confirmedAt = existingOrder.confirmedAt || now;
+      data.readyAt = now;
+    } else if (requestedAction === 'DELIVERED') {
+      data.status = 'DELIVERED';
+      data.confirmedAt = existingOrder.confirmedAt || now;
+      data.deliveredAt = now;
+    } else if (requestedAction === 'CANCELLED') {
+      data.status = 'CANCELLED';
+    } else {
+      return res.status(400).json({ error: 'Invalid order action' });
+    }
+
     const order = await prisma.order.update({
-      where: { id: Number(id) },
-      data: { status }
+      where: { id: orderId },
+      data,
+      include: orderInclude
     });
     res.json(order);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update order status' });
+  }
+};
+
+export const getOrderStatus = async (req: Request, res: Response) => {
+  try {
+    const orderNumber = String(req.params.orderNumber || '');
+    const token = String(req.query.token || '');
+
+    if (!token) {
+      return res.status(401).json({ error: 'Order session token is required' });
+    }
+
+    const order = await prisma.order.findFirst({
+      where: {
+        orderNumber,
+        customerSessionToken: token,
+        customerSessionExpiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order session expired or not found' });
+    }
+
+    res.json(publicOrderStatus(order));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch order status' });
   }
 };

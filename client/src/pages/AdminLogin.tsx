@@ -19,6 +19,7 @@ const AdminLogin = () => {
     try {
       const res = await axios.post(`${API_URL}/admin/login`, { username, password });
       localStorage.setItem('adminToken', res.data.token);
+      localStorage.setItem('adminSessionExpiresAt', res.data.expiresAt);
       navigate('/admin/dashboard');
     } catch (err) {
       setError('Invalid username or password');

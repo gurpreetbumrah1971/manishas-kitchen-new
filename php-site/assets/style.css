@@ -861,6 +861,52 @@ textarea {
     width: min(100%, 340px);
 }
 
+.order-status-card {
+    display: grid;
+    gap: 0.45rem;
+    justify-items: center;
+    width: min(100%, 360px);
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    background: #fff3e0;
+    color: #ef6c00;
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.status-pill[data-status="CONFIRMED"] {
+    background: #fff8e1;
+    color: #8a5a00;
+}
+
+.status-pill[data-status="PREPARING"] {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-pill[data-status="READY"],
+.status-pill[data-status="DELIVERED"] {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.order-countdown {
+    color: var(--primary);
+    font-size: 1.15rem;
+    font-weight: 900;
+}
+
 .auth-section {
     display: grid;
     place-items: center;

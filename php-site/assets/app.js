@@ -1,4 +1,5 @@
 const CART_KEY = 'phpCart';
+const ORDER_SESSION_KEY = 'mkOrderSession';
 const DISCOUNT_TIERS = {
   400: 0.10,
   800: 0.15,
@@ -67,6 +68,32 @@ function updatePaymentQr(amount) {
 function parseMoney(value) {
   const amount = String(value || '').replace(/[^\d.]/g, '');
   return Number(amount || 0);
+}
+
+function getActiveOrderSession() {
+  try {
+    const session = JSON.parse(localStorage.getItem(ORDER_SESSION_KEY) || 'null');
+    if (!session?.orderNumber || !session?.token || !session?.expiresAt) return null;
+    if (Date.now() >= new Date(session.expiresAt).getTime()) {
+      localStorage.removeItem(ORDER_SESSION_KEY);
+      return null;
+    }
+    return session;
+  } catch {
+    localStorage.removeItem(ORDER_SESSION_KEY);
+    return null;
+  }
+}
+
+function saveOrderSession(session) {
+  localStorage.setItem(ORDER_SESSION_KEY, JSON.stringify(session));
+}
+
+function formatCountdown(milliseconds) {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
 function updateCartCount() {
@@ -321,7 +348,86 @@ document.querySelectorAll('[data-date-group]').forEach((group) => {
   syncDateGroup(group);
 });
 
-function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl }) {
+let orderStatusPollTimer = null;
+let orderCountdownTimer = null;
+let latestOrderStatus = null;
+
+function clearOrderStatusTimers() {
+  if (orderStatusPollTimer) {
+    clearInterval(orderStatusPollTimer);
+    orderStatusPollTimer = null;
+  }
+  if (orderCountdownTimer) {
+    clearInterval(orderCountdownTimer);
+    orderCountdownTimer = null;
+  }
+}
+
+function statusMessage(status) {
+  if (!status) return 'Waiting for kitchen confirmation.';
+  if (status.statusLabel === 'CONFIRMED') return 'Order confirmed. The kitchen will start preparation shortly.';
+  if (status.statusLabel === 'PREPARING') return 'Food is getting ready.';
+  if (status.statusLabel === 'READY') return 'Your food is ready.';
+  if (status.statusLabel === 'DELIVERED') return 'Delivered. Thank you for ordering from Manisha\'s Kitchen.';
+  if (status.statusLabel === 'CANCELLED') return 'This order was cancelled.';
+  return 'Waiting for kitchen confirmation.';
+}
+
+function updateOrderStatusPanel(status) {
+  latestOrderStatus = status;
+  const label = document.querySelector('[data-order-status-label]');
+  const message = document.querySelector('[data-order-status-message]');
+  const countdown = document.querySelector('[data-order-countdown]');
+  if (!label || !message || !countdown) return;
+
+  label.textContent = status?.statusLabel || 'PENDING';
+  label.dataset.status = status?.statusLabel || 'PENDING';
+  message.textContent = statusMessage(status);
+
+  if (status?.statusLabel === 'PREPARING' && status.preparationEndsAt) {
+    const remaining = new Date(status.preparationEndsAt).getTime() - Date.now();
+    countdown.hidden = false;
+    countdown.textContent = remaining > 0
+      ? `Estimated ready in ${formatCountdown(remaining)}`
+      : 'Estimated ready any moment now';
+    return;
+  }
+
+  countdown.hidden = true;
+  countdown.textContent = '';
+}
+
+async function fetchOrderStatus(session) {
+  if (!session?.orderNumber || !session?.token) return;
+  try {
+    const params = new URLSearchParams({ token: session.token });
+    const response = await fetch(`/api/orders/${encodeURIComponent(session.orderNumber)}/status?${params.toString()}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 404) {
+        localStorage.removeItem(ORDER_SESSION_KEY);
+        clearOrderStatusTimers();
+      }
+      return;
+    }
+    updateOrderStatusPanel(await response.json());
+  } catch {
+    // Keep the current visible status; the next poll will retry.
+  }
+}
+
+function startOrderStatusTracking(session) {
+  clearOrderStatusTimers();
+  updateOrderStatusPanel(null);
+  fetchOrderStatus(session);
+  orderStatusPollTimer = setInterval(() => fetchOrderStatus(session), 30000);
+  orderCountdownTimer = setInterval(() => {
+    if (latestOrderStatus) updateOrderStatusPanel(latestOrderStatus);
+  }, 1000);
+}
+
+function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl, session }) {
   const section = document.querySelector('.checkout-page .section.compact');
   if (!section) return;
 
@@ -338,10 +444,33 @@ function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl }) {
         <p>Scan QR / use UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
         <p>Order ID: <strong>${escapeHtml(order.orderNumber || order.order_number || '')}</strong></p>
       </div>
+      <div class="order-status-card">
+        <span class="status-pill" data-order-status-label data-status="PENDING">PENDING</span>
+        <strong data-order-status-message>Waiting for kitchen confirmation.</strong>
+        <span class="order-countdown" data-order-countdown hidden></span>
+      </div>
       <a class="btn primary" href="${escapeHtml(whatsappUrl)}" target="_blank" rel="noopener">Send WhatsApp Confirmation</a>
       <a class="btn secondary" href="/menu.html">Back to Menu</a>
     </div>
   `;
+
+  if (session) startOrderStatusTracking(session);
+}
+
+function restoreStaticOrderSession() {
+  const section = document.querySelector('.checkout-page .section.compact');
+  if (!section || getCart().length) return;
+
+  const session = getActiveOrderSession();
+  if (!session) return;
+
+  showStaticOrderThankYou({
+    order: { orderNumber: session.orderNumber },
+    total: session.total || 'Rs. 0.00',
+    qrSrc: session.qrSrc || '/assets/payment/mk-qrcode.jpg',
+    whatsappUrl: session.whatsappUrl || '/menu.html',
+    session,
+  });
 }
 
 document.querySelector('[data-checkout-form]')?.addEventListener('submit', async (event) => {
@@ -419,10 +548,21 @@ document.querySelector('[data-checkout-form]')?.addEventListener('submit', async
         '',
         "Thank you for ordering from Manisha's Kitchen.",
       ].join('\n'))}`;
+      const session = result.customerSessionToken && result.customerSessionExpiresAt
+        ? {
+          orderNumber,
+          token: result.customerSessionToken,
+          expiresAt: result.customerSessionExpiresAt,
+          total,
+          qrSrc,
+          whatsappUrl,
+        }
+        : null;
 
       localStorage.removeItem(CART_KEY);
+      if (session) saveOrderSession(session);
       updateCartCount();
-      showStaticOrderThankYou({ order: result, total, qrSrc, whatsappUrl });
+      showStaticOrderThankYou({ order: result, total, qrSrc, whatsappUrl, session });
     } catch (error) {
       alert(error.message || 'Failed to place order. Please try again.');
       if (submitButton) {
@@ -494,3 +634,4 @@ if (success) {
 renderCartControls();
 renderCheckout();
 updateCartCount();
+restoreStaticOrderSession();

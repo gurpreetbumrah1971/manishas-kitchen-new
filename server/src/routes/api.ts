@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
 import { createFoodItem, deleteFoodItem, getCategories, getMenu, getMenuImage, updateFoodItem, updateFoodItemAvailability } from '../controllers/menuController';
-import { createOrder, getOrders, updateOrderStatus } from '../controllers/orderController';
+import { createOrder, getOrderStatus, getOrders, updateOrderStatus } from '../controllers/orderController';
 import { login } from '../controllers/adminController';
 import { authenticateAdmin } from '../middleware/auth';
 
@@ -74,6 +74,7 @@ router.patch('/admin/menu/:id/availability', authenticateAdmin, updateFoodItemAv
 
 // Order Routes
 router.post('/orders', createOrder);
+router.get('/orders/:orderNumber/status', getOrderStatus);
 router.get('/admin/orders', authenticateAdmin, getOrders);
 router.patch('/admin/orders/:id/status', authenticateAdmin, updateOrderStatus);
 
