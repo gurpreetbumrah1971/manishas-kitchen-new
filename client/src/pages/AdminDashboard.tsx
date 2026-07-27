@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -70,9 +70,76 @@ const AdminDashboard = () => {
   const [bulkSendingIndex, setBulkSendingIndex] = useState<number | null>(null);
   const [uploadingBulkMedia, setUploadingBulkMedia] = useState(false);
   const [preparationMinutesByOrder, setPreparationMinutesByOrder] = useState<Record<number, string>>({});
+  const [ringtoneEnabled, setRingtoneEnabled] = useState(localStorage.getItem('adminRingtoneEnabled') === '1');
+  const [ringtoneBlocked, setRingtoneBlocked] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const ringtoneTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigate = useNavigate();
   const token = localStorage.getItem('adminToken');
   const adminSessionExpiresAt = localStorage.getItem('adminSessionExpiresAt');
+
+  const stopRingtone = useCallback(() => {
+    if (ringtoneTimerRef.current) {
+      clearInterval(ringtoneTimerRef.current);
+      ringtoneTimerRef.current = null;
+    }
+  }, []);
+
+  const playRingtoneTone = useCallback(async () => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContextClass();
+      }
+
+      const context = audioContextRef.current;
+      if (context.state !== 'running') {
+        await context.resume();
+      }
+
+      if (context.state !== 'running') {
+        setRingtoneBlocked(true);
+        return;
+      }
+
+      const startAt = context.currentTime;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, startAt);
+      oscillator.frequency.setValueAtTime(660, startAt + 0.18);
+      oscillator.frequency.setValueAtTime(880, startAt + 0.36);
+      gain.gain.setValueAtTime(0.0001, startAt);
+      gain.gain.exponentialRampToValueAtTime(0.16, startAt + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.62);
+
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(startAt);
+      oscillator.stop(startAt + 0.65);
+      setRingtoneBlocked(false);
+    } catch {
+      setRingtoneBlocked(true);
+    }
+  }, []);
+
+  const startRingtone = useCallback(() => {
+    if (ringtoneTimerRef.current) return;
+    void playRingtoneTone();
+    ringtoneTimerRef.current = setInterval(() => {
+      void playRingtoneTone();
+    }, 1400);
+  }, [playRingtoneTone]);
+
+  const enableRingtone = async () => {
+    localStorage.setItem('adminRingtoneEnabled', '1');
+    setRingtoneEnabled(true);
+    setRingtoneBlocked(false);
+    await playRingtoneTone();
+  };
 
   useEffect(() => {
     if (!token || (adminSessionExpiresAt && Date.now() > new Date(adminSessionExpiresAt).getTime())) {
@@ -82,28 +149,69 @@ const AdminDashboard = () => {
       return;
     }
 
+    let active = true;
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+    const handleAuthFailure = () => {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminSessionExpiresAt');
+      navigate('/admin/login');
+    };
+    const applyOrders = (nextOrders: any[]) => {
+      if (!active) return;
+      setOrders(nextOrders);
+      setSelectedOrder(current => current ? nextOrders.find(order => order.id === current.id) || current : current);
+    };
+
+    const fetchOrders = async () => {
+      try {
+        const ordersRes = await axios.get(`${API_URL}/admin/orders`, config);
+        applyOrders(ordersRes.data);
+      } catch (err) {
+        console.error(err);
+        handleAuthFailure();
+      }
+    };
+
     const fetchData = async () => {
       try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
         const [ordersRes, menuRes, categoriesRes] = await Promise.all([
           axios.get(`${API_URL}/admin/orders`, config),
           axios.get(`${API_URL}/menu?admin=true`, config),
           axios.get(`${API_URL}/categories`, config)
         ]);
-        setOrders(ordersRes.data);
-        setMenuItems(menuRes.data);
-        setCategories(categoriesRes.data);
+        applyOrders(ordersRes.data);
+        if (active) {
+          setMenuItems(menuRes.data);
+          setCategories(categoriesRes.data);
+        }
       } catch (err) {
         console.error(err);
-        localStorage.removeItem('adminToken');
-        navigate('/admin/login');
+        handleAuthFailure();
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
     fetchData();
+    const poll = setInterval(fetchOrders, 15000);
+
+    return () => {
+      active = false;
+      clearInterval(poll);
+    };
   }, [token, adminSessionExpiresAt, navigate]);
+
+  useEffect(() => {
+    const hasUnconfirmedPendingOrder = orders.some(order => order.status === 'PENDING' && !order.confirmedAt);
+    if (hasUnconfirmedPendingOrder && ringtoneEnabled) {
+      startRingtone();
+      return;
+    }
+
+    stopRingtone();
+  }, [orders, ringtoneEnabled, startRingtone, stopRingtone]);
+
+  useEffect(() => () => stopRingtone(), [stopRingtone]);
 
   const toggleAvailability = async (id: number, currentStatus: boolean) => {
     try {
@@ -390,6 +498,7 @@ const AdminDashboard = () => {
   // Stats
   const totalRevenue = orders.reduce((sum, o) => sum + Number(o.grandTotal), 0);
   const pendingOrders = orders.filter(o => o.status === 'PENDING').length;
+  const unconfirmedPendingOrders = orders.filter(o => o.status === 'PENDING' && !o.confirmedAt);
   const completedOrders = orders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED').length;
   const visibleMenuItems = selectedCategoryId === 'all'
     ? menuItems
@@ -749,6 +858,38 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <div style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+        {(!ringtoneEnabled || ringtoneBlocked || unconfirmedPendingOrders.length > 0) && (
+          <div className="card" style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '1rem',
+            flexWrap: 'wrap',
+            padding: '1rem 1.25rem',
+            marginBottom: '1.5rem',
+            border: unconfirmedPendingOrders.length > 0 ? '1px solid #ffb74d' : '1px solid #eee',
+            backgroundColor: unconfirmedPendingOrders.length > 0 ? '#fff8e1' : '#fff',
+          }}>
+            <div>
+              <strong>
+                {unconfirmedPendingOrders.length > 0
+                  ? `${unconfirmedPendingOrders.length} order${unconfirmedPendingOrders.length === 1 ? '' : 's'} awaiting confirmation`
+                  : 'Order ringtone'}
+              </strong>
+              <p style={{ color: '#666', fontSize: '0.86rem', marginTop: '4px' }}>
+                {ringtoneEnabled && !ringtoneBlocked
+                  ? 'Ringtone is enabled. Confirm pending orders to stop the sound.'
+                  : 'Tap once to enable ringtone alerts on this device.'}
+              </p>
+            </div>
+            {(!ringtoneEnabled || ringtoneBlocked) && (
+              <button onClick={enableRingtone} className="btn-primary" style={{ padding: '10px 14px' }}>
+                Enable Ringtone
+              </button>
+            )}
+          </div>
+        )}
+
         {activeTab === 'overview' && (
           <>
             <h1 style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Dashboard Overview</h1>
