@@ -37,6 +37,14 @@ if (fs.existsSync(phpAssetsPath)) {
   app.use('/food', express.static(path.join(phpAssetsPath, 'food')));
 }
 
+app.get('/admin/login.php', (req, res) => {
+  res.redirect(302, '/admin/login');
+});
+
+app.get('/admin/dashboard.php', (req, res) => {
+  res.redirect(302, '/admin/dashboard');
+});
+
 if (fs.existsSync(clientDistPath)) {
   app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
     res.sendFile(path.join(clientDistPath, 'index.html'));
