@@ -15,7 +15,7 @@ A modern, responsive, and full-stack restaurant order booking system for Indian 
 - **Tech Stack:**
   - **Frontend:** React (TypeScript), Vite, Lucide Icons, Chart.js.
   - **Backend:** Node.js (Express), TypeScript, Prisma ORM.
-  - **Database:** MySQL.
+  - **Database:** PostgreSQL.
 
 ## Render Deployment
 
@@ -30,6 +30,7 @@ This repo is ready to deploy on Render's free tier as:
    - `manishas-kitchen`
    - `manishas-kitchen-db`
 4. Open the `manishas-kitchen` URL after deploy. The API health check is available at `/health`.
+5. Admin login is available at `/admin/login`.
 
 The first start runs `prisma db push` and seeds the default admin/menu data. The seed is idempotent and will not delete existing orders on later restarts.
 
