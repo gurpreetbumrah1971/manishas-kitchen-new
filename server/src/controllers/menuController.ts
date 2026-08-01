@@ -33,18 +33,23 @@ export const getCategories = async (req: Request, res: Response) => {
     const categories = await prisma.category.findMany({
       where: {
         name: { in: visibleCategoryOrder }
-      },
-      include: {
-        foodItems: {
-          where: { isAvailable: true },
-          select: { id: true }
-        }
       }
     });
+    const categoryCounts = await prisma.foodItem.groupBy({
+      by: ['categoryId'],
+      where: {
+        isAvailable: true,
+        category: {
+          name: { in: visibleCategoryOrder }
+        }
+      },
+      _count: { _all: true }
+    });
+    const countByCategoryId = new Map(categoryCounts.map((count) => [count.categoryId, count._count._all]));
     res.json(categories
-      .map(({ foodItems, ...category }) => ({
+      .map((category) => ({
         ...category,
-        _count: { foodItems: foodItems.length }
+        _count: { foodItems: countByCategoryId.get(category.id) || 0 }
       }))
       .sort((a, b) => visibleCategoryOrder.indexOf(a.name) - visibleCategoryOrder.indexOf(b.name)));
   } catch (error) {
