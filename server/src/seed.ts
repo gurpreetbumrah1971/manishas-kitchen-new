@@ -85,6 +85,11 @@ const menuItems: MenuItemSeed[] = [
 ];
 
 const retiredMenuItemNames = [
+  'Egg Burji + 2 Pav (Single)',
+  'Egg Burji + 2 Pav (Double)',
+  'Egg Omelet + 2 Pav (Single)',
+  'Egg Omelet + 2 Pav (Double)',
+  'Mix Pakoda',
   'Misal Pav',
   'Wada Usal Pav',
   'Veg Biryani',

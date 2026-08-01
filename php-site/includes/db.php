@@ -545,7 +545,15 @@ function seed_data(PDO $pdo): void
         sync_menu_images($pdo, $imageMap);
         sync_menu_categories($pdo, $categoryIds);
         sync_menu_items($pdo, $items, $categoryIds);
-        retire_menu_items($pdo, ['Misal Pav', 'Wada Usal Pav']);
+        retire_menu_items($pdo, [
+            'Egg Burji + 2 Pav (Single)',
+            'Egg Burji + 2 Pav (Double)',
+            'Egg Omelet + 2 Pav (Single)',
+            'Egg Omelet + 2 Pav (Double)',
+            'Mix Pakoda',
+            'Misal Pav',
+            'Wada Usal Pav',
+        ]);
         retire_non_frontend_category_items($pdo);
         return;
     }
@@ -557,7 +565,15 @@ function seed_data(PDO $pdo): void
     foreach ($items as $item) {
         $stmt->execute([$item[0], $item[1], $item[2], $item[5], $item[4] ? 1 : 0, $categoryIds[$item[3]]]);
     }
-    retire_menu_items($pdo, ['Misal Pav', 'Wada Usal Pav']);
+    retire_menu_items($pdo, [
+        'Egg Burji + 2 Pav (Single)',
+        'Egg Burji + 2 Pav (Double)',
+        'Egg Omelet + 2 Pav (Single)',
+        'Egg Omelet + 2 Pav (Double)',
+        'Mix Pakoda',
+        'Misal Pav',
+        'Wada Usal Pav',
+    ]);
     retire_non_frontend_category_items($pdo);
 }
 

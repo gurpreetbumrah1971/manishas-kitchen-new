@@ -5,6 +5,8 @@ const DISCOUNT_TIERS = {
   800: 0.15,
   1000: 0.20,
 };
+const FRONTEND_CATEGORY_ORDER = ['Parathas', 'Frankies', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages'];
+const FRONTEND_CATEGORY_INDEX = new Map(FRONTEND_CATEGORY_ORDER.map((name, index) => [name, index]));
 
 function getCart() {
   try {
@@ -163,6 +165,67 @@ function updateDiscountNudge(subtotal) {
       node.textContent = message;
     }
     node.hidden = message === '';
+  });
+}
+
+function categoryNameFromNode(node) {
+  return (node?.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeStaticMenuCategories() {
+  document.querySelectorAll('[data-menu-tabs]').forEach((tabGroup) => {
+    const tabsContainer = tabGroup.querySelector('.menu-tabs');
+    if (!tabsContainer) return;
+
+    const panels = [...tabGroup.querySelectorAll('[data-menu-panel]')];
+    const entries = [...tabsContainer.querySelectorAll('[data-menu-tab]')].map((tab) => {
+      const name = categoryNameFromNode(tab);
+      return {
+        name,
+        tab,
+        panel: panels.find((panel) => panel.dataset.menuPanel === tab.dataset.menuTab),
+      };
+    });
+    const orderedEntries = entries
+      .filter((entry) => FRONTEND_CATEGORY_INDEX.has(entry.name))
+      .sort((a, b) => FRONTEND_CATEGORY_INDEX.get(a.name) - FRONTEND_CATEGORY_INDEX.get(b.name));
+    const activeEntry = orderedEntries.find((entry) => {
+      const requestedCategory = new URLSearchParams(window.location.search).get('category');
+      return requestedCategory && entry.tab.dataset.menuTab === requestedCategory;
+    }) || orderedEntries[0];
+
+    entries.forEach((entry) => {
+      if (FRONTEND_CATEGORY_INDEX.has(entry.name)) return;
+      entry.tab.remove();
+      entry.panel?.remove();
+    });
+    orderedEntries.forEach((entry) => {
+      tabsContainer.appendChild(entry.tab);
+      if (entry.panel) tabGroup.appendChild(entry.panel);
+
+      const isActive = entry === activeEntry;
+      entry.tab.classList.toggle('active', isActive);
+      entry.tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      if (entry.panel) entry.panel.hidden = !isActive;
+    });
+  });
+
+  document.querySelectorAll('.menu-accordion-layout').forEach((layout) => {
+    const entries = [...layout.querySelectorAll('.menu-accordion')].map((details) => ({
+      name: categoryNameFromNode(details.querySelector('summary')),
+      details,
+    }));
+    const orderedEntries = entries
+      .filter((entry) => FRONTEND_CATEGORY_INDEX.has(entry.name))
+      .sort((a, b) => FRONTEND_CATEGORY_INDEX.get(a.name) - FRONTEND_CATEGORY_INDEX.get(b.name));
+
+    entries.forEach((entry) => {
+      if (!FRONTEND_CATEGORY_INDEX.has(entry.name)) entry.details.remove();
+    });
+    orderedEntries.forEach((entry, index) => {
+      layout.appendChild(entry.details);
+      entry.details.open = index === 0;
+    });
   });
 }
 
@@ -638,6 +701,7 @@ if (success) {
   }
 }
 
+normalizeStaticMenuCategories();
 renderCartControls();
 renderCheckout();
 updateCartCount();

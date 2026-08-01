@@ -35,12 +35,18 @@ export const getCategories = async (req: Request, res: Response) => {
         name: { in: visibleCategoryOrder }
       },
       include: {
-        _count: {
-          select: { foodItems: true }
+        foodItems: {
+          where: { isAvailable: true },
+          select: { id: true }
         }
       }
     });
-    res.json(categories.sort((a, b) => visibleCategoryOrder.indexOf(a.name) - visibleCategoryOrder.indexOf(b.name)));
+    res.json(categories
+      .map(({ foodItems, ...category }) => ({
+        ...category,
+        _count: { foodItems: foodItems.length }
+      }))
+      .sort((a, b) => visibleCategoryOrder.indexOf(a.name) - visibleCategoryOrder.indexOf(b.name)));
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch categories' });
   }

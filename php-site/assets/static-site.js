@@ -1,11 +1,10 @@
 const STATIC_CATEGORIES = [
-  { id: 1, name: 'Beverages', image: '/assets/food/optimized/iced-tea.jpg', count: 12 },
-  { id: 2, name: 'Biryanis', image: '/assets/food/optimized/generated/custom-party-box-realistic.jpg', count: 4 },
-  { id: 3, name: 'Egg Dishes', image: '/assets/food/optimized/generated/egg-omelet-realistic.jpg', count: 4 },
-  { id: 4, name: 'Frankies', image: '/assets/food/optimized/generated/paneer-paratha-realistic.jpg', count: 2 },
-  { id: 5, name: 'Pakodas', image: '/assets/food/optimized/generated/wada-realistic.jpg', count: 4 },
   { id: 6, name: 'Parathas', image: '/assets/food/optimized/generated/aloo-paratha-realistic.jpg', count: 8 },
+  { id: 4, name: 'Frankies', image: '/assets/food/optimized/generated/paneer-paratha-realistic.jpg', count: 3 },
+  { id: 5, name: 'Pakodas', image: '/assets/food/photo-updates/onion-pakoda.png', count: 4 },
+  { id: 3, name: 'Egg Dishes', image: '/assets/food/optimized/generated/egg-omelet-realistic.jpg', count: 7 },
   { id: 7, name: 'Snacks', image: '/assets/food/optimized/poha.jpg', count: 13 },
+  { id: 1, name: 'Beverages', image: '/assets/food/optimized/iced-tea.jpg', count: 12 },
 ];
 
 const STATIC_MENU = [
