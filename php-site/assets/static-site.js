@@ -9,13 +9,13 @@ const STATIC_CATEGORIES = [
 ];
 
 const STATIC_MENU = [
-  [1, 'Tea', 'Hot traditional Indian masala chai.', 15, 1, true, '/assets/food/optimized/tea-realistic.jpg'],
-  [2, 'Hot Coffee', 'Freshly brewed hot coffee.', 30, 1, true, '/assets/food/optimized/generated/hot-coffee-realistic.jpg'],
-  [3, 'Chaas', 'Refreshing spiced buttermilk.', 20, 1, true, '/assets/food/optimized/generated/chaas-realistic.jpg'],
-  [4, 'Nimbu Pani', 'Classic fresh lime water.', 20, 1, true, '/assets/food/optimized/generated/nimbu-pani-realistic.jpg'],
+  [1, 'Tea', 'Hot traditional Indian masala chai.', 25, 1, true, '/assets/food/optimized/tea-realistic.jpg'],
+  [2, 'Hot Coffee', 'Freshly brewed hot coffee.', 35, 1, true, '/assets/food/optimized/generated/hot-coffee-realistic.jpg'],
+  [3, 'Chaas', 'Refreshing spiced buttermilk.', 30, 1, true, '/assets/food/optimized/generated/chaas-realistic.jpg'],
+  [4, 'Nimbu Pani', 'Classic fresh lime water.', 25, 1, true, '/assets/food/optimized/generated/nimbu-pani-realistic.jpg'],
   [5, 'Lemon Tea', 'Refreshing hot lemon tea.', 25, 1, true, '/assets/food/optimized/lemon-tea.jpg'],
-  [6, 'Green Tea', 'Healthy and soothing hot green tea.', 25, 1, true, '/assets/food/optimized/generated/green-tea-realistic.jpg'],
-  [7, 'Iced Tea', 'Chilled lemon infused iced tea.', 40, 1, true, '/assets/food/optimized/iced-tea.jpg'],
+  [6, 'Green Tea', 'Healthy and soothing hot green tea.', 30, 1, true, '/assets/food/optimized/generated/green-tea-realistic.jpg'],
+  [7, 'Iced Tea', 'Chilled lemon infused iced tea.', 50, 1, true, '/assets/food/optimized/iced-tea.jpg'],
   [8, 'Watermelon Juice', 'Freshly squeezed watermelon juice.', 50, 1, true, '/assets/food/optimized/generated/watermelon-juice-realistic.jpg'],
   [9, 'Cold Coffee', 'Chilled creamy cold coffee.', 60, 1, true, '/assets/food/optimized/generated/cold-coffee-realistic.jpg'],
   [10, 'Chikoo Milkshake', 'Thick and creamy sapota shake.', 60, 1, true, '/assets/food/optimized/generated/chikoo-milkshake-realistic.jpg'],

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import prisma from '../prisma';
 import { menuImageUrl, renderMenuImageSvg } from '../utils/menuImages';
 
+const visibleCategoryOrder = ['Parathas', 'Frankies', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages'];
+
 const parseFoodItemBody = (body: any) => {
   const name = String(body.name || '').trim();
   const description = String(body.description || '').trim();
@@ -29,13 +31,16 @@ const parseFoodItemBody = (body: any) => {
 export const getCategories = async (req: Request, res: Response) => {
   try {
     const categories = await prisma.category.findMany({
+      where: {
+        name: { in: visibleCategoryOrder }
+      },
       include: {
         _count: {
           select: { foodItems: true }
         }
       }
     });
-    res.json(categories);
+    res.json(categories.sort((a, b) => visibleCategoryOrder.indexOf(a.name) - visibleCategoryOrder.indexOf(b.name)));
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch categories' });
   }
@@ -44,7 +49,11 @@ export const getCategories = async (req: Request, res: Response) => {
 export const getMenu = async (req: Request, res: Response) => {
   try {
     const { categoryId, admin } = req.query;
-    const where: any = {};
+    const where: any = {
+      category: {
+        name: { in: visibleCategoryOrder }
+      }
+    };
     
     if (categoryId) where.categoryId = Number(categoryId);
     if (!admin) where.isAvailable = true; // Only show available items to users
@@ -53,7 +62,13 @@ export const getMenu = async (req: Request, res: Response) => {
       where,
       include: { category: true }
     });
-    res.json(foodItems);
+    res.json(foodItems.sort((a, b) => {
+      const categoryCompare =
+        (visibleCategoryOrder.indexOf(a.category.name) === -1 ? Number.MAX_SAFE_INTEGER : visibleCategoryOrder.indexOf(a.category.name)) -
+        (visibleCategoryOrder.indexOf(b.category.name) === -1 ? Number.MAX_SAFE_INTEGER : visibleCategoryOrder.indexOf(b.category.name));
+      if (categoryCompare !== 0) return categoryCompare;
+      return a.id - b.id;
+    }));
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch menu' });
   }

@@ -169,9 +169,17 @@ function fetch_categories(bool $admin = false): array
         SELECT c.*, COUNT(f.id) AS food_count
         FROM categories c
         LEFT JOIN food_items f ON $joinCondition
-        WHERE c.name IN ('Beverages', 'Biryanis', 'Egg Dishes', 'Frankies', 'Pakodas', 'Parathas', 'Snacks')
+        WHERE c.name IN ('Parathas', 'Frankies', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages')
         GROUP BY c.id
-        ORDER BY c.name
+        ORDER BY CASE c.name
+            WHEN 'Parathas' THEN 1
+            WHEN 'Frankies' THEN 2
+            WHEN 'Pakodas' THEN 3
+            WHEN 'Egg Dishes' THEN 4
+            WHEN 'Snacks' THEN 5
+            WHEN 'Beverages' THEN 6
+            ELSE 99
+        END
     ")->fetchAll();
 }
 
@@ -190,6 +198,7 @@ function fetch_menu(?int $categoryId = null, bool $admin = false): array
         FROM food_items f
         JOIN categories c ON c.id = f.category_id
         WHERE 1 = 1
+          AND c.name IN (\'Parathas\', \'Frankies\', \'Pakodas\', \'Egg Dishes\', \'Snacks\', \'Beverages\')
     ';
     $params = [];
     if ($categoryId) {
@@ -207,6 +216,14 @@ function fetch_menu(?int $categoryId = null, bool $admin = false): array
 
 function sort_menu_items(array $items): array
 {
+    $categoryOrder = [
+        'Parathas' => 1,
+        'Frankies' => 2,
+        'Pakodas' => 3,
+        'Egg Dishes' => 4,
+        'Snacks' => 5,
+        'Beverages' => 6,
+    ];
     $order = [
         'Aloo Paratha' => 1,
         'Gobi Paratha' => 2,
@@ -218,7 +235,13 @@ function sort_menu_items(array $items): array
         'Plain Paratha' => 8,
     ];
 
-    usort($items, function (array $a, array $b) use ($order): int {
+    usort($items, function (array $a, array $b) use ($categoryOrder, $order): int {
+        $aCategoryOrder = $categoryOrder[$a['category_name'] ?? ''] ?? PHP_INT_MAX;
+        $bCategoryOrder = $categoryOrder[$b['category_name'] ?? ''] ?? PHP_INT_MAX;
+        if ($aCategoryOrder !== $bCategoryOrder) {
+            return $aCategoryOrder <=> $bCategoryOrder;
+        }
+
         $categoryCompare = strcmp((string)($a['category_name'] ?? ''), (string)($b['category_name'] ?? ''));
         if ($categoryCompare !== 0) {
             return $categoryCompare;
@@ -260,66 +283,69 @@ function fetch_orders(): array
 function sample_categories(): array
 {
     return [
-        ['id' => 1, 'name' => 'Beverages', 'image' => 'assets/food/iced-tea.png', 'food_count' => 12],
-        ['id' => 2, 'name' => 'Biryanis', 'image' => 'assets/food/generated/custom-party-box-realistic.png', 'food_count' => 4],
-        ['id' => 3, 'name' => 'Egg Dishes', 'image' => 'assets/food/generated/egg-omelet-realistic.png', 'food_count' => 4],
-        ['id' => 4, 'name' => 'Frankies', 'image' => 'assets/food/generated/paneer-paratha-realistic.png', 'food_count' => 2],
-        ['id' => 5, 'name' => 'Pakodas', 'image' => 'assets/food/generated/wada-realistic.png', 'food_count' => 4],
         ['id' => 6, 'name' => 'Parathas', 'image' => 'assets/food/generated/aloo-paratha-realistic.png', 'food_count' => 8],
+        ['id' => 4, 'name' => 'Frankies', 'image' => 'assets/food/generated/paneer-paratha-realistic.png', 'food_count' => 3],
+        ['id' => 5, 'name' => 'Pakodas', 'image' => 'assets/food/generated/wada-realistic.png', 'food_count' => 4],
+        ['id' => 3, 'name' => 'Egg Dishes', 'image' => 'assets/food/generated/egg-omelet-realistic.png', 'food_count' => 7],
         ['id' => 7, 'name' => 'Snacks', 'image' => 'assets/food/poha.png', 'food_count' => 13],
+        ['id' => 1, 'name' => 'Beverages', 'image' => 'assets/food/iced-tea.png', 'food_count' => 12],
     ];
 }
 
 function sample_menu(): array
 {
     $items = [
-        [1, 'Tea', 'Hot traditional Indian masala chai.', 15, 1, 'Beverages', 'assets/food/tea-realistic.png'],
-        [2, 'Hot Coffee', 'Freshly brewed hot coffee.', 30, 1, 'Beverages', 'assets/food/generated/hot-coffee-realistic.png'],
-        [3, 'Chaas', 'Refreshing spiced buttermilk.', 20, 1, 'Beverages', 'assets/food/generated/chaas-realistic.png'],
-        [4, 'Nimbu Pani', 'Classic fresh lime water.', 20, 1, 'Beverages', 'assets/food/generated/nimbu-pani-realistic.png'],
+        [1, 'Tea', 'Hot traditional Indian masala chai.', 25, 1, 'Beverages', 'assets/food/tea-realistic.png'],
+        [2, 'Hot Coffee', 'Freshly brewed hot coffee.', 35, 1, 'Beverages', 'assets/food/generated/hot-coffee-realistic.png'],
+        [3, 'Chaas', 'Refreshing spiced buttermilk.', 30, 1, 'Beverages', 'assets/food/generated/chaas-realistic.png'],
+        [4, 'Nimbu Pani', 'Classic fresh lime water.', 25, 1, 'Beverages', 'assets/food/generated/nimbu-pani-realistic.png'],
         [5, 'Lemon Tea', 'Refreshing hot lemon tea.', 25, 1, 'Beverages', 'assets/food/lemon-tea.png'],
-        [6, 'Green Tea', 'Healthy and soothing hot green tea.', 25, 1, 'Beverages', 'assets/food/generated/green-tea-realistic.png'],
-        [7, 'Iced Tea', 'Chilled lemon infused iced tea.', 40, 1, 'Beverages', 'assets/food/iced-tea.png'],
+        [6, 'Green Tea', 'Healthy and soothing hot green tea.', 30, 1, 'Beverages', 'assets/food/generated/green-tea-realistic.png'],
+        [7, 'Iced Tea', 'Chilled lemon infused iced tea.', 50, 1, 'Beverages', 'assets/food/iced-tea.png'],
         [8, 'Watermelon Juice', 'Freshly squeezed watermelon juice.', 50, 1, 'Beverages', 'assets/food/generated/watermelon-juice-realistic.png'],
         [9, 'Cold Coffee', 'Chilled creamy cold coffee.', 60, 1, 'Beverages', 'assets/food/generated/cold-coffee-realistic.png'],
         [10, 'Chikoo Milkshake', 'Thick and creamy sapota shake.', 60, 1, 'Beverages', 'assets/food/generated/chikoo-milkshake-realistic.png'],
         [11, 'Chocolate Milkshake', 'Rich and indulgent chocolate shake.', 90, 1, 'Beverages', 'assets/food/generated/chocolate-milkshake-realistic.png'],
         [12, 'Mango Milkshake', 'Creamy shake made with fresh mangoes.', 120, 1, 'Beverages', 'assets/food/generated/mango-milkshake-realistic.png'],
         [13, 'Veg Biryani', 'Fragrant rice layered with spiced vegetables.', 140, 2, 'Biryanis', 'assets/food/generated/custom-party-box-realistic.png'],
-        [14, 'Egg Biryani', 'Fragrant rice layered with masala eggs.', 160, 2, 'Biryanis', 'assets/food/generated/egg-burji-realistic.png', false],
-        [43, 'Chicken Dum Biryani', 'Slow-cooked dum biryani with tender chicken and aromatic rice.', 225, 2, 'Biryanis', 'assets/food/generated/custom-party-box-realistic.png', false],
-        [44, 'Paneer Biryani', 'Aromatic biryani layered with spiced paneer and basmati rice.', 225, 2, 'Biryanis', 'assets/food/generated/paneer-paratha-realistic.png'],
-        [15, 'Egg Burji + 2 Pav (Single)', 'Spiced scrambled eggs served with 2 pav.', 40, 3, 'Egg Dishes', 'assets/food/generated/egg-burji-realistic.png', false],
-        [16, 'Egg Burji + 2 Pav (Double)', 'Double portion spiced scrambled eggs with 2 pav.', 80, 3, 'Egg Dishes', 'assets/food/generated/egg-burji-realistic.png', false],
-        [17, 'Egg Omelet + 2 Pav (Single)', 'Classic spiced omelet served with 2 pav.', 40, 3, 'Egg Dishes', 'assets/food/generated/egg-omelet-realistic.png', false],
-        [18, 'Egg Omelet + 2 Pav (Double)', 'Double portion spiced omelet with 2 pav.', 80, 3, 'Egg Dishes', 'assets/food/generated/egg-omelet-realistic.png', false],
-        [19, 'Aloo Frankie', 'Soft roll filled with spiced potato and chutney.', 60, 4, 'Frankies', 'assets/food/generated/aloo-paratha-realistic.png'],
-        [20, 'Paneer Frankie', 'Soft roll filled with spiced paneer and onions.', 90, 4, 'Frankies', 'assets/food/generated/paneer-paratha-realistic.png'],
-        [21, 'Wada', 'Single spicy potato fritter.', 15, 5, 'Pakodas', 'assets/food/generated/wada-realistic.png'],
-        [22, 'Wada Pav', 'Spicy potato fritter in a bun.', 20, 5, 'Pakodas', 'assets/food/generated/wada-pav-realistic.png'],
-        [23, 'Onion Pakoda', 'Crisp onion fritters with house masala.', 50, 5, 'Pakodas', 'assets/food/generated/wada-realistic.png'],
-        [24, 'Mix Pakoda', 'Assorted vegetable fritters fried crisp.', 70, 5, 'Pakodas', 'assets/food/generated/custom-party-box-realistic.png'],
-        [25, 'Aloo Paratha', 'Wheat flatbread stuffed with spiced potatoes.', 60, 6, 'Parathas', 'assets/food/generated/aloo-paratha-realistic.png'],
-        [26, 'Gobi Paratha', 'Wheat flatbread stuffed with spiced cauliflower.', 60, 6, 'Parathas', 'assets/food/generated/gobi-paratha-realistic.png'],
+        [14, 'Egg Biryani', 'Fragrant rice layered with masala eggs.', 160, 2, 'Biryanis', 'assets/food/photo-updates/egg-biryani.png', false],
+        [43, 'Chicken Dum Biryani', 'Slow-cooked dum biryani with tender chicken and aromatic rice.', 225, 2, 'Biryanis', 'assets/food/photo-updates/chicken-biryani.png', false],
+        [44, 'Paneer Biryani', 'Aromatic biryani layered with spiced paneer and basmati rice.', 225, 2, 'Biryanis', 'assets/food/photo-updates/paneer-biryani.png'],
+        [15, 'Single Egg Burjee + 2 Butter Pav', 'Spiced scrambled egg served with 2 butter pav.', 70, 3, 'Egg Dishes', 'assets/food/generated/egg-burji-realistic.png', false],
+        [17, 'Single Egg Omelet + 2 Butter Pav', 'Classic spiced omelet served with 2 butter pav.', 70, 3, 'Egg Dishes', 'assets/food/generated/egg-omelet-realistic.png', false],
+        [16, 'Double Egg Burjee + 4 Butter Pav', 'Double portion spiced scrambled eggs served with 4 butter pav.', 120, 3, 'Egg Dishes', 'assets/food/generated/egg-burji-realistic.png', false],
+        [18, 'Double Omelet + 4 Butter Pav', 'Double portion spiced omelet served with 4 butter pav.', 120, 3, 'Egg Dishes', 'assets/food/generated/egg-omelet-realistic.png', false],
+        [55, 'Boiled Egg (1 Egg)', 'One boiled egg served fresh.', 25, 3, 'Egg Dishes', 'assets/food/generated/egg-omelet-realistic.png', false],
+        [56, 'Extra Pav', 'Additional pav served with egg dishes.', 7, 3, 'Egg Dishes', 'assets/food/generated/pav-realistic.png'],
+        [57, 'Extra Butter Pav', 'Additional butter pav served with egg dishes.', 15, 3, 'Egg Dishes', 'assets/food/generated/butter-pav-realistic.png'],
+        [19, 'Aloo Frankie', 'Soft roll filled with spiced potato and chutney.', 70, 4, 'Frankies', 'assets/food/generated/aloo-paratha-realistic.png'],
+        [20, 'Paneer Frankie', 'Soft roll filled with spiced paneer and onions.', 130, 4, 'Frankies', 'assets/food/generated/paneer-paratha-realistic.png'],
+        [48, 'Chicken Frankie', 'Soft roll filled with spiced chicken and onions.', 130, 4, 'Frankies', 'assets/food/photo-updates/chicken-kheema-paratha.png', false],
+        [21, 'Wada', 'Single spicy potato fritter.', 20, 7, 'Snacks', 'assets/food/photo-updates/wada.png'],
+        [22, 'Wada Pav', 'Spicy potato fritter in a bun.', 25, 7, 'Snacks', 'assets/food/photo-updates/wada-pav.png'],
+        [23, 'Onion Pakoda', 'Crisp onion fritters with house masala.', 65, 5, 'Pakodas', 'assets/food/photo-updates/onion-pakoda.png'],
+        [53, 'Paneer Pakoda', 'Crisp paneer fritters with house masala.', 100, 5, 'Pakodas', 'assets/food/generated/paneer-paratha-realistic.png'],
+        [54, 'Moong Dal Pakoda', 'Crisp moong dal fritters with house masala.', 65, 5, 'Pakodas', 'assets/food/photo-updates/moong-dal-pakoda.png'],
+        [24, 'Chana Daal Pakoda', 'Crisp chana dal fritters with house masala.', 65, 5, 'Pakodas', 'assets/food/photo-updates/chana-dal-pakoda.png'],
+        [25, 'Aloo Paratha', 'Wheat flatbread stuffed with spiced potatoes.', 65, 6, 'Parathas', 'assets/food/generated/aloo-paratha-realistic.png'],
+        [26, 'Gobi Paratha', 'Wheat flatbread stuffed with spiced cauliflower.', 65, 6, 'Parathas', 'assets/food/photo-updates/gobi-paratha.png'],
         [27, 'Paneer Paratha', 'Wheat flatbread stuffed with spiced cottage cheese.', 100, 6, 'Parathas', 'assets/food/generated/paneer-paratha-realistic.png'],
-        [28, 'Methi Paratha', 'Wheat flatbread with fresh fenugreek leaves.', 60, 6, 'Parathas', 'assets/food/generated/methi-paratha-realistic.png'],
-        [45, 'Palak Paratha', 'Wheat flatbread layered with spiced spinach.', 60, 6, 'Parathas', 'assets/food/generated/methi-paratha-realistic.png'],
-        [46, 'Cabbage Paratha', 'Wheat flatbread stuffed with seasoned cabbage.', 60, 6, 'Parathas', 'assets/food/generated/gobi-paratha-realistic.png'],
+        [28, 'Methi Paratha', 'Wheat flatbread with fresh fenugreek leaves.', 65, 6, 'Parathas', 'assets/food/photo-updates/methi-paratha.png'],
+        [45, 'Palak Paratha', 'Wheat flatbread layered with spiced spinach.', 65, 6, 'Parathas', 'assets/food/photo-updates/palak-paratha.png'],
+        [46, 'Cabbage Paratha', 'Wheat flatbread stuffed with seasoned cabbage.', 65, 6, 'Parathas', 'assets/food/photo-updates/cabbage-paratha.png'],
         [47, 'Moong Daal Chilla', 'Savory moong dal pancake with mild spices.', 65, 6, 'Parathas', 'assets/food/generated/uttapam-realistic.png'],
-        [29, 'Plain Paratha', 'Simple layered wheat flatbread.', 20, 6, 'Parathas', 'assets/food/generated/plain-paratha-realistic.png'],
-        [30, 'Poha', 'Flattened rice seasoned with spices.', 30, 7, 'Snacks', 'assets/food/generated/poha-realistic.png'],
+        [29, 'Plain Paratha', 'Simple layered wheat flatbread.', 20, 6, 'Parathas', 'assets/food/photo-updates/plain-paratha.png'],
+        [30, 'Poha', 'Flattened rice seasoned with spices.', 45, 7, 'Snacks', 'assets/food/generated/poha-realistic.png'],
         [31, 'Poha Usal', 'Poha served with spicy bean curry.', 40, 7, 'Snacks', 'assets/food/generated/poha-usal-realistic.png'],
-        [32, 'Upma', 'Savory semolina porridge.', 30, 7, 'Snacks', 'assets/food/generated/upma-realistic.png'],
+        [32, 'Upma', 'Savory semolina porridge.', 45, 7, 'Snacks', 'assets/food/generated/upma-realistic.png'],
         [33, 'Uttapam', 'Thick rice pancake with toppings.', 60, 7, 'Snacks', 'assets/food/generated/uttapam-realistic.png'],
         [34, 'Dhokla (Half)', 'Steamed gram flour cake (4 pieces).', 40, 7, 'Snacks', 'assets/food/dhokla.jpeg'],
         [35, 'Dhokla (Full)', 'Steamed gram flour cake (8 pieces).', 70, 7, 'Snacks', 'assets/food/dhokla.jpeg'],
         [36, 'Pav', 'Single bread bun.', 5, 7, 'Snacks', 'assets/food/generated/pav-realistic.png'],
         [37, 'Pav Bhaji', 'Spiced vegetable mash with buns.', 150, 7, 'Snacks', 'assets/food/generated/pav-bhaji-realistic.png'],
-        [38, 'Misal Pav', 'Spicy sprout curry topped with farsan, served with pav.', 80, 7, 'Snacks', 'assets/food/misal-pav.png'],
-        [39, 'Wada Usal Pav', 'Wada served with spicy sprout curry and pav.', 80, 7, 'Snacks', 'assets/food/generated/wada-usal-pav-realistic.png'],
-        [40, 'Chole Puri', 'Spicy chickpeas served with 4 fluffy fried puris.', 110, 7, 'Snacks', 'assets/food/generated/chole-puri-realistic.png'],
+        [40, 'Chole Puri', 'Spicy chickpeas served with 4 fluffy fried puris.', 130, 7, 'Snacks', 'assets/food/generated/chole-puri-realistic.png'],
         [41, 'Chole Bhature', 'Spicy chickpeas served with 2 large bhaturas.', 150, 7, 'Snacks', 'assets/food/generated/chole-bhature-realistic.png'],
-        [42, 'Chole Plate', 'A plate of spicy chickpeas (Chole only).', 80, 7, 'Snacks', 'assets/food/generated/chole-plate-realistic.png'],
+        [42, 'Chole Plate', 'A plate of spicy chickpeas (Chole only).', 90, 7, 'Snacks', 'assets/food/generated/chole-plate-realistic.png'],
     ];
 
     return array_map(fn($item) => [

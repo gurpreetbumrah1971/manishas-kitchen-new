@@ -16,66 +16,85 @@ type MenuItemSeed = {
   image: string;
 };
 
+const photoUpdateUrl = (filename: string) => `/food/photo-updates/${filename}.png`;
+
 const categories: CategorySeed[] = [
   { name: 'Beverages', image: '/food/iced-tea.png' },
   { name: 'Biryanis', image: generatedMenuAssetUrl('Veg Biryani') },
-  { name: 'Egg Dishes', image: generatedMenuAssetUrl('Egg Omelet + 2 Pav (Single)') },
+  { name: 'Egg Dishes', image: generatedMenuAssetUrl('Single Egg Omelet + 2 Butter Pav') },
   { name: 'Frankies', image: generatedMenuAssetUrl('Paneer Frankie') },
-  { name: 'Pakodas', image: generatedMenuAssetUrl('Onion Pakoda') },
+  { name: 'Pakodas', image: photoUpdateUrl('onion-pakoda') },
   { name: 'Parathas', image: generatedMenuAssetUrl('Aloo Paratha') },
   { name: 'Snacks', image: '/food/poha.png' },
   { name: 'Custom', image: generatedMenuAssetUrl('Custom Party Box') },
 ];
 
 const menuItems: MenuItemSeed[] = [
-  { name: 'Tea', description: 'Hot traditional Indian masala chai.', price: 15, categoryName: 'Beverages', isVeg: true, image: '/food/tea-realistic.png' },
-  { name: 'Hot Coffee', description: 'Freshly brewed hot coffee.', price: 30, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Hot Coffee') },
-  { name: 'Chaas', description: 'Refreshing spiced buttermilk.', price: 20, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Chaas') },
-  { name: 'Nimbu Pani', description: 'Classic fresh lime water.', price: 20, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Nimbu Pani') },
+  { name: 'Tea', description: 'Hot traditional Indian masala chai.', price: 25, categoryName: 'Beverages', isVeg: true, image: '/food/tea-realistic.png' },
+  { name: 'Hot Coffee', description: 'Freshly brewed hot coffee.', price: 35, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Hot Coffee') },
+  { name: 'Chaas', description: 'Refreshing spiced buttermilk.', price: 30, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Chaas') },
+  { name: 'Nimbu Pani', description: 'Classic fresh lime water.', price: 25, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Nimbu Pani') },
   { name: 'Lemon Tea', description: 'Refreshing hot lemon tea.', price: 25, categoryName: 'Beverages', isVeg: true, image: '/food/lemon-tea.png' },
-  { name: 'Green Tea', description: 'Healthy and soothing hot green tea.', price: 25, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Green Tea') },
-  { name: 'Iced Tea', description: 'Chilled lemon infused iced tea.', price: 40, categoryName: 'Beverages', isVeg: true, image: '/food/iced-tea.png' },
+  { name: 'Green Tea', description: 'Healthy and soothing hot green tea.', price: 30, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Green Tea') },
+  { name: 'Iced Tea', description: 'Chilled lemon infused iced tea.', price: 50, categoryName: 'Beverages', isVeg: true, image: '/food/iced-tea.png' },
   { name: 'Watermelon Juice', description: 'Freshly squeezed watermelon juice.', price: 50, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Watermelon Juice') },
   { name: 'Cold Coffee', description: 'Chilled creamy cold coffee.', price: 60, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Cold Coffee') },
   { name: 'Chikoo Milkshake', description: 'Thick and creamy sapota shake.', price: 60, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Chikoo Milkshake') },
   { name: 'Chocolate Milkshake', description: 'Rich and indulgent chocolate shake.', price: 90, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Chocolate Milkshake') },
   { name: 'Mango Milkshake', description: 'Creamy shake made with fresh mangoes.', price: 120, categoryName: 'Beverages', isVeg: true, image: generatedMenuAssetUrl('Mango Milkshake') },
   { name: 'Veg Biryani', description: 'Fragrant rice layered with spiced vegetables.', price: 140, categoryName: 'Biryanis', isVeg: true, image: generatedMenuAssetUrl('Veg Biryani') },
-  { name: 'Egg Biryani', description: 'Fragrant rice layered with masala eggs.', price: 160, categoryName: 'Biryanis', isVeg: false, image: generatedMenuAssetUrl('Egg Biryani') },
-  { name: 'Chicken Dum Biryani', description: 'Slow-cooked dum biryani with tender chicken and aromatic rice.', price: 225, categoryName: 'Biryanis', isVeg: false, image: generatedMenuAssetUrl('Chicken Dum Biryani') },
-  { name: 'Paneer Biryani', description: 'Aromatic biryani layered with spiced paneer and basmati rice.', price: 225, categoryName: 'Biryanis', isVeg: true, image: generatedMenuAssetUrl('Paneer Biryani') },
-  { name: 'Egg Burji + 2 Pav (Single)', description: 'Spiced scrambled eggs served with 2 pav.', price: 40, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Egg Burji + 2 Pav (Single)') },
-  { name: 'Egg Burji + 2 Pav (Double)', description: 'Double portion spiced scrambled eggs with 2 pav.', price: 80, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Egg Burji + 2 Pav (Double)') },
-  { name: 'Egg Omelet + 2 Pav (Single)', description: 'Classic spiced omelet served with 2 pav.', price: 40, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Egg Omelet + 2 Pav (Single)') },
-  { name: 'Egg Omelet + 2 Pav (Double)', description: 'Double portion spiced omelet with 2 pav.', price: 80, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Egg Omelet + 2 Pav (Double)') },
-  { name: 'Aloo Frankie', description: 'Soft roll filled with spiced potato and chutney.', price: 60, categoryName: 'Frankies', isVeg: true, image: generatedMenuAssetUrl('Aloo Frankie') },
-  { name: 'Paneer Frankie', description: 'Soft roll filled with spiced paneer and onions.', price: 90, categoryName: 'Frankies', isVeg: true, image: generatedMenuAssetUrl('Paneer Frankie') },
-  { name: 'Wada', description: 'Single spicy potato fritter.', price: 15, categoryName: 'Pakodas', isVeg: true, image: generatedMenuAssetUrl('Wada') },
-  { name: 'Wada Pav', description: 'Spicy potato fritter in a bun.', price: 20, categoryName: 'Pakodas', isVeg: true, image: generatedMenuAssetUrl('Wada Pav') },
-  { name: 'Onion Pakoda', description: 'Crisp onion fritters with house masala.', price: 50, categoryName: 'Pakodas', isVeg: true, image: generatedMenuAssetUrl('Onion Pakoda') },
-  { name: 'Mix Pakoda', description: 'Assorted vegetable fritters fried crisp.', price: 70, categoryName: 'Pakodas', isVeg: true, image: generatedMenuAssetUrl('Mix Pakoda') },
-  { name: 'Aloo Paratha', description: 'Wheat flatbread stuffed with spiced potatoes.', price: 60, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Aloo Paratha') },
-  { name: 'Gobi Paratha', description: 'Wheat flatbread stuffed with spiced cauliflower.', price: 60, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Gobi Paratha') },
+  { name: 'Egg Biryani', description: 'Fragrant rice layered with masala eggs.', price: 160, categoryName: 'Biryanis', isVeg: false, image: photoUpdateUrl('egg-biryani') },
+  { name: 'Chicken Dum Biryani', description: 'Slow-cooked dum biryani with tender chicken and aromatic rice.', price: 225, categoryName: 'Biryanis', isVeg: false, image: photoUpdateUrl('chicken-biryani') },
+  { name: 'Paneer Biryani', description: 'Aromatic biryani layered with spiced paneer and basmati rice.', price: 225, categoryName: 'Biryanis', isVeg: true, image: photoUpdateUrl('paneer-biryani') },
+  { name: 'Single Egg Burjee + 2 Butter Pav', description: 'Spiced scrambled egg served with 2 butter pav.', price: 70, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Single Egg Burjee + 2 Butter Pav') },
+  { name: 'Single Egg Omelet + 2 Butter Pav', description: 'Classic spiced omelet served with 2 butter pav.', price: 70, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Single Egg Omelet + 2 Butter Pav') },
+  { name: 'Double Egg Burjee + 4 Butter Pav', description: 'Double portion spiced scrambled eggs served with 4 butter pav.', price: 120, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Double Egg Burjee + 4 Butter Pav') },
+  { name: 'Double Omelet + 4 Butter Pav', description: 'Double portion spiced omelet served with 4 butter pav.', price: 120, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Double Omelet + 4 Butter Pav') },
+  { name: 'Boiled Egg (1 Egg)', description: 'One boiled egg served fresh.', price: 25, categoryName: 'Egg Dishes', isVeg: false, image: generatedMenuAssetUrl('Boiled Egg (1 Egg)') },
+  { name: 'Extra Pav', description: 'Additional pav served with egg dishes.', price: 7, categoryName: 'Egg Dishes', isVeg: true, image: generatedMenuAssetUrl('Pav') },
+  { name: 'Extra Butter Pav', description: 'Additional butter pav served with egg dishes.', price: 15, categoryName: 'Egg Dishes', isVeg: true, image: generatedMenuAssetUrl('Butter Pav') },
+  { name: 'Aloo Frankie', description: 'Soft roll filled with spiced potato and chutney.', price: 70, categoryName: 'Frankies', isVeg: true, image: generatedMenuAssetUrl('Aloo Frankie') },
+  { name: 'Paneer Frankie', description: 'Soft roll filled with spiced paneer and onions.', price: 130, categoryName: 'Frankies', isVeg: true, image: generatedMenuAssetUrl('Paneer Frankie') },
+  { name: 'Chicken Frankie', description: 'Soft roll filled with spiced chicken and onions.', price: 130, categoryName: 'Frankies', isVeg: false, image: photoUpdateUrl('chicken-kheema-paratha') },
+  { name: 'Wada', description: 'Single spicy potato fritter.', price: 20, categoryName: 'Snacks', isVeg: true, image: photoUpdateUrl('wada') },
+  { name: 'Wada Pav', description: 'Spicy potato fritter in a bun.', price: 25, categoryName: 'Snacks', isVeg: true, image: photoUpdateUrl('wada-pav') },
+  { name: 'Onion Pakoda', description: 'Crisp onion fritters with house masala.', price: 65, categoryName: 'Pakodas', isVeg: true, image: photoUpdateUrl('onion-pakoda') },
+  { name: 'Paneer Pakoda', description: 'Crisp paneer fritters with house masala.', price: 100, categoryName: 'Pakodas', isVeg: true, image: generatedMenuAssetUrl('Paneer Paratha') },
+  { name: 'Moong Dal Pakoda', description: 'Crisp moong dal fritters with house masala.', price: 65, categoryName: 'Pakodas', isVeg: true, image: photoUpdateUrl('moong-dal-pakoda') },
+  { name: 'Chana Daal Pakoda', description: 'Crisp chana dal fritters with house masala.', price: 65, categoryName: 'Pakodas', isVeg: true, image: photoUpdateUrl('chana-dal-pakoda') },
+  { name: 'Aloo Paratha', description: 'Wheat flatbread stuffed with spiced potatoes.', price: 65, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Aloo Paratha') },
+  { name: 'Gobi Paratha', description: 'Wheat flatbread stuffed with spiced cauliflower.', price: 65, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('gobi-paratha') },
   { name: 'Paneer Paratha', description: 'Wheat flatbread stuffed with spiced cottage cheese.', price: 100, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Paneer Paratha') },
-  { name: 'Methi Paratha', description: 'Wheat flatbread with fresh fenugreek leaves.', price: 60, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Methi Paratha') },
-  { name: 'Palak Paratha', description: 'Wheat flatbread layered with spiced spinach.', price: 60, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Palak Paratha') },
-  { name: 'Cabbage Paratha', description: 'Wheat flatbread stuffed with seasoned cabbage.', price: 60, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Cabbage Paratha') },
+  { name: 'Methi Paratha', description: 'Wheat flatbread with fresh fenugreek leaves.', price: 65, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('methi-paratha') },
+  { name: 'Palak Paratha', description: 'Wheat flatbread layered with spiced spinach.', price: 65, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('palak-paratha') },
+  { name: 'Cabbage Paratha', description: 'Wheat flatbread stuffed with seasoned cabbage.', price: 65, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('cabbage-paratha') },
   { name: 'Moong Daal Chilla', description: 'Savory moong dal pancake with mild spices.', price: 65, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Moong Daal Chilla') },
-  { name: 'Plain Paratha', description: 'Simple layered wheat flatbread.', price: 20, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Plain Paratha') },
-  { name: 'Poha', description: 'Flattened rice seasoned with spices.', price: 30, categoryName: 'Snacks', isVeg: true, image: '/food/poha.png' },
+  { name: 'Plain Paratha', description: 'Simple layered wheat flatbread.', price: 20, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('plain-paratha') },
+  { name: 'Poha', description: 'Flattened rice seasoned with spices.', price: 45, categoryName: 'Snacks', isVeg: true, image: '/food/poha.png' },
   { name: 'Poha Usal', description: 'Poha served with spicy bean curry.', price: 40, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Poha Usal') },
-  { name: 'Upma', description: 'Savory semolina porridge.', price: 30, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Upma') },
+  { name: 'Upma', description: 'Savory semolina porridge.', price: 45, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Upma') },
   { name: 'Uttapam', description: 'Thick rice pancake with toppings.', price: 60, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Uttapam') },
   { name: 'Dhokla (Half)', description: 'Steamed gram flour cake (4 pieces).', price: 40, categoryName: 'Snacks', isVeg: true, image: '/food/dhokla.jpeg' },
   { name: 'Dhokla (Full)', description: 'Steamed gram flour cake (8 pieces).', price: 70, categoryName: 'Snacks', isVeg: true, image: '/food/dhokla.jpeg' },
   { name: 'Pav', description: 'Single bread bun.', price: 5, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Pav') },
   { name: 'Pav Bhaji', description: 'Spiced vegetable mash with buns.', price: 150, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Pav Bhaji') },
-  { name: 'Misal Pav', description: 'Spicy sprout curry topped with farsan, served with pav.', price: 80, categoryName: 'Snacks', isVeg: true, image: '/food/misal-pav.png' },
-  { name: 'Wada Usal Pav', description: 'Wada served with spicy sprout curry and pav.', price: 80, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Wada Usal Pav') },
-  { name: 'Chole Puri', description: 'Spicy chickpeas served with 4 fluffy fried puris.', price: 110, categoryName: 'Snacks', isVeg: true, image: '/food/chole-puri.png' },
+  { name: 'Chole Puri', description: 'Spicy chickpeas served with 4 fluffy fried puris.', price: 130, categoryName: 'Snacks', isVeg: true, image: '/food/chole-puri.png' },
   { name: 'Chole Bhature', description: 'Spicy chickpeas served with 2 large bhaturas.', price: 150, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Chole Bhature') },
-  { name: 'Chole Plate', description: 'A plate of spicy chickpeas (Chole only).', price: 80, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Chole Plate') },
+  { name: 'Chole Plate', description: 'A plate of spicy chickpeas (Chole only).', price: 90, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Chole Plate') },
   { name: 'Custom Party Box', description: 'Your selection of snacks and sweets.', price: 999, categoryName: 'Custom', isVeg: true, image: generatedMenuAssetUrl('Custom Party Box') },
+];
+
+const retiredMenuItemNames = [
+  'Misal Pav',
+  'Wada Usal Pav',
+  'Veg Biryani',
+  'Egg Biryani',
+  'Chicken Dum Biryani',
+  'Paneer Biryani',
+  'Custom Party Box',
+  'Bhatura',
+  'Butter Pav',
+  'Puri Plate',
 ];
 
 async function seedAdmin() {
@@ -139,10 +158,18 @@ async function syncMenuItems(categoryByName: Map<string, { id: number }>) {
   }
 }
 
+async function retireMenuItems() {
+  await prisma.foodItem.updateMany({
+    where: { name: { in: retiredMenuItemNames } },
+    data: { isAvailable: false },
+  });
+}
+
 async function main() {
   await seedAdmin();
   const categoryByName = await syncCategories();
   await syncMenuItems(categoryByName);
+  await retireMenuItems();
 
   console.log('Seed data synchronized successfully');
 }
