@@ -431,9 +431,9 @@ const AdminDashboard = () => {
     const updatingAction = updatingOrderActionById[order.id];
 
     return (
-      <div style={{ display: 'grid', gap: '8px', minWidth: '230px' }}>
+      <div className="admin-order-actions" style={{ display: 'grid', gap: '8px', minWidth: '230px' }}>
         {statusLabel === 'PENDING' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(110px, 1fr))', gap: '6px' }}>
+          <div className="admin-action-pair" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(110px, 1fr))', gap: '6px' }}>
             <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'CONFIRM')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
               <MessageCircle size={15} /> {updatingAction === 'CONFIRM' ? 'Confirming...' : 'Confirm Order'}
             </button>
@@ -443,7 +443,7 @@ const AdminDashboard = () => {
           </div>
         )}
         {statusLabel === 'CONFIRMED' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '72px minmax(110px, 1fr)', gap: '6px', alignItems: 'center' }}>
+          <div className="admin-prep-action" style={{ display: 'grid', gridTemplateColumns: '72px minmax(110px, 1fr)', gap: '6px', alignItems: 'center' }}>
             <input
               type="number"
               min="1"
@@ -617,7 +617,7 @@ const AdminDashboard = () => {
     if (!selectedOrder) return null;
 
     return (
-      <div style={{
+      <div className="admin-modal-overlay" style={{
         position: 'fixed',
         top: 0,
         left: 0,
@@ -630,13 +630,13 @@ const AdminDashboard = () => {
         zIndex: 1001,
         padding: '1rem'
       }}>
-        <div className="card" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem' }}>
+        <div className="card admin-order-modal" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #eee', paddingBottom: '1rem' }}>
             <h2 style={{ fontSize: '1.5rem' }}>Order Details: {selectedOrder.orderNumber}</h2>
             <button onClick={() => setSelectedOrder(null)} style={{ background: 'none', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+          <div className="admin-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
             <div>
               <p style={{ color: '#666', fontSize: '0.8rem', marginBottom: '2px' }}>Customer Name</p>
               <p style={{ fontWeight: '600' }}>{selectedOrder.customerName}</p>
@@ -681,7 +681,7 @@ const AdminDashboard = () => {
           <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Items</h3>
           <div style={{ backgroundColor: '#f9f9f9', borderRadius: '8px', padding: '1rem' }}>
             {selectedOrder.orderItems.map((item: any) => (
-              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
+              <div className="admin-modal-item-row" key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                   <img src={item.foodItem.image} alt={item.foodItem.name} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
                   <div>
@@ -708,7 +708,7 @@ const AdminDashboard = () => {
             </div>
           </div>
           
-          <div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+          <div className="admin-modal-footer" style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
             <button 
               onClick={() => window.print()} 
               style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', cursor: 'pointer' }}
@@ -731,13 +731,13 @@ const AdminDashboard = () => {
   const renderOrdersTable = (limit?: number) => {
     const displayOrders = limit ? orders.slice(0, limit) : orders;
     return (
-      <div className="card">
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="card admin-panel-card">
+        <div className="admin-card-header" style={{ padding: '1.5rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3>{limit ? 'Recent Orders' : 'All Orders'}</h3>
           {limit && <button onClick={() => navigate('/admin/orders')} style={{ color: 'var(--primary-color)', fontWeight: '600', background: 'none' }}>View All</button>}
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
+          <table className="admin-table admin-orders-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ backgroundColor: '#f9f9f9' }}>
                 <th style={{ padding: '1rem' }}>Order ID</th>
@@ -751,7 +751,7 @@ const AdminDashboard = () => {
             <tbody>
               {displayOrders.map(order => (
                 <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '1rem' }}>
+                  <td data-label="Order ID" style={{ padding: '1rem' }}>
                     <button 
                       onClick={() => setSelectedOrder(order)} 
                       style={{ color: 'var(--primary-color)', fontWeight: 'bold', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
@@ -759,7 +759,7 @@ const AdminDashboard = () => {
                       {order.orderNumber}
                     </button>
                   </td>
-                  <td style={{ padding: '1rem' }}>
+                  <td data-label="Customer" style={{ padding: '1rem' }}>
                     {order.customerName}<br/>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <small style={{ color: '#666' }}>{order.whatsappNumber || order.mobileNumber}</small>
@@ -775,7 +775,7 @@ const AdminDashboard = () => {
                   </td>
                   <td style={{ padding: '1rem' }}>₹{order.grandTotal}</td>
                   <td style={{ padding: '1rem' }}><span style={{ fontSize: '0.8rem', padding: '2px 8px', borderRadius: '12px', backgroundColor: '#eee' }}>{order.orderType}</span></td>
-                  <td style={{ padding: '1rem' }}>
+                  <td data-label="Status" style={{ padding: '1rem' }}>
                     <span style={{
                       fontSize: '0.8rem',
                       padding: '4px 10px',
@@ -786,7 +786,7 @@ const AdminDashboard = () => {
                       {orderStatusLabel(order)}
                     </span>
                   </td>
-                  <td style={{ padding: '1rem' }}>
+                  <td data-label="Actions" style={{ padding: '1rem' }}>
                     {renderOrderActions(order)}
                   </td>
                 </tr>
@@ -802,11 +802,11 @@ const AdminDashboard = () => {
   if (loading) return <div className="container" style={{ padding: '2rem' }}>Loading Dashboard...</div>;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
+    <div className="admin-dashboard-shell" style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
       {/* Sidebar */}
-      <div style={{ width: '260px', backgroundColor: '#fff', borderRight: '1px solid #ddd', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div className="admin-sidebar" style={{ width: '260px', backgroundColor: '#fff', borderRight: '1px solid #ddd', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--primary-color)', padding: '0 1rem' }}>Admin Panel</h2>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <nav className="admin-nav" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {adminSections.map(section => {
             const Icon = section.icon;
             return (
@@ -816,15 +816,15 @@ const AdminDashboard = () => {
             );
           })}
         </nav>
-        <button onClick={logout} style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 1rem', borderRadius: '8px', color: '#f44336', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <button className="admin-logout" onClick={logout} style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 1rem', borderRadius: '8px', color: '#f44336', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}>
           <LogOut size={20} /> Logout
         </button>
       </div>
 
       {/* Main Content */}
-      <div style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+      <div className="admin-main" style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
         {(!ringtoneEnabled || ringtoneBlocked || unconfirmedPendingOrders.length > 0) && (
-          <div className="card" style={{
+          <div className="card admin-alert-card" style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -857,10 +857,10 @@ const AdminDashboard = () => {
 
         {activeTab === 'overview' && (
           <>
-            <h1 style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Dashboard Overview</h1>
+            <h1 className="admin-page-title" style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Dashboard Overview</h1>
             
             {/* Stats Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
               <div className="card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ padding: '10px', backgroundColor: '#e3f2fd', borderRadius: '8px' }}><TrendingUp color="#1976d2" /></div>
                 <div><p style={{ color: '#666', fontSize: '0.8rem' }}>Total Revenue</p><h3 style={{ fontSize: '1.4rem' }}>₹{totalRevenue}</h3></div>
@@ -880,7 +880,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Charts */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="admin-charts-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
               <div className="card" style={{ padding: '1.5rem' }}>
                 <h3 style={{ marginBottom: '1.5rem' }}>Weekly Sales</h3>
                 <Bar data={barData} />
@@ -897,15 +897,15 @@ const AdminDashboard = () => {
 
         {activeTab === 'orders' && (
           <>
-            <h1 style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Order Management</h1>
+            <h1 className="admin-page-title" style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Order Management</h1>
             {renderOrdersTable()}
           </>
         )}
 
         {activeTab === 'menu' && (
           <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: '1.8rem' }}>Menu Management</h1>
+            <div className="admin-page-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '1rem', flexWrap: 'wrap' }}>
+              <h1 className="admin-page-title" style={{ fontSize: '1.8rem' }}>Menu Management</h1>
               <button onClick={openAddMenuItem} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Plus size={18} /> Add Item
               </button>
@@ -998,8 +998,8 @@ const AdminDashboard = () => {
 
             <div className="card">
               <div style={{ padding: '1.5rem', borderBottom: '1px solid #eee' }}><h3>Items</h3></div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
+                <table className="admin-table admin-menu-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f9f9f9' }}>
                       <th style={{ padding: '1rem' }}>Item</th>
@@ -1012,7 +1012,7 @@ const AdminDashboard = () => {
                   <tbody>
                     {visibleMenuItems.map(item => (
                       <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
-                        <td style={{ padding: '1rem' }}>
+                        <td data-label="Item" style={{ padding: '1rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <img src={item.image} alt={item.name} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
                             <div>
@@ -1021,7 +1021,7 @@ const AdminDashboard = () => {
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '1rem' }}>{item.category?.name}</td>
+                        <td data-label="Category" style={{ padding: '1rem' }}>{item.category?.name}</td>
                         <td style={{ padding: '1rem' }}>₹{item.price}</td>
                         <td style={{ padding: '1rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1038,7 +1038,7 @@ const AdminDashboard = () => {
                             </label>
                           </div>
                         </td>
-                        <td style={{ padding: '1rem' }}>
+                        <td data-label="Actions" style={{ padding: '1rem' }}>
                           <div style={{ display: 'flex', gap: '8px' }}>
                             <button onClick={() => openEditMenuItem(item)} title="Edit item" style={{ padding: '8px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', cursor: 'pointer' }}>
                               <Pencil size={16} />
@@ -1064,7 +1064,7 @@ const AdminDashboard = () => {
 
         {activeTab === 'customers' && (
           <>
-            <h1 style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Customer LMS</h1>
+            <h1 className="admin-page-title" style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Customer LMS</h1>
             <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                 <div>
@@ -1124,8 +1124,8 @@ const AdminDashboard = () => {
                 </div>
                 <span style={{ color: '#666', fontSize: '0.9rem' }}>{customers.length} customers</span>
               </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
+                <table className="admin-table admin-customers-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f9f9f9' }}>
                       <th style={{ padding: '1rem' }}>
@@ -1145,8 +1145,8 @@ const AdminDashboard = () => {
                   <tbody>
                     {customers.map((customer: any) => (
                       <React.Fragment key={customer.number}>
-                        <tr style={{ borderBottom: '1px solid #eee' }}>
-                          <td style={{ padding: '1rem' }}>
+                        <tr className="admin-customer-row" style={{ borderBottom: '1px solid #eee' }}>
+                          <td data-label="Select" style={{ padding: '1rem' }}>
                             <input type="checkbox" checked={selectedCustomerNumbers.includes(customer.number)} onChange={() => toggleCustomerSelection(customer.number)} />
                           </td>
                           <td style={{ padding: '1rem', fontWeight: '600' }}>{customer.name}</td>
@@ -1170,13 +1170,13 @@ const AdminDashboard = () => {
                             </button>
                           </td>
                         </tr>
-                        <tr>
-                          <td colSpan={10} style={{ padding: '0 1rem 1rem', backgroundColor: '#fcfcfc' }}>
+                        <tr className="admin-history-row">
+                          <td className="admin-history-cell" colSpan={10} style={{ padding: '0 1rem 1rem', backgroundColor: '#fcfcfc' }}>
                             <details>
                               <summary style={{ cursor: 'pointer', color: 'var(--primary-color)', fontWeight: '600', padding: '0.75rem 0' }}>Order History</summary>
                               <div style={{ display: 'grid', gap: '0.75rem' }}>
                                 {customer.orders.map((order: any) => (
-                                  <div key={order.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr 1fr 1fr', gap: '1rem', padding: '0.75rem', border: '1px solid #eee', borderRadius: '8px', backgroundColor: '#fff' }}>
+                                  <div className="admin-history-order" key={order.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr 1fr 1fr', gap: '1rem', padding: '0.75rem', border: '1px solid #eee', borderRadius: '8px', backgroundColor: '#fff' }}>
                                     <button onClick={() => setSelectedOrder(order)} style={{ color: 'var(--primary-color)', fontWeight: '700', background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
                                       {order.orderNumber}
                                     </button>
@@ -1207,7 +1207,7 @@ const AdminDashboard = () => {
 
         {activeTab === 'settings' && (
           <>
-            <h1 style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Settings</h1>
+            <h1 className="admin-page-title" style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Settings</h1>
             <div className="card" style={{ padding: '2rem' }}>
               <h3>General Settings</h3>
               <p style={{ color: '#666', marginTop: '1rem' }}>Settings module is currently under development. Here you will be able to manage:</p>
