@@ -596,7 +596,7 @@ function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl, session }) 
       </div>
       <div class="thank-you-address">
         <strong>Manisha's Kitchen</strong>
-        <span>Shop No. 02, Sai Proviso Krutika CHS, plot 87, sector 17, Koparkhairane 400709</span>
+        <span>Shop No. 02, Sai Proviso Krutika CHS, Plot 87, Sector 17,<br>Koparkhairane 400709</span>
         <span>Near Tej Vedant hospital</span>
       </div>
       <a class="btn primary" href="${escapeHtml(whatsappUrl)}" target="_blank" rel="noopener">Send WhatsApp Confirmation</a>
