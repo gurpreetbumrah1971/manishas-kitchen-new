@@ -857,6 +857,7 @@ function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl, session }) 
   const section = document.querySelector('.checkout-page .section.compact');
   if (!section) return;
 
+  const paymentQrSrc = qrSrc || '/assets/payment/mk-qrcode.jpg';
   section.innerHTML = `
     <div class="success-panel checkout-thank-you">
       <h1>Thank you for your order!</h1>
@@ -866,7 +867,7 @@ function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl, session }) 
         <strong>${escapeHtml(total)}</strong>
       </div>
       <div class="payment-box thank-you-payment">
-        <img class="qr" src="${escapeHtml(qrSrc)}" alt="UPI payment QR code">
+        <img class="qr" src="${escapeHtml(paymentQrSrc)}" alt="UPI payment QR code">
         <p>Scan QR / use UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
         <p>Order ID: <strong>${escapeHtml(order.orderNumber || order.order_number || '')}</strong></p>
       </div>
@@ -972,7 +973,7 @@ document.querySelector('[data-checkout-form]')?.addEventListener('submit', async
       }
 
       const orderNumber = result.orderNumber || result.order_number || `ORD-${Date.now()}`;
-      const qrSrc = document.querySelector('[data-payment-qr]')?.src || 'assets/payment/mk-qrcode.jpg';
+      const qrSrc = '/assets/payment/mk-qrcode.jpg';
       const whatsappUrl = `https://wa.me/${normalizedNumber}?text=${encodeURIComponent([
         'Order Confirmed!',
         `Order ID: ${orderNumber}`,
