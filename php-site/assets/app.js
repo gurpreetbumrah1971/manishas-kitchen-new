@@ -1,6 +1,6 @@
 const CART_KEY = 'phpCart';
 const ORDER_SESSION_KEY = 'mkOrderSession';
-const INDEPENDENCE_BANNER_SEEN_KEY = 'mkIndependenceBannerSeen';
+const INDEPENDENCE_BANNER_SEEN_KEY = 'mkIndependenceBannerSeenV2';
 const DISCOUNT_TIERS = {
   400: 0.10,
   800: 0.15,
@@ -193,7 +193,12 @@ function updateDiscountNudge(subtotal) {
 
 function shouldShowIndependenceBanner() {
   const path = window.location.pathname.toLowerCase();
-  const isMenuPage = path.endsWith('/menu.html') || path.endsWith('/menu.php');
+  const isMenuPage = document.body.classList.contains('menu-page')
+    || path.endsWith('/menu.html')
+    || path.endsWith('/menu.php')
+    || path.endsWith('/index.html')
+    || path === '/'
+    || path === '';
   if (!isMenuPage) return false;
 
   try {
