@@ -748,7 +748,7 @@ textarea {
 .delivery-nudge {
     color: var(--primary);
     font-size: 0.82rem;
-    font-weight: 800;
+    font-weight: 400;
 }
 
 .total-row.grand {
