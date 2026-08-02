@@ -126,11 +126,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 <p>Scan QR / use UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
                 <p>Order ID: <strong><?= e($successOrder['order_number']) ?></strong></p>
             </div>
-            <div class="thank-you-address">
-                <strong>Manisha's Kitchen</strong>
-                <span>Shop No. 02, Sai Proviso Krutika CHS, Plot 87, Sector 17,<br>Koparkhairane 400709</span>
-                <span>Near Tej Vedant hospital</span>
-            </div>
             <a class="btn primary" href="index.php">Back Home</a>
         </div>
     <?php else: ?>
