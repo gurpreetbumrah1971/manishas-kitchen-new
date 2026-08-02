@@ -28,7 +28,7 @@ import {
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import API_URL from '../utils/api';
-import { buildCustomerOfferMessage, buildOrderConfirmationMessage, buildOrderDeliveryMessage, openWhatsAppMessage, whatsappUrl } from '../utils/whatsapp';
+import { buildCustomerOfferMessage, openWhatsAppMessage } from '../utils/whatsapp';
 
 ChartJS.register(
   CategoryScale,
@@ -392,24 +392,7 @@ const AdminDashboard = () => {
     return { backgroundColor: '#ffebee', color: '#c62828' };
   };
 
-  const openOrderWhatsApp = (order: any, action: string, popup?: Window | null) => {
-    const message = action === 'DELIVERED'
-      ? buildOrderDeliveryMessage(order)
-      : buildOrderConfirmationMessage(order);
-    const url = whatsappUrl(order.whatsappNumber || order.mobileNumber, message);
-    if (!url) {
-      popup?.close();
-      return;
-    }
-    if (popup && !popup.closed) {
-      popup.location.href = url;
-      return;
-    }
-    window.open(url, '_blank');
-  };
-
-  const updateOrderAction = async (order: any, action: string, options: { openWhatsApp?: boolean } = {}) => {
-    const popup = options.openWhatsApp ? window.open('', '_blank') : null;
+  const updateOrderAction = async (order: any, action: string) => {
     setUpdatingOrderActionById(current => ({ ...current, [order.id]: action }));
     try {
       const payload: any = { action };
@@ -426,12 +409,7 @@ const AdminDashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       replaceOrder(res.data);
-
-      if (options.openWhatsApp && (action === 'CONFIRM' || action === 'DELIVERED')) {
-        openOrderWhatsApp(res.data, action, popup);
-      }
     } catch (err: any) {
-      popup?.close();
       alert(err.response?.data?.error || 'Failed to update order');
     } finally {
       setUpdatingOrderActionById(current => {
@@ -450,7 +428,7 @@ const AdminDashboard = () => {
     return (
       <div style={{ display: 'grid', gap: '8px', minWidth: '230px' }}>
         {statusLabel === 'PENDING' && (
-          <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'CONFIRM', { openWhatsApp: true })} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
+          <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'CONFIRM')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
             <MessageCircle size={15} /> {updatingAction === 'CONFIRM' ? 'Confirming...' : 'Confirm Order'}
           </button>
         )}
@@ -481,7 +459,7 @@ const AdminDashboard = () => {
           </div>
         )}
         {order.status === 'COMPLETED' && (
-          <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'DELIVERED', { openWhatsApp: true })} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#2e7d32', color: '#fff', cursor: updatingAction ? 'wait' : 'pointer', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
+          <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'DELIVERED')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#2e7d32', color: '#fff', cursor: updatingAction ? 'wait' : 'pointer', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
             {updatingAction === 'DELIVERED' ? 'Updating...' : 'Delivered'}
           </button>
         )}
