@@ -433,6 +433,8 @@ function seed_data(PDO $pdo): void
         'Chicken Kheema Paratha' => 'assets/food/photo-updates/chicken-kheema-paratha.png',
         'Corn Cheese Paratha' => 'assets/food/photo-updates/corn-cheese-paratha.png',
         'Lorn Paratha' => 'assets/food/photo-updates/loki-paratha.png',
+        'Chicken Galouti Kebab' => 'assets/food/photo-updates/chicken-kheema-paratha.png',
+        'Chicken Shami Kebab' => 'assets/food/photo-updates/chicken-kheema-paratha.png',
         'Chole Puri' => 'assets/food/generated/chole-puri-realistic.png',
         'Chole Bhature' => 'assets/food/generated/chole-bhature-realistic.png',
         'Chole Plate' => 'assets/food/generated/chole-plate-realistic.png',
@@ -471,6 +473,7 @@ function seed_data(PDO $pdo): void
         ['Biryanis', 'assets/food/generated/custom-party-box-realistic.png'],
         ['Egg Dishes', 'assets/food/generated/egg-omelet-realistic.png'],
         ['Frankies', 'assets/food/generated/paneer-paratha-realistic.png'],
+        ['Kebabs', 'assets/food/photo-updates/chicken-kheema-paratha.png'],
         ['Pakodas', 'assets/food/generated/wada-realistic.png'],
         ['Parathas', 'assets/food/generated/aloo-paratha-realistic.png'],
         ['Snacks', 'assets/food/poha.png'],
@@ -517,6 +520,8 @@ function seed_data(PDO $pdo): void
         ['Aloo Frankie', 'Soft roll filled with spiced potato and chutney.', 70, 'Frankies', true, 'assets/food/generated/aloo-paratha-realistic.png'],
         ['Paneer Frankie', 'Soft roll filled with spiced paneer and onions.', 130, 'Frankies', true, 'assets/food/generated/paneer-paratha-realistic.png'],
         ['Chicken Frankie', 'Soft roll filled with spiced chicken and onions.', 130, 'Frankies', false, 'assets/food/photo-updates/chicken-kheema-paratha.png'],
+        ['Chicken Galouti Kebab', 'Tender minced chicken kebab with aromatic spices.', 195, 'Kebabs', false, 'assets/food/photo-updates/chicken-kheema-paratha.png'],
+        ['Chicken Shami Kebab', 'Spiced chicken and lentil kebab cooked until tender.', 195, 'Kebabs', false, 'assets/food/photo-updates/chicken-kheema-paratha.png'],
         ['Wada', 'Single spicy potato fritter.', 20, 'Snacks', true, 'assets/food/photo-updates/wada.png'],
         ['Wada Pav', 'Spicy potato fritter in a bun.', 25, 'Snacks', true, 'assets/food/photo-updates/wada-pav.png'],
         ['Onion Pakoda', 'Crisp onion fritters with house masala.', 65, 'Pakodas', true, 'assets/food/photo-updates/onion-pakoda.png'],
@@ -664,7 +669,7 @@ function retire_menu_items(PDO $pdo, array $names): void
 
 function retire_non_frontend_category_items(PDO $pdo): void
 {
-    $frontendCategories = ['Parathas', 'Frankies', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages'];
+    $frontendCategories = ['Parathas', 'Frankies', 'Kebabs', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages'];
     $placeholders = implode(',', array_fill(0, count($frontendCategories), '?'));
     $stmt = $pdo->prepare("
         UPDATE food_items
@@ -701,6 +706,8 @@ function sync_menu_categories(PDO $pdo, array $categoryIds): void
         'Aloo Frankie' => 'Frankies',
         'Paneer Frankie' => 'Frankies',
         'Chicken Frankie' => 'Frankies',
+        'Chicken Galouti Kebab' => 'Kebabs',
+        'Chicken Shami Kebab' => 'Kebabs',
         'Wada' => 'Snacks',
         'Wada Pav' => 'Snacks',
         'Paneer Pakoda' => 'Pakodas',

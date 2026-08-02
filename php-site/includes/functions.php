@@ -169,15 +169,16 @@ function fetch_categories(bool $admin = false): array
         SELECT c.*, COUNT(f.id) AS food_count
         FROM categories c
         LEFT JOIN food_items f ON $joinCondition
-        WHERE c.name IN ('Parathas', 'Frankies', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages')
+        WHERE c.name IN ('Parathas', 'Frankies', 'Kebabs', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages')
         GROUP BY c.id
         ORDER BY CASE c.name
             WHEN 'Parathas' THEN 1
             WHEN 'Frankies' THEN 2
-            WHEN 'Pakodas' THEN 3
-            WHEN 'Egg Dishes' THEN 4
-            WHEN 'Snacks' THEN 5
-            WHEN 'Beverages' THEN 6
+            WHEN 'Kebabs' THEN 3
+            WHEN 'Pakodas' THEN 4
+            WHEN 'Egg Dishes' THEN 5
+            WHEN 'Snacks' THEN 6
+            WHEN 'Beverages' THEN 7
             ELSE 99
         END
     ")->fetchAll();
@@ -198,7 +199,7 @@ function fetch_menu(?int $categoryId = null, bool $admin = false): array
         FROM food_items f
         JOIN categories c ON c.id = f.category_id
         WHERE 1 = 1
-          AND c.name IN (\'Parathas\', \'Frankies\', \'Pakodas\', \'Egg Dishes\', \'Snacks\', \'Beverages\')
+          AND c.name IN (\'Parathas\', \'Frankies\', \'Kebabs\', \'Pakodas\', \'Egg Dishes\', \'Snacks\', \'Beverages\')
     ';
     $params = [];
     if ($categoryId) {
@@ -219,10 +220,11 @@ function sort_menu_items(array $items): array
     $categoryOrder = [
         'Parathas' => 1,
         'Frankies' => 2,
-        'Pakodas' => 3,
-        'Egg Dishes' => 4,
-        'Snacks' => 5,
-        'Beverages' => 6,
+        'Kebabs' => 3,
+        'Pakodas' => 4,
+        'Egg Dishes' => 5,
+        'Snacks' => 6,
+        'Beverages' => 7,
     ];
     $order = [
         'Aloo Paratha' => 1,
@@ -237,6 +239,8 @@ function sort_menu_items(array $items): array
         'Chicken Kheema Paratha' => 10,
         'Corn Cheese Paratha' => 11,
         'Lorn Paratha' => 12,
+        'Chicken Galouti Kebab' => 1,
+        'Chicken Shami Kebab' => 2,
     ];
 
     usort($items, function (array $a, array $b) use ($categoryOrder, $order): int {
@@ -289,6 +293,7 @@ function sample_categories(): array
     return [
         ['id' => 6, 'name' => 'Parathas', 'image' => 'assets/food/generated/aloo-paratha-realistic.png', 'food_count' => 12],
         ['id' => 4, 'name' => 'Frankies', 'image' => 'assets/food/generated/paneer-paratha-realistic.png', 'food_count' => 3],
+        ['id' => 8, 'name' => 'Kebabs', 'image' => 'assets/food/photo-updates/chicken-kheema-paratha.png', 'food_count' => 2],
         ['id' => 5, 'name' => 'Pakodas', 'image' => 'assets/food/generated/wada-realistic.png', 'food_count' => 4],
         ['id' => 3, 'name' => 'Egg Dishes', 'image' => 'assets/food/generated/egg-omelet-realistic.png', 'food_count' => 7],
         ['id' => 7, 'name' => 'Snacks', 'image' => 'assets/food/poha.png', 'food_count' => 13],
@@ -343,6 +348,8 @@ function sample_menu(): array
         [64, 'Chicken Kheema Paratha', 'Wheat flatbread stuffed with spiced chicken kheema.', 100, 6, 'Parathas', 'assets/food/photo-updates/chicken-kheema-paratha.png', false],
         [65, 'Corn Cheese Paratha', 'Wheat flatbread stuffed with sweet corn and cheese.', 100, 6, 'Parathas', 'assets/food/photo-updates/corn-cheese-paratha.png'],
         [66, 'Lorn Paratha', 'Wheat flatbread stuffed with seasoned vegetables.', 65, 6, 'Parathas', 'assets/food/photo-updates/loki-paratha.png'],
+        [67, 'Chicken Galouti Kebab', 'Tender minced chicken kebab with aromatic spices.', 195, 8, 'Kebabs', 'assets/food/photo-updates/chicken-kheema-paratha.png', false],
+        [68, 'Chicken Shami Kebab', 'Spiced chicken and lentil kebab cooked until tender.', 195, 8, 'Kebabs', 'assets/food/photo-updates/chicken-kheema-paratha.png', false],
         [30, 'Poha', 'Flattened rice seasoned with spices.', 45, 7, 'Snacks', 'assets/food/generated/poha-realistic.png'],
         [31, 'Poha Usal', 'Poha served with spicy bean curry.', 40, 7, 'Snacks', 'assets/food/generated/poha-usal-realistic.png'],
         [32, 'Upma', 'Savory semolina porridge.', 45, 7, 'Snacks', 'assets/food/generated/upma-realistic.png'],

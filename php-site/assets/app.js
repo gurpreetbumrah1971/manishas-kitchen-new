@@ -5,13 +5,18 @@ const DISCOUNT_TIERS = {
   800: 0.15,
   1000: 0.20,
 };
-const FRONTEND_CATEGORY_ORDER = ['Parathas', 'Frankies', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages'];
+const FRONTEND_CATEGORY_ORDER = ['Parathas', 'Frankies', 'Kebabs', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages'];
 const FRONTEND_CATEGORY_INDEX = new Map(FRONTEND_CATEGORY_ORDER.map((name, index) => [name, index]));
+const ADDITIONAL_STATIC_CATEGORIES = [
+  { name: 'Kebabs', slug: 'kebabs' },
+];
 const ADDITIONAL_STATIC_MENU_ITEMS = [
   { id: 63, name: 'Mulli Paratha', description: 'Wheat flatbread stuffed with seasoned radish.', price: 65, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/muli-paratha.png' },
   { id: 64, name: 'Chicken Kheema Paratha', description: 'Wheat flatbread stuffed with spiced chicken kheema.', price: 100, categoryName: 'Parathas', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
   { id: 65, name: 'Corn Cheese Paratha', description: 'Wheat flatbread stuffed with sweet corn and cheese.', price: 100, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/corn-cheese-paratha.png' },
   { id: 66, name: 'Lorn Paratha', description: 'Wheat flatbread stuffed with seasoned vegetables.', price: 65, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/loki-paratha.png' },
+  { id: 67, name: 'Chicken Galouti Kebab', description: 'Tender minced chicken kebab with aromatic spices.', price: 195, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
+  { id: 68, name: 'Chicken Shami Kebab', description: 'Spiced chicken and lentil kebab cooked until tender.', price: 195, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
 ];
 
 function getCart() {
@@ -273,30 +278,87 @@ function menuCardHtml(item) {
   `;
 }
 
-function hydrateStaticMenuAdditions() {
-  const parathaTab = [...document.querySelectorAll('[data-menu-tab]')]
-    .find((tab) => categoryNameFromNode(tab) === 'Parathas');
-  const parathaPanels = [];
-  const tabPanel = parathaTab
-    ? [...document.querySelectorAll('[data-menu-panel]')]
-      .find((panel) => panel.dataset.menuPanel === parathaTab.dataset.menuTab)
-    : null;
-  if (tabPanel) parathaPanels.push(tabPanel);
+function ensureStaticCategory(category) {
+  document.querySelectorAll('[data-menu-tabs]').forEach((tabGroup) => {
+    const tabsContainer = tabGroup.querySelector('.menu-tabs');
+    if (!tabsContainer) return;
 
-  document.querySelectorAll('.menu-accordion').forEach((details) => {
-    if (categoryNameFromNode(details.querySelector('summary')) === 'Parathas') {
-      parathaPanels.push(details);
-    }
+    const existingTab = [...tabsContainer.querySelectorAll('[data-menu-tab]')]
+      .find((tab) => categoryNameFromNode(tab) === category.name);
+    if (existingTab) return;
+
+    const tab = document.createElement('button');
+    tab.className = 'menu-tab';
+    tab.type = 'button';
+    tab.role = 'tab';
+    tab.id = `menu-tab-${category.slug}`;
+    tab.dataset.menuTab = category.slug;
+    tab.setAttribute('aria-controls', `menu-panel-${category.slug}`);
+    tab.setAttribute('aria-selected', 'false');
+    tab.textContent = category.name;
+
+    const panel = document.createElement('section');
+    panel.className = 'menu-tab-panel';
+    panel.id = `menu-panel-${category.slug}`;
+    panel.role = 'tabpanel';
+    panel.dataset.menuPanel = category.slug;
+    panel.setAttribute('aria-labelledby', tab.id);
+    panel.hidden = true;
+
+    const grid = document.createElement('div');
+    grid.className = 'menu-grid';
+    panel.appendChild(grid);
+
+    tabsContainer.appendChild(tab);
+    tabGroup.appendChild(panel);
   });
 
-  parathaPanels.forEach((panel) => {
-    const grid = panel.querySelector('.menu-grid');
-    if (!grid) return;
-    const existingNames = new Set([...grid.querySelectorAll('.menu-card h3')].map((node) => categoryNameFromNode(node)));
-    ADDITIONAL_STATIC_MENU_ITEMS.forEach((item) => {
+  document.querySelectorAll('.menu-accordion-layout').forEach((layout) => {
+    const existingDetails = [...layout.querySelectorAll('.menu-accordion')]
+      .find((details) => categoryNameFromNode(details.querySelector('summary')) === category.name);
+    if (existingDetails) return;
+
+    const details = document.createElement('details');
+    details.className = 'menu-accordion';
+    const summary = document.createElement('summary');
+    summary.textContent = category.name;
+    const grid = document.createElement('div');
+    grid.className = 'menu-grid';
+    details.append(summary, grid);
+    layout.appendChild(details);
+  });
+}
+
+function hydrateStaticMenuAdditions() {
+  ADDITIONAL_STATIC_CATEGORIES.forEach(ensureStaticCategory);
+  const itemsByCategory = ADDITIONAL_STATIC_MENU_ITEMS.reduce((groups, item) => {
+    groups.set(item.categoryName, [...(groups.get(item.categoryName) || []), item]);
+    return groups;
+  }, new Map());
+
+  itemsByCategory.forEach((items, categoryName) => {
+    const categoryTabs = [...document.querySelectorAll('[data-menu-tab]')]
+      .filter((tab) => categoryNameFromNode(tab) === categoryName);
+    const panels = categoryTabs
+      .map((tab) => [...document.querySelectorAll('[data-menu-panel]')]
+        .find((panel) => panel.dataset.menuPanel === tab.dataset.menuTab))
+      .filter(Boolean);
+
+    document.querySelectorAll('.menu-accordion').forEach((details) => {
+      if (categoryNameFromNode(details.querySelector('summary')) === categoryName) {
+        panels.push(details);
+      }
+    });
+
+    panels.forEach((panel) => {
+      const grid = panel.querySelector('.menu-grid');
+      if (!grid) return;
+      const existingNames = new Set([...grid.querySelectorAll('.menu-card h3')].map((node) => categoryNameFromNode(node)));
+      items.forEach((item) => {
       if (!existingNames.has(item.name)) {
         grid.insertAdjacentHTML('beforeend', menuCardHtml(item));
       }
+    });
     });
   });
 }
@@ -783,8 +845,8 @@ if (success) {
   }
 }
 
-normalizeStaticMenuCategories();
 hydrateStaticMenuAdditions();
+normalizeStaticMenuCategories();
 renderCartControls();
 renderCheckout();
 updateCartCount();

@@ -1,6 +1,7 @@
 const STATIC_CATEGORIES = [
   { id: 6, name: 'Parathas', image: '/assets/food/optimized/generated/aloo-paratha-realistic.jpg', count: 12 },
   { id: 4, name: 'Frankies', image: '/assets/food/optimized/generated/paneer-paratha-realistic.jpg', count: 3 },
+  { id: 8, name: 'Kebabs', image: '/assets/food/photo-updates/chicken-kheema-paratha.png', count: 2 },
   { id: 5, name: 'Pakodas', image: '/assets/food/photo-updates/onion-pakoda.png', count: 4 },
   { id: 3, name: 'Egg Dishes', image: '/assets/food/optimized/generated/egg-omelet-realistic.jpg', count: 7 },
   { id: 7, name: 'Snacks', image: '/assets/food/optimized/poha.jpg', count: 13 },
@@ -46,6 +47,8 @@ const STATIC_MENU = [
   [64, 'Chicken Kheema Paratha', 'Wheat flatbread stuffed with spiced chicken kheema.', 100, 6, false, '/assets/food/photo-updates/chicken-kheema-paratha.png'],
   [65, 'Corn Cheese Paratha', 'Wheat flatbread stuffed with sweet corn and cheese.', 100, 6, true, '/assets/food/photo-updates/corn-cheese-paratha.png'],
   [66, 'Lorn Paratha', 'Wheat flatbread stuffed with seasoned vegetables.', 65, 6, true, '/assets/food/photo-updates/loki-paratha.png'],
+  [67, 'Chicken Galouti Kebab', 'Tender minced chicken kebab with aromatic spices.', 195, 8, false, '/assets/food/photo-updates/chicken-kheema-paratha.png'],
+  [68, 'Chicken Shami Kebab', 'Spiced chicken and lentil kebab cooked until tender.', 195, 8, false, '/assets/food/photo-updates/chicken-kheema-paratha.png'],
   [30, 'Poha', 'Flattened rice seasoned with spices.', 30, 7, true, '/assets/food/optimized/generated/poha-realistic.jpg'],
   [31, 'Poha Usal', 'Poha served with spicy bean curry.', 40, 7, true, '/assets/food/optimized/generated/poha-usal-realistic.jpg'],
   [32, 'Upma', 'Savory semolina porridge.', 30, 7, true, '/assets/food/optimized/generated/upma-realistic.jpg'],
