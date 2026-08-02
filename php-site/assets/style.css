@@ -1589,6 +1589,45 @@ th {
     background: #fff;
 }
 
+.menu-search-results {
+    border-bottom: 1px solid #eeeeee;
+    background: #fff;
+}
+
+.menu-search-results-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem 0.35rem;
+}
+
+.menu-search-results-head h2 {
+    margin: 0;
+    color: #171717;
+    font-size: 0.88rem;
+    line-height: 1.2;
+}
+
+.menu-search-results-head span {
+    flex: 0 0 auto;
+    color: #777;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.menu-search-results .menu-grid {
+    border-top: 1px solid #f1f1f1;
+}
+
+.menu-search-empty {
+    margin: 0;
+    padding: 0.25rem 1rem 1rem;
+    color: #777;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
 .menu-page-heading {
     display: grid;
     gap: 0.15rem;

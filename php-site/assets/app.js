@@ -413,6 +413,90 @@ function menuCardHtml(item) {
   `;
 }
 
+function ensureMenuSearchResults() {
+  document.querySelectorAll('.menu-app-shell').forEach((shell) => {
+    if (shell.querySelector('[data-menu-search-results]')) return;
+
+    const toolbar = shell.querySelector('.toolbar');
+    if (!toolbar) return;
+
+    const section = document.createElement('section');
+    section.className = 'menu-search-results';
+    section.dataset.menuSearchResults = '';
+    section.hidden = true;
+    section.innerHTML = `
+      <div class="menu-search-results-head">
+        <h2>Search Results</h2>
+        <span data-menu-search-count></span>
+      </div>
+      <div class="menu-grid" data-menu-search-grid></div>
+      <p class="menu-search-empty" data-menu-search-empty hidden>No matching food items found.</p>
+    `;
+    toolbar.insertAdjacentElement('afterend', section);
+  });
+}
+
+function menuItemFromCard(card) {
+  const control = card.querySelector('[data-cart-control]');
+  const cartItem = control?.dataset.cartItem ? JSON.parse(control.dataset.cartItem) : {};
+  const name = cartItem.name || categoryNameFromNode(card.querySelector('.menu-heading h3'));
+  const description = categoryNameFromNode(card.querySelector('.menu-body p'));
+  const price = Number(cartItem.price || parseMoney(card.querySelector('.menu-heading strong')?.textContent));
+  const image = cartItem.image || card.querySelector('.image-wrap img')?.getAttribute('src') || '';
+
+  return {
+    id: Number(cartItem.id || control?.dataset.id || 0),
+    name,
+    description,
+    price,
+    image,
+    isVeg: card.dataset.veg !== 'nonveg',
+    searchText: card.dataset.name || `${name} ${description}`.toLowerCase(),
+  };
+}
+
+function collectSearchableMenuItems() {
+  const seen = new Set();
+  return [...document.querySelectorAll('.menu-tabs-layout [data-menu-item], .menu-accordion-layout [data-menu-item]')]
+    .map(menuItemFromCard)
+    .filter((item) => {
+      const key = item.name.toLowerCase();
+      if (!item.id || !item.name || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function renderMenuSearchResults(query, vegMode) {
+  const searchSection = document.querySelector('[data-menu-search-results]');
+  if (!searchSection) return;
+
+  const grid = searchSection.querySelector('[data-menu-search-grid]');
+  const count = searchSection.querySelector('[data-menu-search-count]');
+  const empty = searchSection.querySelector('[data-menu-search-empty]');
+  if (!grid || !count || !empty) return;
+
+  if (!query) {
+    searchSection.hidden = true;
+    grid.innerHTML = '';
+    count.textContent = '';
+    empty.hidden = true;
+    return;
+  }
+
+  const matches = collectSearchableMenuItems().filter((item) => {
+    const matchesSearch = item.searchText.includes(query);
+    const matchesVeg = vegMode === 'all' || (item.isVeg ? 'veg' : 'nonveg') === vegMode;
+    return matchesSearch && matchesVeg;
+  });
+
+  searchSection.hidden = false;
+  count.textContent = matches.length === 1 ? '1 item found' : `${matches.length} items found`;
+  grid.innerHTML = matches.map(menuCardHtml).join('');
+  empty.hidden = matches.length > 0;
+  renderCartControls();
+}
+
 function ensureStaticCategory(category) {
   document.querySelectorAll('[data-menu-tabs]').forEach((tabGroup) => {
     const tabsContainer = tabGroup.querySelector('.menu-tabs');
@@ -640,13 +724,14 @@ document.addEventListener('click', (event) => {
 });
 
 function applyMenuFilters() {
-  const query = document.querySelector('[data-menu-search]')?.value.toLowerCase() || '';
+  const query = document.querySelector('[data-menu-search]')?.value.trim().toLowerCase() || '';
   const vegMode = document.querySelector('[data-veg-filter] .active')?.dataset.vegValue || 'all';
-  document.querySelectorAll('[data-menu-item]').forEach((item) => {
+  document.querySelectorAll('.menu-tabs-layout [data-menu-item], .menu-accordion-layout [data-menu-item]').forEach((item) => {
     const matchesSearch = item.dataset.name.includes(query);
     const matchesVeg = vegMode === 'all' || item.dataset.veg === vegMode;
     item.hidden = !matchesSearch || !matchesVeg;
   });
+  renderMenuSearchResults(query, vegMode);
 }
 
 document.querySelector('[data-menu-search]')?.addEventListener('input', applyMenuFilters);
@@ -983,8 +1068,10 @@ if (success) {
 hydrateStaticMenuAdditions();
 normalizeStaticMenuCategories();
 updateStaticMenuItemOverrides();
+ensureMenuSearchResults();
 renderCartControls();
 renderCheckout();
 updateCartCount();
+applyMenuFilters();
 restoreStaticOrderSession();
 showIndependenceBannerPopup();
