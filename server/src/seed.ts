@@ -76,7 +76,7 @@ const menuItems: MenuItemSeed[] = [
   { name: 'Mulli Paratha', description: 'Wheat flatbread stuffed with seasoned radish.', price: 65, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('muli-paratha') },
   { name: 'Chicken Kheema Paratha', description: 'Wheat flatbread stuffed with spiced chicken kheema.', price: 100, categoryName: 'Parathas', isVeg: false, image: photoUpdateUrl('chicken-kheema-paratha') },
   { name: 'Corn Cheese Paratha', description: 'Wheat flatbread stuffed with sweet corn and cheese.', price: 100, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('corn-cheese-paratha') },
-  { name: 'Lorn Paratha', description: 'Wheat flatbread stuffed with seasoned vegetables.', price: 65, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('loki-paratha') },
+  { name: 'Loki Paratha', description: 'Wheat flatbread stuffed with seasoned vegetables.', price: 65, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('loki-paratha') },
   { name: 'Poha', description: 'Flattened rice seasoned with spices.', price: 45, categoryName: 'Snacks', isVeg: true, image: '/food/poha.png' },
   { name: 'Poha Usal', description: 'Poha served with spicy bean curry.', price: 40, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Poha Usal') },
   { name: 'Upma', description: 'Savory semolina porridge.', price: 45, categoryName: 'Snacks', isVeg: true, image: generatedMenuAssetUrl('Upma') },

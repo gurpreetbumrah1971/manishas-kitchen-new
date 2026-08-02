@@ -19,7 +19,7 @@ const ADDITIONAL_STATIC_MENU_ITEMS = [
   { id: 63, name: 'Mulli Paratha', description: 'Wheat flatbread stuffed with seasoned radish.', price: 65, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/muli-paratha.png' },
   { id: 64, name: 'Chicken Kheema Paratha', description: 'Wheat flatbread stuffed with spiced chicken kheema.', price: 100, categoryName: 'Parathas', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
   { id: 65, name: 'Corn Cheese Paratha', description: 'Wheat flatbread stuffed with sweet corn and cheese.', price: 100, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/corn-cheese-paratha.png' },
-  { id: 66, name: 'Lorn Paratha', description: 'Wheat flatbread stuffed with seasoned vegetables.', price: 65, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/loki-paratha.png' },
+  { id: 66, name: 'Loki Paratha', description: 'Wheat flatbread stuffed with seasoned vegetables.', price: 65, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/loki-paratha.png' },
   { id: 67, name: 'Chicken Galouti Kebab', description: 'Tender minced chicken kebab with aromatic spices.', price: 195, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
   { id: 68, name: 'Chicken Shami Kebab', description: 'Spiced chicken and lentil kebab cooked until tender.', price: 195, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
 ];

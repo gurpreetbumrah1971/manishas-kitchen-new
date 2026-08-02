@@ -238,7 +238,7 @@ function sort_menu_items(array $items): array
         'Mulli Paratha' => 9,
         'Chicken Kheema Paratha' => 10,
         'Corn Cheese Paratha' => 11,
-        'Lorn Paratha' => 12,
+        'Loki Paratha' => 12,
         'Chicken Galouti Kebab' => 1,
         'Chicken Shami Kebab' => 2,
     ];
@@ -347,7 +347,7 @@ function sample_menu(): array
         [63, 'Mulli Paratha', 'Wheat flatbread stuffed with seasoned radish.', 65, 6, 'Parathas', 'assets/food/photo-updates/muli-paratha.png'],
         [64, 'Chicken Kheema Paratha', 'Wheat flatbread stuffed with spiced chicken kheema.', 100, 6, 'Parathas', 'assets/food/photo-updates/chicken-kheema-paratha.png', false],
         [65, 'Corn Cheese Paratha', 'Wheat flatbread stuffed with sweet corn and cheese.', 100, 6, 'Parathas', 'assets/food/photo-updates/corn-cheese-paratha.png'],
-        [66, 'Lorn Paratha', 'Wheat flatbread stuffed with seasoned vegetables.', 65, 6, 'Parathas', 'assets/food/photo-updates/loki-paratha.png'],
+        [66, 'Loki Paratha', 'Wheat flatbread stuffed with seasoned vegetables.', 65, 6, 'Parathas', 'assets/food/photo-updates/loki-paratha.png'],
         [67, 'Chicken Galouti Kebab', 'Tender minced chicken kebab with aromatic spices.', 195, 8, 'Kebabs', 'assets/food/photo-updates/chicken-kheema-paratha.png', false],
         [68, 'Chicken Shami Kebab', 'Spiced chicken and lentil kebab cooked until tender.', 195, 8, 'Kebabs', 'assets/food/photo-updates/chicken-kheema-paratha.png', false],
         [30, 'Poha', 'Flattened rice seasoned with spices.', 45, 7, 'Snacks', 'assets/food/generated/poha-realistic.png'],
