@@ -5,10 +5,16 @@ const normalizeIndianMobile = (value?: string) => {
   return digits;
 };
 
-export const openWhatsAppMessage = (mobile: string | undefined, message: string) => {
+export const whatsappUrl = (mobile: string | undefined, message: string) => {
   const number = normalizeIndianMobile(mobile);
-  if (!number) return;
-  window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, '_blank');
+  if (!number) return '';
+  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+};
+
+export const openWhatsAppMessage = (mobile: string | undefined, message: string) => {
+  const url = whatsappUrl(mobile, message);
+  if (!url) return;
+  window.open(url, '_blank');
 };
 
 export const orderTypeLabel = (orderType: string) => {

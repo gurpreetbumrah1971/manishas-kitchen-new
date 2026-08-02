@@ -28,7 +28,7 @@ import {
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import API_URL from '../utils/api';
-import { buildCustomerOfferMessage, buildOrderConfirmationMessage, buildOrderDeliveryMessage, openWhatsAppMessage } from '../utils/whatsapp';
+import { buildCustomerOfferMessage, buildOrderConfirmationMessage, buildOrderDeliveryMessage, openWhatsAppMessage, whatsappUrl } from '../utils/whatsapp';
 
 ChartJS.register(
   CategoryScale,
@@ -102,6 +102,7 @@ const AdminDashboard = () => {
   const [bulkSendingIndex, setBulkSendingIndex] = useState<number | null>(null);
   const [uploadingBulkMedia, setUploadingBulkMedia] = useState(false);
   const [preparationMinutesByOrder, setPreparationMinutesByOrder] = useState<Record<number, string>>({});
+  const [updatingOrderActionById, setUpdatingOrderActionById] = useState<Record<number, string>>({});
   const [ringtoneEnabled, setRingtoneEnabled] = useState(localStorage.getItem('adminRingtoneEnabled') === '1');
   const [ringtoneBlocked, setRingtoneBlocked] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -391,7 +392,25 @@ const AdminDashboard = () => {
     return { backgroundColor: '#ffebee', color: '#c62828' };
   };
 
-  const updateOrderAction = async (order: any, action: string) => {
+  const openOrderWhatsApp = (order: any, action: string, popup?: Window | null) => {
+    const message = action === 'DELIVERED'
+      ? buildOrderDeliveryMessage(order)
+      : buildOrderConfirmationMessage(order);
+    const url = whatsappUrl(order.whatsappNumber || order.mobileNumber, message);
+    if (!url) {
+      popup?.close();
+      return;
+    }
+    if (popup && !popup.closed) {
+      popup.location.href = url;
+      return;
+    }
+    window.open(url, '_blank');
+  };
+
+  const updateOrderAction = async (order: any, action: string, options: { openWhatsApp?: boolean } = {}) => {
+    const popup = options.openWhatsApp ? window.open('', '_blank') : null;
+    setUpdatingOrderActionById(current => ({ ...current, [order.id]: action }));
     try {
       const payload: any = { action };
       if (action === 'PREPARING') {
@@ -408,14 +427,18 @@ const AdminDashboard = () => {
       });
       replaceOrder(res.data);
 
-      if (action === 'CONFIRM') {
-        openWhatsAppMessage(res.data.whatsappNumber || res.data.mobileNumber, buildOrderConfirmationMessage(res.data));
-      }
-      if (action === 'DELIVERED') {
-        openWhatsAppMessage(res.data.whatsappNumber || res.data.mobileNumber, buildOrderDeliveryMessage(res.data));
+      if (options.openWhatsApp && (action === 'CONFIRM' || action === 'DELIVERED')) {
+        openOrderWhatsApp(res.data, action, popup);
       }
     } catch (err: any) {
+      popup?.close();
       alert(err.response?.data?.error || 'Failed to update order');
+    } finally {
+      setUpdatingOrderActionById(current => {
+        const next = { ...current };
+        delete next[order.id];
+        return next;
+      });
     }
   };
 
@@ -423,12 +446,13 @@ const AdminDashboard = () => {
     const statusLabel = orderStatusLabel(order);
     const minutesValue = preparationMinutesByOrder[order.id] ?? String(order.preparationMinutes || 20);
     const terminal = order.status === 'DELIVERED' || order.status === 'CANCELLED';
+    const updatingAction = updatingOrderActionById[order.id];
 
     return (
       <div style={{ display: 'grid', gap: '8px', minWidth: '230px' }}>
         {statusLabel === 'PENDING' && (
-          <button onClick={() => updateOrderAction(order, 'CONFIRM')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700 }}>
-            <MessageCircle size={15} /> Confirm
+          <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'CONFIRM', { openWhatsApp: true })} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
+            <MessageCircle size={15} /> {updatingAction === 'CONFIRM' ? 'Confirming...' : 'Confirm'}
           </button>
         )}
         {!terminal && order.status !== 'COMPLETED' && (
@@ -442,19 +466,19 @@ const AdminDashboard = () => {
               aria-label={`Preparation minutes for ${order.orderNumber}`}
               style={{ padding: '8px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '0.82rem' }}
             />
-            <button onClick={() => updateOrderAction(order, 'PREPARING')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #1976d2', backgroundColor: '#fff', color: '#1976d2', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700 }}>
-              <Clock size={15} /> Preparing
+            <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'PREPARING')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #1976d2', backgroundColor: '#fff', color: '#1976d2', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
+              <Clock size={15} /> {updatingAction === 'PREPARING' ? 'Updating...' : 'Preparing'}
             </button>
           </div>
         )}
         {order.status === 'PREPARING' && (
-          <button onClick={() => updateOrderAction(order, 'READY')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#fff', color: '#2e7d32', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700 }}>
-            <CheckCircle size={15} /> Ready
+          <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'READY')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#fff', color: '#2e7d32', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
+            <CheckCircle size={15} /> {updatingAction === 'READY' ? 'Updating...' : 'Ready'}
           </button>
         )}
         {order.status === 'COMPLETED' && (
-          <button onClick={() => updateOrderAction(order, 'DELIVERED')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#2e7d32', color: '#fff', cursor: 'pointer', fontWeight: 700 }}>
-            Delivered
+          <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'DELIVERED', { openWhatsApp: true })} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#2e7d32', color: '#fff', cursor: updatingAction ? 'wait' : 'pointer', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
+            {updatingAction === 'DELIVERED' ? 'Updating...' : 'Delivered'}
           </button>
         )}
       </div>
@@ -608,6 +632,9 @@ const AdminDashboard = () => {
   const OrderDetailsModal = () => {
     if (!selectedOrder) return null;
 
+    const selectedStatusLabel = orderStatusLabel(selectedOrder);
+    const updatingSelectedAction = updatingOrderActionById[selectedOrder.id];
+
     return (
       <div style={{
         position: 'fixed',
@@ -702,16 +729,22 @@ const AdminDashboard = () => {
           
           <div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
             <button 
-              onClick={() => sendOrderConfirmation(selectedOrder)} 
-              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #25D366', color: '#128C7E', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              disabled={Boolean(updatingSelectedAction)}
+              onClick={() => selectedStatusLabel === 'PENDING'
+                ? updateOrderAction(selectedOrder, 'CONFIRM', { openWhatsApp: true })
+                : sendOrderConfirmation(selectedOrder)}
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #25D366', color: '#128C7E', backgroundColor: '#fff', cursor: updatingSelectedAction ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: updatingSelectedAction ? 0.68 : 1 }}
             >
-              <MessageCircle size={16} /> WhatsApp
+              <MessageCircle size={16} /> {selectedStatusLabel === 'PENDING' ? (updatingSelectedAction === 'CONFIRM' ? 'Confirming...' : 'Confirm Order') : 'WhatsApp Confirmation'}
             </button>
             <button 
-              onClick={() => sendOrderDelivery(selectedOrder)} 
-              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #25D366', color: '#128C7E', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              disabled={Boolean(updatingSelectedAction)}
+              onClick={() => selectedOrder.status === 'COMPLETED'
+                ? updateOrderAction(selectedOrder, 'DELIVERED', { openWhatsApp: true })
+                : sendOrderDelivery(selectedOrder)}
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #25D366', color: '#128C7E', backgroundColor: '#fff', cursor: updatingSelectedAction ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: updatingSelectedAction ? 0.68 : 1 }}
             >
-              <MessageCircle size={16} /> Delivery
+              <MessageCircle size={16} /> {selectedOrder.status === 'COMPLETED' ? (updatingSelectedAction === 'DELIVERED' ? 'Updating...' : 'Mark Delivered') : 'Delivery WhatsApp'}
             </button>
             <button 
               onClick={() => window.print()} 
