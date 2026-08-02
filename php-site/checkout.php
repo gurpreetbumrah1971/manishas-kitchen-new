@@ -111,9 +111,21 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 ?>
 <section class="section compact">
     <?php if ($successOrder): ?>
+        <?php
+        $paymentQrSrc = 'assets/payment/mk-qrcode.jpg';
+        ?>
         <div class="success-panel" data-clear-cart data-whatsapp="<?= e(whatsapp_url($successOrder['whatsapp_number'], order_confirmation_message($successOrder))) ?>">
-            <h1>Order Placed Successfully!</h1>
-            <p>Your order is being prepared. A WhatsApp confirmation will open shortly.</p>
+            <h1>Thank you for your order!</h1>
+            <p>Your order has been received. A WhatsApp confirmation will open shortly.</p>
+            <div class="thank-you-total">
+                <span>Total Amount</span>
+                <strong><?= rupee((float)$successOrder['grand_total']) ?></strong>
+            </div>
+            <div class="payment-box thank-you-payment">
+                <img class="qr" src="<?= e($paymentQrSrc) ?>" alt="UPI payment QR code">
+                <p>Scan QR / use UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
+                <p>Order ID: <strong><?= e($successOrder['order_number']) ?></strong></p>
+            </div>
             <div class="thank-you-address">
                 <strong>Manisha's Kitchen</strong>
                 <span>Shop No. 02, Sai Proviso Krutika CHS, Plot 87, Sector 17,<br>Koparkhairane 400709</span>
