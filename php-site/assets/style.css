@@ -924,6 +924,21 @@ textarea {
     width: min(100%, 340px);
 }
 
+.thank-you-address {
+    display: grid;
+    gap: 0.25rem;
+    width: min(100%, 460px);
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--muted);
+    background: #fffaf4;
+}
+
+.thank-you-address strong {
+    color: var(--ink);
+}
+
 .order-status-card {
     display: grid;
     gap: 0.45rem;
