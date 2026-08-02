@@ -21,11 +21,13 @@
 </a>
 <?php endif; ?>
 <footer class="site-footer">
+    <?php if (!in_admin_area()): ?>
     <div class="footer-address">
         <strong>Manisha's Kitchen</strong>
         <span>Shop No. 02, Sai Proviso Krutika CHS, Plot 87, Sector 17,<br>Koparkhairane 400709</span>
         <span>Near Tej Vedant hospital</span>
     </div>
+    <?php endif; ?>
     <div>Dine-in, takeaway and delivery ordering with WhatsApp updates.</div>
 </footer>
 <script src="<?= $assetBase ?>assets/app.js?v=<?= filemtime(__DIR__ . '/../assets/app.js') ?>"></script>
