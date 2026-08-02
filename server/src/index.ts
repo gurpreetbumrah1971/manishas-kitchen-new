@@ -16,6 +16,10 @@ const phpAssetsPath = path.join(publicRootPath, 'php-site/assets');
 const sendPublicPage = (res: express.Response, pageName: string) => {
   res.sendFile(path.join(publicRootPath, `${pageName}.html`));
 };
+const sendAdminApp = (res: express.Response) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(clientDistPath, 'index.html'));
+};
 
 app.use(cors());
 app.use(express.json());
@@ -47,7 +51,7 @@ app.get('/admin/dashboard.php', (req, res) => {
 
 if (fs.existsSync(clientDistPath)) {
   app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
-    res.sendFile(path.join(clientDistPath, 'index.html'));
+    sendAdminApp(res);
   });
 }
 
