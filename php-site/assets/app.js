@@ -1133,46 +1133,6 @@ document.querySelectorAll('[data-availability-form]').forEach((form) => {
   });
 });
 
-document.querySelectorAll('[data-status-form]').forEach((form) => {
-  const select = form.querySelector('[data-status-select]');
-  const feedback = form.querySelector('[data-status-feedback]');
-  if (!select) return;
-
-  select.addEventListener('change', async () => {
-    const previous = select.dataset.previousValue || select.defaultValue;
-    const actionUrl = new URL(form.getAttribute('action') || window.location.href, window.location.href).href;
-    select.disabled = true;
-    if (feedback) feedback.textContent = 'Updating...';
-
-    try {
-      const response = await fetch(actionUrl, {
-        method: 'POST',
-        body: new FormData(form),
-        credentials: 'same-origin',
-        headers: {
-          Accept: 'application/json',
-          'X-Requested-With': 'fetch',
-        },
-      });
-      const result = await response.json().catch(() => null);
-      if (!response.ok || !result?.ok) {
-        throw new Error(result?.error || 'Could not update order status.');
-      }
-      select.dataset.previousValue = select.value;
-      if (feedback) {
-        feedback.textContent = `Updated to ${result.label || result.status}`;
-      }
-    } catch (error) {
-      select.value = previous;
-      if (feedback) feedback.textContent = error.message || 'Could not update.';
-    } finally {
-      select.disabled = false;
-    }
-  });
-
-  select.dataset.previousValue = select.value;
-});
-
 const success = document.querySelector('[data-clear-cart]');
 if (success) {
   localStorage.removeItem(CART_KEY);

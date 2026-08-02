@@ -451,7 +451,7 @@ const AdminDashboard = () => {
       <div style={{ display: 'grid', gap: '8px', minWidth: '230px' }}>
         {statusLabel === 'PENDING' && (
           <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'CONFIRM', { openWhatsApp: true })} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
-            <MessageCircle size={15} /> {updatingAction === 'CONFIRM' ? 'Confirming...' : 'Confirm'}
+            <MessageCircle size={15} /> {updatingAction === 'CONFIRM' ? 'Confirming...' : 'Confirm Order'}
           </button>
         )}
         {statusLabel === 'CONFIRMED' && (
@@ -462,6 +462,8 @@ const AdminDashboard = () => {
               max="180"
               value={minutesValue}
               onChange={(event) => setPreparationMinutesByOrder(current => ({ ...current, [order.id]: event.target.value }))}
+              title="Preparation time in minutes"
+              placeholder="Min"
               aria-label={`Preparation minutes for ${order.orderNumber}`}
               style={{ padding: '8px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '0.82rem' }}
             />
@@ -485,14 +487,6 @@ const AdminDashboard = () => {
         )}
       </div>
     );
-  };
-
-  const sendOrderConfirmation = (order: any) => {
-    openWhatsAppMessage(order.whatsappNumber || order.mobileNumber, buildOrderConfirmationMessage(order));
-  };
-
-  const sendOrderDelivery = (order: any) => {
-    openWhatsAppMessage(order.whatsappNumber || order.mobileNumber, buildOrderDeliveryMessage(order));
   };
 
   const sendCustomerOffer = (customer: any) => {
@@ -634,9 +628,6 @@ const AdminDashboard = () => {
   const OrderDetailsModal = () => {
     if (!selectedOrder) return null;
 
-    const selectedStatusLabel = orderStatusLabel(selectedOrder);
-    const updatingSelectedAction = updatingOrderActionById[selectedOrder.id];
-
     return (
       <div style={{
         position: 'fixed',
@@ -730,24 +721,6 @@ const AdminDashboard = () => {
           </div>
           
           <div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
-            <button 
-              disabled={Boolean(updatingSelectedAction)}
-              onClick={() => selectedStatusLabel === 'PENDING'
-                ? updateOrderAction(selectedOrder, 'CONFIRM', { openWhatsApp: true })
-                : sendOrderConfirmation(selectedOrder)}
-              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #25D366', color: '#128C7E', backgroundColor: '#fff', cursor: updatingSelectedAction ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: updatingSelectedAction ? 0.68 : 1 }}
-            >
-              <MessageCircle size={16} /> {selectedStatusLabel === 'PENDING' ? (updatingSelectedAction === 'CONFIRM' ? 'Confirming...' : 'Confirm Order') : 'WhatsApp Confirmation'}
-            </button>
-            <button 
-              disabled={Boolean(updatingSelectedAction)}
-              onClick={() => selectedOrder.status === 'COMPLETED'
-                ? updateOrderAction(selectedOrder, 'DELIVERED', { openWhatsApp: true })
-                : sendOrderDelivery(selectedOrder)}
-              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #25D366', color: '#128C7E', backgroundColor: '#fff', cursor: updatingSelectedAction ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: updatingSelectedAction ? 0.68 : 1 }}
-            >
-              <MessageCircle size={16} /> {selectedOrder.status === 'COMPLETED' ? (updatingSelectedAction === 'DELIVERED' ? 'Updating...' : 'Mark Delivered') : 'Delivery WhatsApp'}
-            </button>
             <button 
               onClick={() => window.print()} 
               style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', cursor: 'pointer' }}

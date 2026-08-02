@@ -1266,18 +1266,6 @@ th {
     margin: 0;
 }
 
-.status-form select {
-    min-width: 130px;
-}
-
-.status-form small {
-    display: block;
-    margin-top: 0.3rem;
-    color: var(--muted);
-    font-size: 0.74rem;
-    font-weight: 700;
-}
-
 .availability-toggle,
 .availability-toggle label {
     margin: 0;
@@ -1668,10 +1656,6 @@ th {
 
     .admin-orders-table .actions .btn {
         width: 100%;
-        min-height: 38px;
-    }
-
-    .admin-orders-table .status-form select {
         min-height: 38px;
     }
 
