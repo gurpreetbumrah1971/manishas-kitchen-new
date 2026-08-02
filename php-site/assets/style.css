@@ -243,7 +243,39 @@ button {
     box-shadow: 0 16px 36px rgba(18, 140, 126, 0.4);
 }
 
+.floating-location-button {
+    position: fixed;
+    left: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 1200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 12px 30px rgba(177, 84, 25, 0.28);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floating-location-button svg {
+    width: 31px;
+    height: 31px;
+    fill: currentColor;
+}
+
+.floating-location-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 36px rgba(177, 84, 25, 0.38);
+}
+
 body:has(.floating-cart-bar:not([hidden])) .floating-whatsapp-button {
+    bottom: 5.8rem;
+}
+
+body:has(.floating-cart-bar:not([hidden])) .floating-location-button {
     bottom: 5.8rem;
 }
 
@@ -1170,10 +1202,21 @@ th {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
+    align-items: flex-start;
     padding: 1.5rem 7vw;
     border-top: 1px solid var(--line);
     color: var(--muted);
     background: #fff;
+}
+
+.footer-address {
+    display: grid;
+    gap: 0.2rem;
+    max-width: 620px;
+}
+
+.footer-address strong {
+    color: var(--ink);
 }
 
 [hidden] {
@@ -1956,7 +1999,18 @@ th {
         height: 54px;
     }
 
+    .floating-location-button {
+        left: 0.9rem;
+        bottom: 0.9rem;
+        width: 54px;
+        height: 54px;
+    }
+
     body:has(.floating-cart-bar:not([hidden])) .floating-whatsapp-button {
+        bottom: 5.55rem;
+    }
+
+    body:has(.floating-cart-bar:not([hidden])) .floating-location-button {
         bottom: 5.55rem;
     }
 

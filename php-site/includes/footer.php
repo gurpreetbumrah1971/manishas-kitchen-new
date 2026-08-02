@@ -20,8 +20,19 @@
     </svg>
 </a>
 <?php endif; ?>
+<?php if (!in_admin_area()): ?>
+<a class="floating-location-button" href="https://www.google.com/maps/place/19%C2%B006'04.0%22N+72%C2%B059'53.5%22E/@19.1011162,72.9956195,17z/data=!3m1!4b1!4m4!3m3!8m2!3d19.1011111!4d72.9981944?hl=en&amp;entry=ttu&amp;g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener" aria-label="Locate Manisha's Kitchen on Google Maps" title="Locate us">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"></path>
+    </svg>
+</a>
+<?php endif; ?>
 <footer class="site-footer">
-    <div>Manisha's Kitchen Order Booking System</div>
+    <div class="footer-address">
+        <strong>Manisha's Kitchen</strong>
+        <span>Shop No. 02, Sai Proviso Krutika CHS, plot 87, sector 17, Koparkhairane 400709</span>
+        <span>Near Tej Vedant hospital</span>
+    </div>
     <div>Dine-in, takeaway and delivery ordering with WhatsApp updates.</div>
 </footer>
 <script src="<?= $assetBase ?>assets/app.js?v=<?= filemtime(__DIR__ . '/../assets/app.js') ?>"></script>
