@@ -445,7 +445,6 @@ const AdminDashboard = () => {
   const renderOrderActions = (order: any) => {
     const statusLabel = orderStatusLabel(order);
     const minutesValue = preparationMinutesByOrder[order.id] ?? String(order.preparationMinutes || 20);
-    const terminal = order.status === 'DELIVERED' || order.status === 'CANCELLED';
     const updatingAction = updatingOrderActionById[order.id];
 
     return (
@@ -455,7 +454,7 @@ const AdminDashboard = () => {
             <MessageCircle size={15} /> {updatingAction === 'CONFIRM' ? 'Confirming...' : 'Confirm'}
           </button>
         )}
-        {!terminal && order.status !== 'COMPLETED' && (
+        {statusLabel === 'CONFIRMED' && (
           <div style={{ display: 'grid', gridTemplateColumns: '72px minmax(110px, 1fr)', gap: '6px', alignItems: 'center' }}>
             <input
               type="number"
@@ -467,14 +466,17 @@ const AdminDashboard = () => {
               style={{ padding: '8px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '0.82rem' }}
             />
             <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'PREPARING')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #1976d2', backgroundColor: '#fff', color: '#1976d2', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
-              <Clock size={15} /> {updatingAction === 'PREPARING' ? 'Updating...' : 'Preparing'}
+              <Clock size={15} /> {updatingAction === 'PREPARING' ? 'Updating...' : 'Start Preparation'}
             </button>
           </div>
         )}
         {order.status === 'PREPARING' && (
-          <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'READY')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#fff', color: '#2e7d32', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
-            <CheckCircle size={15} /> {updatingAction === 'READY' ? 'Updating...' : 'Ready'}
-          </button>
+          <div style={{ display: 'grid', gap: '6px' }}>
+            <small style={{ color: '#666', fontWeight: 700 }}>Preparation time: {order.preparationMinutes || minutesValue} min</small>
+            <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'READY')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#fff', color: '#2e7d32', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
+              <CheckCircle size={15} /> {updatingAction === 'READY' ? 'Updating...' : 'Ready'}
+            </button>
+          </div>
         )}
         {order.status === 'COMPLETED' && (
           <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'DELIVERED', { openWhatsApp: true })} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#2e7d32', color: '#fff', cursor: updatingAction ? 'wait' : 'pointer', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
