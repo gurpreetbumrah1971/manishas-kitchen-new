@@ -249,14 +249,15 @@ function render_orders_table(array $orders, bool $limited): void { ?>
                     </td>
                     <td data-label="Total"><strong><?= rupee($order['grand_total']) ?></strong></td>
                     <td data-label="Status">
-                        <form action="actions.php" method="post" class="status-form">
+                        <form action="actions.php" method="post" class="status-form" data-status-form>
                             <input type="hidden" name="action" value="update_status">
                             <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
-                            <select name="status" onchange="this.form.submit()">
+                            <select name="status" data-status-select>
                                 <?php foreach (['PENDING', 'PREPARING', 'COMPLETED', 'DELIVERED', 'CANCELLED'] as $status): ?>
                                     <option value="<?= $status ?>" <?= $order['status'] === $status ? 'selected' : '' ?>><?= $status ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <small data-status-feedback></small>
                         </form>
                     </td>
                     <td data-label="Time"><?= e(date('d M Y, h:i A', strtotime($order['created_at']))) ?></td>

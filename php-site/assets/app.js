@@ -793,6 +793,69 @@ function statusMessage(status) {
   return 'Waiting for kitchen confirmation.';
 }
 
+function shortTime(value) {
+  if (!value) return '';
+  return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function orderStepText(step, status) {
+  const label = status?.statusLabel || 'PENDING';
+  if (step === 'CONFIRMED') {
+    if (label === 'PENDING') return 'Waiting for kitchen confirmation.';
+    if (status?.confirmedAt) return `Confirmed at ${shortTime(status.confirmedAt)}.`;
+    return 'Order confirmed.';
+  }
+  if (step === 'PREPARING') {
+    if (label === 'PENDING' || label === 'CONFIRMED') return 'Preparation time will show here.';
+    if (label === 'PREPARING' && status?.preparationEndsAt) {
+      const remaining = new Date(status.preparationEndsAt).getTime() - Date.now();
+      return remaining > 0
+        ? `Preparation time: ${status.preparationMinutes || '-'} min. Ready in ${formatCountdown(remaining)}.`
+        : 'Estimated ready any moment now.';
+    }
+    if (label === 'READY' || label === 'DELIVERED') return 'Preparation complete. Food is ready.';
+    return 'Preparation not active.';
+  }
+  if (step === 'DELIVERED') {
+    if (label === 'DELIVERED') return status?.deliveredAt ? `Delivered at ${shortTime(status.deliveredAt)}.` : 'Delivered.';
+    if (label === 'CANCELLED') return 'Order cancelled.';
+    return 'Delivery pending.';
+  }
+  return '';
+}
+
+function updateOrderStatusSteps(status) {
+  const label = status?.statusLabel || 'PENDING';
+  const completedByLabel = {
+    PENDING: [],
+    CONFIRMED: ['CONFIRMED'],
+    PREPARING: ['CONFIRMED'],
+    READY: ['CONFIRMED', 'PREPARING'],
+    DELIVERED: ['CONFIRMED', 'PREPARING', 'DELIVERED'],
+    CANCELLED: [],
+  };
+  const activeByLabel = {
+    PENDING: 'CONFIRMED',
+    CONFIRMED: 'PREPARING',
+    PREPARING: 'PREPARING',
+    READY: 'DELIVERED',
+    DELIVERED: 'DELIVERED',
+    CANCELLED: '',
+  };
+  const completeSteps = completedByLabel[label] || [];
+  const activeStep = activeByLabel[label] || '';
+
+  document.querySelectorAll('[data-order-step]').forEach((step) => {
+    const key = step.dataset.orderStep;
+    step.classList.toggle('complete', completeSteps.includes(key));
+    step.classList.toggle('active', key === activeStep);
+    step.classList.toggle('cancelled', label === 'CANCELLED');
+  });
+  document.querySelectorAll('[data-order-step-text]').forEach((node) => {
+    node.textContent = orderStepText(node.dataset.orderStepText, status);
+  });
+}
+
 function updateOrderStatusPanel(status) {
   latestOrderStatus = status;
   const label = document.querySelector('[data-order-status-label]');
@@ -804,6 +867,7 @@ function updateOrderStatusPanel(status) {
   label.textContent = status?.statusLabel || 'PENDING';
   label.dataset.status = status?.statusLabel || 'PENDING';
   message.textContent = statusMessage(status);
+  updateOrderStatusSteps(status);
   if (updated) {
     updated.textContent = status
       ? `Updated ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
@@ -875,6 +939,23 @@ function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl, session }) 
         <span class="status-pill" data-order-status-label data-status="PENDING">PENDING</span>
         <strong data-order-status-message>Waiting for kitchen confirmation.</strong>
         <span class="order-countdown" data-order-countdown hidden></span>
+        <div class="order-status-steps" aria-label="Order status">
+          <div class="order-status-step active" data-order-step="CONFIRMED">
+            <span>1</span>
+            <strong>Confirmation</strong>
+            <small data-order-step-text="CONFIRMED">Waiting for kitchen confirmation.</small>
+          </div>
+          <div class="order-status-step" data-order-step="PREPARING">
+            <span>2</span>
+            <strong>Preparation</strong>
+            <small data-order-step-text="PREPARING">Preparation time will show here.</small>
+          </div>
+          <div class="order-status-step" data-order-step="DELIVERED">
+            <span>3</span>
+            <strong>Delivered</strong>
+            <small data-order-step-text="DELIVERED">Delivery pending.</small>
+          </div>
+        </div>
         <span class="order-status-meta" data-order-status-updated>Checking status...</span>
       </div>
       <a class="btn primary" href="${escapeHtml(whatsappUrl)}" target="_blank" rel="noopener">Send WhatsApp Confirmation</a>
@@ -1050,6 +1131,46 @@ document.querySelectorAll('[data-availability-form]').forEach((form) => {
       checkbox.disabled = false;
     }
   });
+});
+
+document.querySelectorAll('[data-status-form]').forEach((form) => {
+  const select = form.querySelector('[data-status-select]');
+  const feedback = form.querySelector('[data-status-feedback]');
+  if (!select) return;
+
+  select.addEventListener('change', async () => {
+    const previous = select.dataset.previousValue || select.defaultValue;
+    const actionUrl = new URL(form.getAttribute('action') || window.location.href, window.location.href).href;
+    select.disabled = true;
+    if (feedback) feedback.textContent = 'Updating...';
+
+    try {
+      const response = await fetch(actionUrl, {
+        method: 'POST',
+        body: new FormData(form),
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          'X-Requested-With': 'fetch',
+        },
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.ok) {
+        throw new Error(result?.error || 'Could not update order status.');
+      }
+      select.dataset.previousValue = select.value;
+      if (feedback) {
+        feedback.textContent = `Updated to ${result.label || result.status}`;
+      }
+    } catch (error) {
+      select.value = previous;
+      if (feedback) feedback.textContent = error.message || 'Could not update.';
+    } finally {
+      select.disabled = false;
+    }
+  });
+
+  select.dataset.previousValue = select.value;
 });
 
 const success = document.querySelector('[data-clear-cart]');

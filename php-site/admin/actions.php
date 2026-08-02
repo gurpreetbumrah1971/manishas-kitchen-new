@@ -32,6 +32,14 @@ try {
             : 'PENDING';
         $stmt = $pdo->prepare('UPDATE orders SET status = ? WHERE id = ?');
         $stmt->execute([$status, (int)$_POST['order_id']]);
+        if (wants_json()) {
+            json_response([
+                'ok' => true,
+                'order_id' => (int)$_POST['order_id'],
+                'status' => $status,
+                'label' => $status === 'COMPLETED' ? 'READY' : $status,
+            ]);
+        }
         redirect('orders.php');
     }
 
