@@ -1,5 +1,6 @@
 const CART_KEY = 'phpCart';
 const ORDER_SESSION_KEY = 'mkOrderSession';
+const INDEPENDENCE_BANNER_SEEN_KEY = 'mkIndependenceBannerSeen';
 const DISCOUNT_TIERS = {
   400: 0.10,
   800: 0.15,
@@ -188,6 +189,57 @@ function updateDiscountNudge(subtotal) {
     }
     node.hidden = message === '';
   });
+}
+
+function shouldShowIndependenceBanner() {
+  const path = window.location.pathname.toLowerCase();
+  const isMenuPage = path.endsWith('/menu.html') || path.endsWith('/menu.php');
+  if (!isMenuPage) return false;
+
+  try {
+    return localStorage.getItem(INDEPENDENCE_BANNER_SEEN_KEY) !== '1';
+  } catch {
+    return false;
+  }
+}
+
+function showIndependenceBannerPopup() {
+  if (!shouldShowIndependenceBanner()) return;
+
+  try {
+    localStorage.setItem(INDEPENDENCE_BANNER_SEEN_KEY, '1');
+  } catch {
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'banner-lightbox';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', 'Independence month offer');
+  overlay.innerHTML = `
+    <div class="banner-lightbox-panel">
+      <button class="banner-lightbox-close" type="button" aria-label="Close banner" data-banner-close>&times;</button>
+      <img src="/assets/banners/independence-month-banner.jpg" alt="Independence month special banner">
+    </div>
+  `;
+
+  const closePopup = () => {
+    overlay.remove();
+    document.removeEventListener('keydown', handleEscape);
+  };
+  const handleEscape = (event) => {
+    if (event.key === 'Escape') closePopup();
+  };
+
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay || event.target.closest('[data-banner-close]')) {
+      closePopup();
+    }
+  });
+  document.addEventListener('keydown', handleEscape);
+  document.body.appendChild(overlay);
+  overlay.querySelector('[data-banner-close]')?.focus();
 }
 
 function categoryNameFromNode(node) {
@@ -851,3 +903,4 @@ renderCartControls();
 renderCheckout();
 updateCartCount();
 restoreStaticOrderSession();
+showIndependenceBannerPopup();
