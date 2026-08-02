@@ -13,6 +13,11 @@ const orderInclude = {
 
 const orderSessionExpiry = () => new Date(Date.now() + ORDER_SESSION_MINUTES * 60 * 1000);
 
+const deliveryChargeForSubtotal = (subtotal: number) => {
+  if (subtotal <= 0 || subtotal > 300) return 0;
+  return subtotal < 150 ? 50 : 30;
+};
+
 const publicStatusLabel = (order: any) => {
   if (order.status === 'DELIVERED') return 'DELIVERED';
   if (order.status === 'COMPLETED') return 'READY';
@@ -56,10 +61,8 @@ export const createOrder = async (req: Request, res: Response) => {
       orderType,
       paymentMethod,
       items, // Array of { foodItemId, name, quantity, unitPrice, subtotal }
-      totalAmount,
       gstAmount,
-      discountAmount,
-      grandTotal
+      discountAmount
     } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -107,6 +110,12 @@ export const createOrder = async (req: Request, res: Response) => {
     });
     const orderNumber = `ORD-${Date.now()}`;
     const customerSessionToken = randomBytes(24).toString('hex');
+    const computedSubtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const computedDeliveryAmount = deliveryChargeForSubtotal(computedSubtotal);
+    const normalizedTotalAmount = computedSubtotal;
+    const normalizedGstAmount = Number(gstAmount) || 0;
+    const normalizedDiscountAmount = Number(discountAmount) || 0;
+    const normalizedGrandTotal = computedSubtotal + normalizedGstAmount - normalizedDiscountAmount + computedDeliveryAmount;
 
     const order = await prisma.order.create({
       data: {
@@ -121,10 +130,10 @@ export const createOrder = async (req: Request, res: Response) => {
         tableNumber,
         orderType: orderType || 'DINE_IN',
         paymentMethod: paymentMethod || 'UPI',
-        totalAmount: Number(totalAmount) || orderItems.reduce((sum, item) => sum + item.subtotal, 0),
-        gstAmount: Number(gstAmount) || 0,
-        discountAmount: Number(discountAmount) || 0,
-        grandTotal: Number(grandTotal) || orderItems.reduce((sum, item) => sum + item.subtotal, 0),
+        totalAmount: normalizedTotalAmount,
+        gstAmount: normalizedGstAmount,
+        discountAmount: normalizedDiscountAmount,
+        grandTotal: normalizedGrandTotal,
         customerSessionToken,
         customerSessionExpiresAt: orderSessionExpiry(),
         orderItems: {

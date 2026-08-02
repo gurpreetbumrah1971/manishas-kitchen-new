@@ -59,7 +59,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $gstAmount = round($total * $gstRate, 2);
             $discountRate = discount_rate($total);
             $discountAmount = round($total * $discountRate, 2);
-            $grandTotal = round($total + $gstAmount - $discountAmount, 2);
+            $deliveryAmount = delivery_charge($total);
+            $grandTotal = round($total + $gstAmount - $discountAmount + $deliveryAmount, 2);
             $orderType = 'DINE_IN';
             $paymentMethod = in_array($_POST['payment_method'] ?? '', ['CASH', 'UPI', 'CARD'], true) ? $_POST['payment_method'] : 'UPI';
 
@@ -131,7 +132,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     <div><span>Food Subtotal</span><strong data-checkout-subtotal>Rs. 0.00</strong></div>
                     <div><span>GST (5%)</span><strong data-checkout-gst>Rs. 0.00</strong></div>
                     <div><span>Discount</span><strong data-checkout-discount>Rs. 0.00</strong></div>
+                    <div><span>Delivery Charges</span><strong data-checkout-delivery>Rs. 0.00</strong></div>
                 </div>
+                <p class="delivery-note">Delivery charges apply for Kopar Khairane. For areas outside Kopar Khairane, please connect with us for delivery charges.</p>
                 <div class="total-row grand">
                     <span>Grand Total</span>
                     <strong data-checkout-total>Rs. 0.00</strong>
@@ -187,6 +190,14 @@ function discount_rate(float $subtotal): float
         return 0.10;
     }
     return 0.0;
+}
+
+function delivery_charge(float $subtotal): float
+{
+    if ($subtotal <= 0 || $subtotal > 300) {
+        return 0.0;
+    }
+    return $subtotal < 150 ? 50.0 : 30.0;
 }
 
 function render_date_dropdowns(string $name, string $label): void

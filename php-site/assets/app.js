@@ -122,6 +122,11 @@ function discountRateForSubtotal(subtotal, tiers) {
     .find(([threshold]) => subtotal >= threshold)?.[1] || 0;
 }
 
+function deliveryChargeForSubtotal(subtotal) {
+  if (subtotal <= 0 || subtotal > 300) return 0;
+  return subtotal < 150 ? 50 : 30;
+}
+
 function nextDiscountNudge(subtotal, tiers = DISCOUNT_TIERS) {
   if (subtotal <= 0) return '';
 
@@ -287,10 +292,12 @@ function renderCheckout() {
   const gst = Number((subtotal * gstRate).toFixed(2));
   const discountRate = discountRateForSubtotal(subtotal, discountTiers);
   const discount = Number((subtotal * discountRate).toFixed(2));
-  const grandTotal = subtotal + gst - discount;
+  const deliveryCharge = deliveryChargeForSubtotal(subtotal);
+  const grandTotal = subtotal + gst - discount + deliveryCharge;
   document.querySelectorAll('[data-checkout-subtotal]').forEach((node) => node.textContent = money(subtotal));
   document.querySelectorAll('[data-checkout-gst]').forEach((node) => node.textContent = money(gst));
   document.querySelectorAll('[data-checkout-discount]').forEach((node) => node.textContent = money(discount));
+  document.querySelectorAll('[data-checkout-delivery]').forEach((node) => node.textContent = money(deliveryCharge));
   document.querySelectorAll('[data-checkout-total], [data-upi-total]').forEach((node) => node.textContent = money(grandTotal));
   updatePaymentQr(grandTotal);
   document.querySelectorAll('[data-cart-json]').forEach((node) => node.value = JSON.stringify(visibleCart));
@@ -571,6 +578,7 @@ document.querySelector('[data-checkout-form]')?.addEventListener('submit', async
     const subtotal = parseMoney(document.querySelector('[data-checkout-subtotal]')?.textContent);
     const gstAmount = parseMoney(document.querySelector('[data-checkout-gst]')?.textContent);
     const discountAmount = parseMoney(document.querySelector('[data-checkout-discount]')?.textContent);
+    const deliveryAmount = parseMoney(document.querySelector('[data-checkout-delivery]')?.textContent);
     const grandTotal = parseMoney(document.querySelector('[data-checkout-total]')?.textContent);
     const total = document.querySelector('[data-checkout-total]')?.textContent || money(grandTotal);
     const items = cart.map((item) => `${item.name} x ${item.quantity}`).join(', ');
@@ -588,6 +596,7 @@ document.querySelector('[data-checkout-form]')?.addEventListener('submit', async
       totalAmount: subtotal,
       gstAmount,
       discountAmount,
+      deliveryAmount,
       grandTotal,
       items: cart.map((item) => ({
         foodItemId: Number(item.id),
