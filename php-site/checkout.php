@@ -132,7 +132,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                     <div><span>Food Subtotal</span><strong data-checkout-subtotal>Rs. 0.00</strong></div>
                     <div><span>GST (5%)</span><strong data-checkout-gst>Rs. 0.00</strong></div>
                     <div><span>Discount</span><strong data-checkout-discount>Rs. 0.00</strong></div>
-                    <div><span>Delivery Charges</span><strong data-checkout-delivery>Rs. 0.00</strong></div>
+                    <div><span>Delivery Charges <small class="delivery-nudge" data-delivery-nudge></small></span><strong data-checkout-delivery>Rs. 0.00</strong></div>
                 </div>
                 <p class="delivery-note">Delivery charges apply for Kopar Khairane. For areas outside Kopar Khairane, please connect with us for delivery charges.</p>
                 <div class="total-row grand">

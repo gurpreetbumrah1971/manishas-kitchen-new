@@ -233,6 +233,10 @@ function sort_menu_items(array $items): array
         'Cabbage Paratha' => 6,
         'Moong Daal Chilla' => 7,
         'Plain Paratha' => 8,
+        'Mulli Paratha' => 9,
+        'Chicken Kheema Paratha' => 10,
+        'Corn Cheese Paratha' => 11,
+        'Lorn Paratha' => 12,
     ];
 
     usort($items, function (array $a, array $b) use ($categoryOrder, $order): int {
@@ -283,7 +287,7 @@ function fetch_orders(): array
 function sample_categories(): array
 {
     return [
-        ['id' => 6, 'name' => 'Parathas', 'image' => 'assets/food/generated/aloo-paratha-realistic.png', 'food_count' => 8],
+        ['id' => 6, 'name' => 'Parathas', 'image' => 'assets/food/generated/aloo-paratha-realistic.png', 'food_count' => 12],
         ['id' => 4, 'name' => 'Frankies', 'image' => 'assets/food/generated/paneer-paratha-realistic.png', 'food_count' => 3],
         ['id' => 5, 'name' => 'Pakodas', 'image' => 'assets/food/generated/wada-realistic.png', 'food_count' => 4],
         ['id' => 3, 'name' => 'Egg Dishes', 'image' => 'assets/food/generated/egg-omelet-realistic.png', 'food_count' => 7],
@@ -335,6 +339,10 @@ function sample_menu(): array
         [46, 'Cabbage Paratha', 'Wheat flatbread stuffed with seasoned cabbage.', 65, 6, 'Parathas', 'assets/food/photo-updates/cabbage-paratha.png'],
         [47, 'Moong Daal Chilla', 'Savory moong dal pancake with mild spices.', 65, 6, 'Parathas', 'assets/food/generated/uttapam-realistic.png'],
         [29, 'Plain Paratha', 'Simple layered wheat flatbread.', 20, 6, 'Parathas', 'assets/food/photo-updates/plain-paratha.png'],
+        [63, 'Mulli Paratha', 'Wheat flatbread stuffed with seasoned radish.', 65, 6, 'Parathas', 'assets/food/photo-updates/muli-paratha.png'],
+        [64, 'Chicken Kheema Paratha', 'Wheat flatbread stuffed with spiced chicken kheema.', 100, 6, 'Parathas', 'assets/food/photo-updates/chicken-kheema-paratha.png', false],
+        [65, 'Corn Cheese Paratha', 'Wheat flatbread stuffed with sweet corn and cheese.', 100, 6, 'Parathas', 'assets/food/photo-updates/corn-cheese-paratha.png'],
+        [66, 'Lorn Paratha', 'Wheat flatbread stuffed with seasoned vegetables.', 65, 6, 'Parathas', 'assets/food/photo-updates/loki-paratha.png'],
         [30, 'Poha', 'Flattened rice seasoned with spices.', 45, 7, 'Snacks', 'assets/food/generated/poha-realistic.png'],
         [31, 'Poha Usal', 'Poha served with spicy bean curry.', 40, 7, 'Snacks', 'assets/food/generated/poha-usal-realistic.png'],
         [32, 'Upma', 'Savory semolina porridge.', 45, 7, 'Snacks', 'assets/food/generated/upma-realistic.png'],

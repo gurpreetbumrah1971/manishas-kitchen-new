@@ -745,6 +745,12 @@ textarea {
     line-height: 1.45;
 }
 
+.delivery-nudge {
+    color: var(--primary);
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
 .total-row.grand {
     margin-top: 0.6rem;
 }

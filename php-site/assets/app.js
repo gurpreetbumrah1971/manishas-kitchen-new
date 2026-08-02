@@ -7,6 +7,12 @@ const DISCOUNT_TIERS = {
 };
 const FRONTEND_CATEGORY_ORDER = ['Parathas', 'Frankies', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages'];
 const FRONTEND_CATEGORY_INDEX = new Map(FRONTEND_CATEGORY_ORDER.map((name, index) => [name, index]));
+const ADDITIONAL_STATIC_MENU_ITEMS = [
+  { id: 63, name: 'Mulli Paratha', description: 'Wheat flatbread stuffed with seasoned radish.', price: 65, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/muli-paratha.png' },
+  { id: 64, name: 'Chicken Kheema Paratha', description: 'Wheat flatbread stuffed with spiced chicken kheema.', price: 100, categoryName: 'Parathas', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
+  { id: 65, name: 'Corn Cheese Paratha', description: 'Wheat flatbread stuffed with sweet corn and cheese.', price: 100, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/corn-cheese-paratha.png' },
+  { id: 66, name: 'Lorn Paratha', description: 'Wheat flatbread stuffed with seasoned vegetables.', price: 65, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/loki-paratha.png' },
+];
 
 function getCart() {
   try {
@@ -127,6 +133,12 @@ function deliveryChargeForSubtotal(subtotal) {
   return subtotal < 150 ? 50 : 30;
 }
 
+function deliveryNudgeForSubtotal(subtotal) {
+  if (subtotal <= 0) return '';
+  if (subtotal > 300) return '(Free delivery unlocked)';
+  return `(Add ${money(301 - subtotal)} more for free delivery)`;
+}
+
 function nextDiscountNudge(subtotal, tiers = DISCOUNT_TIERS) {
   if (subtotal <= 0) return '';
 
@@ -234,6 +246,61 @@ function normalizeStaticMenuCategories() {
   });
 }
 
+function menuCardHtml(item) {
+  const cartItem = JSON.stringify({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    image: item.image,
+  });
+  return `
+    <article class="card menu-card" data-menu-item data-name="${escapeHtml(`${item.name} ${item.description}`.toLowerCase())}" data-veg="${item.isVeg ? 'veg' : 'nonveg'}">
+      <div class="image-wrap">
+        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}">
+        <span class="badge ${item.isVeg ? 'veg' : 'nonveg'}">${item.isVeg ? 'Veg' : 'Non-Veg'}</span>
+      </div>
+      <div class="menu-body">
+        <div class="menu-heading">
+          <h3>${escapeHtml(item.name)}</h3>
+          <strong>${money(item.price)}</strong>
+        </div>
+        <p>${escapeHtml(item.description)}</p>
+        <div class="cart-control" data-cart-control data-id="${item.id}" data-cart-item='${escapeHtml(cartItem)}'>
+          <button class="btn primary full" type="button" data-add-cart data-item='${escapeHtml(cartItem)}'>Add</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function hydrateStaticMenuAdditions() {
+  const parathaTab = [...document.querySelectorAll('[data-menu-tab]')]
+    .find((tab) => categoryNameFromNode(tab) === 'Parathas');
+  const parathaPanels = [];
+  const tabPanel = parathaTab
+    ? [...document.querySelectorAll('[data-menu-panel]')]
+      .find((panel) => panel.dataset.menuPanel === parathaTab.dataset.menuTab)
+    : null;
+  if (tabPanel) parathaPanels.push(tabPanel);
+
+  document.querySelectorAll('.menu-accordion').forEach((details) => {
+    if (categoryNameFromNode(details.querySelector('summary')) === 'Parathas') {
+      parathaPanels.push(details);
+    }
+  });
+
+  parathaPanels.forEach((panel) => {
+    const grid = panel.querySelector('.menu-grid');
+    if (!grid) return;
+    const existingNames = new Set([...grid.querySelectorAll('.menu-card h3')].map((node) => categoryNameFromNode(node)));
+    ADDITIONAL_STATIC_MENU_ITEMS.forEach((item) => {
+      if (!existingNames.has(item.name)) {
+        grid.insertAdjacentHTML('beforeend', menuCardHtml(item));
+      }
+    });
+  });
+}
+
 function changeQuantity(id, quantity) {
   const cart = getCart();
   const next = cart
@@ -298,6 +365,7 @@ function renderCheckout() {
   document.querySelectorAll('[data-checkout-gst]').forEach((node) => node.textContent = money(gst));
   document.querySelectorAll('[data-checkout-discount]').forEach((node) => node.textContent = money(discount));
   document.querySelectorAll('[data-checkout-delivery]').forEach((node) => node.textContent = money(deliveryCharge));
+  document.querySelectorAll('[data-delivery-nudge]').forEach((node) => node.textContent = deliveryNudgeForSubtotal(subtotal));
   document.querySelectorAll('[data-checkout-total], [data-upi-total]').forEach((node) => node.textContent = money(grandTotal));
   updatePaymentQr(grandTotal);
   document.querySelectorAll('[data-cart-json]').forEach((node) => node.value = JSON.stringify(visibleCart));
@@ -716,6 +784,7 @@ if (success) {
 }
 
 normalizeStaticMenuCategories();
+hydrateStaticMenuAdditions();
 renderCartControls();
 renderCheckout();
 updateCartCount();
