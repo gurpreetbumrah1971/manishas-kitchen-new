@@ -228,18 +228,27 @@ require_once __DIR__ . '/../includes/header.php';
 </section>
 <?php
 function render_orders_table(array $orders, bool $limited): void { ?>
-    <div class="card table-card">
+    <div class="card table-card admin-orders-card">
         <div class="table-head"><h2><?= $limited ? 'Recent Orders' : 'Orders' ?></h2><?php if ($limited): ?><a href="orders.php">View All</a><?php endif; ?></div>
-        <table>
+        <table class="admin-orders-table">
             <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Time</th><th>Actions</th></tr></thead>
             <tbody>
             <?php foreach ($orders as $order): ?>
                 <tr>
-                    <td><strong><?= e($order['order_number']) ?></strong></td>
-                    <td><?= e($order['customer_name']) ?><br><small><?= e($order['whatsapp_number'] ?: $order['mobile_number']) ?></small></td>
-                    <td><?php foreach ($order['items'] as $item): ?><div><?= e($item['name']) ?> x <?= (int)$item['quantity'] ?></div><?php endforeach; ?></td>
-                    <td><?= rupee($order['grand_total']) ?></td>
-                    <td>
+                    <td data-label="Order"><strong><?= e($order['order_number']) ?></strong></td>
+                    <td data-label="Customer">
+                        <span class="admin-order-customer">
+                            <strong><?= e($order['customer_name']) ?></strong>
+                            <small><?= e($order['whatsapp_number'] ?: $order['mobile_number']) ?></small>
+                        </span>
+                    </td>
+                    <td data-label="Items">
+                        <span class="admin-order-items">
+                            <?php foreach ($order['items'] as $item): ?><span><?= e($item['name']) ?> x <?= (int)$item['quantity'] ?></span><?php endforeach; ?>
+                        </span>
+                    </td>
+                    <td data-label="Total"><strong><?= rupee($order['grand_total']) ?></strong></td>
+                    <td data-label="Status">
                         <form action="actions.php" method="post" class="status-form">
                             <input type="hidden" name="action" value="update_status">
                             <input type="hidden" name="order_id" value="<?= (int)$order['id'] ?>">
@@ -250,8 +259,8 @@ function render_orders_table(array $orders, bool $limited): void { ?>
                             </select>
                         </form>
                     </td>
-                    <td><?= e(date('d M Y, h:i A', strtotime($order['created_at']))) ?></td>
-                    <td class="actions">
+                    <td data-label="Time"><?= e(date('d M Y, h:i A', strtotime($order['created_at']))) ?></td>
+                    <td class="actions" data-label="Actions">
                         <a class="btn mini whatsapp" target="_blank" href="<?= e(whatsapp_url($order['whatsapp_number'] ?: $order['mobile_number'], order_confirmation_message($order))) ?>">Confirm</a>
                         <a class="btn mini whatsapp" target="_blank" href="<?= e(whatsapp_url($order['whatsapp_number'] ?: $order['mobile_number'], order_delivery_message($order))) ?>">Delivery</a>
                     </td>

@@ -8,6 +8,7 @@ $promoLinkLabel = trim((string)($siteSettings['promo_banner_link_label'] ?? ''))
 $promoLinkUrl = trim((string)($siteSettings['promo_banner_link_url'] ?? ''));
 $bodyClass = trim((string)($bodyClass ?? ''));
 $bodyClasses = trim(($bodyClass !== '' ? $bodyClass . ' ' : '') . (in_admin_area() ? 'admin-app' : 'order-app'));
+$styleVersion = filemtime(__DIR__ . '/../assets/style.css');
 ?>
 <!doctype html>
 <html lang="en">
@@ -18,7 +19,7 @@ $bodyClasses = trim(($bodyClass !== '' ? $bodyClass . ' ' : '') . (in_admin_area
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= $assetBase ?>assets/style.css">
+    <link rel="stylesheet" href="<?= $assetBase ?>assets/style.css?v=<?= $styleVersion ?>">
 </head>
 <body class="<?= e($bodyClasses) ?>">
 <?php if (!in_admin_area() && $promoEnabled && $promoText !== ''): ?>

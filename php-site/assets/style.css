@@ -1168,6 +1168,22 @@ th {
     color: var(--muted);
 }
 
+.admin-order-customer,
+.admin-order-items {
+    display: grid;
+    gap: 0.18rem;
+    min-width: 0;
+}
+
+.admin-order-customer small {
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.admin-order-items span {
+    line-height: 1.35;
+}
+
 .actions {
     display: flex;
     align-items: center;
@@ -1498,6 +1514,86 @@ th {
     .admin-sidebar {
         position: static;
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .admin-orders-card {
+        overflow: visible;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .admin-orders-card .table-head {
+        margin-bottom: 0.75rem;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 8px 18px rgba(42, 24, 16, 0.06);
+    }
+
+    .admin-orders-table,
+    .admin-orders-table tbody,
+    .admin-orders-table tr,
+    .admin-orders-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .admin-orders-table {
+        border-collapse: separate;
+        border-spacing: 0 0.75rem;
+    }
+
+    .admin-orders-table thead {
+        display: none;
+    }
+
+    .admin-orders-table tr {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 8px 18px rgba(42, 24, 16, 0.06);
+    }
+
+    .admin-orders-table td {
+        display: grid;
+        grid-template-columns: 86px minmax(0, 1fr);
+        gap: 0.75rem;
+        padding: 0.7rem 0.85rem;
+        border-bottom: 1px solid #f0ebe6;
+        font-size: 0.86rem;
+    }
+
+    .admin-orders-table td:last-child {
+        border-bottom: 0;
+    }
+
+    .admin-orders-table td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .admin-orders-table td[data-label="Items"],
+    .admin-orders-table td[data-label="Actions"] {
+        grid-template-columns: 1fr;
+        gap: 0.35rem;
+    }
+
+    .admin-orders-table .actions {
+        align-items: stretch;
+    }
+
+    .admin-orders-table .actions .btn {
+        width: 100%;
+        min-height: 38px;
+    }
+
+    .admin-orders-table .status-form select {
+        min-height: 38px;
     }
 
     .checkout-item {
