@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../prisma';
 import { menuImageUrl, renderMenuImageSvg } from '../utils/menuImages';
 
-const visibleCategoryOrder = ['Parathas', 'Frankies', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages'];
+const visibleCategoryOrder = ['Parathas', 'Frankies', 'Kebabs', 'Pakodas', 'Egg Dishes', 'Snacks', 'Beverages'];
 
 const parseFoodItemBody = (body: any) => {
   const name = String(body.name || '').trim();

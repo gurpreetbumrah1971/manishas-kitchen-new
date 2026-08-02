@@ -99,6 +99,7 @@ const retiredMenuItemNames = [
   'Mix Pakoda',
   'Misal Pav',
   'Wada Usal Pav',
+  'Lorn Paratha',
   'Veg Biryani',
   'Egg Biryani',
   'Chicken Dum Biryani',

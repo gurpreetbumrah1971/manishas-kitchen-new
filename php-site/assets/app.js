@@ -23,10 +23,35 @@ const ADDITIONAL_STATIC_MENU_ITEMS = [
   { id: 67, name: 'Chicken Galouti Kebab', description: 'Tender minced chicken kebab with aromatic spices.', price: 195, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
   { id: 68, name: 'Chicken Shami Kebab', description: 'Spiced chicken and lentil kebab cooked until tender.', price: 195, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
 ];
+const STATIC_MENU_ITEM_OVERRIDES = new Map([
+  ['Egg Burji + 2 Pav (Single)', { name: 'Single Egg Burjee + 2 Butter Pav', price: 70, isVeg: false }],
+  ['Egg Burji + 2 Pav (Double)', { name: 'Double Egg Burjee + 4 Butter Pav', price: 120, isVeg: false }],
+  ['Egg Omelet + 2 Pav (Single)', { name: 'Single Egg Omelet + 2 Butter Pav', price: 70, isVeg: false }],
+  ['Egg Omelet + 2 Pav (Double)', { name: 'Double Omelet + 4 Butter Pav', price: 120, isVeg: false }],
+  ['Aloo Frankie', { price: 70 }],
+  ['Paneer Frankie', { price: 130 }],
+  ['Wada Pav', { price: 25 }],
+  ['Wada', { price: 20 }],
+  ['Onion Pakoda', { price: 65 }],
+  ['Aloo Paratha', { price: 65 }],
+  ['Gobi Paratha', { price: 65 }],
+  ['Methi Paratha', { price: 65 }],
+  ['Palak Paratha', { price: 65 }],
+  ['Cabbage Paratha', { price: 65 }],
+  ['Poha', { price: 45 }],
+  ['Upma', { price: 45 }],
+  ['Chole Puri', { price: 130 }],
+  ['Chole Plate', { price: 90 }],
+  ['Mix Pakoda', { remove: true }],
+  ['Misal Pav', { remove: true }],
+  ['Wada Usal Pav', { remove: true }],
+]);
 
 function getCart() {
   try {
-    return JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(CART_KEY) || '[]')
+      .map(applyCartItemOverride)
+      .filter(Boolean);
   } catch {
     return [];
   }
@@ -128,6 +153,55 @@ function updateCartCount() {
     node.hidden = count <= 0;
   });
   updateDiscountNudge(subtotal);
+}
+
+function applyCartItemOverride(item) {
+  const override = STATIC_MENU_ITEM_OVERRIDES.get(item?.name);
+  if (!override) return item;
+  if (override.remove) return null;
+  return {
+    ...item,
+    name: override.name || item.name,
+    price: override.price || item.price,
+  };
+}
+
+function updateStaticMenuItemOverrides() {
+  document.querySelectorAll('[data-menu-item]').forEach((card) => {
+    const heading = card.querySelector('.menu-heading h3');
+    const originalName = categoryNameFromNode(heading);
+    const override = STATIC_MENU_ITEM_OVERRIDES.get(originalName);
+    if (!override) return;
+
+    if (override.remove) {
+      card.remove();
+      return;
+    }
+
+    const name = override.name || originalName;
+    const description = categoryNameFromNode(card.querySelector('.menu-body p'));
+    const isVeg = override.isVeg ?? card.dataset.veg !== 'nonveg';
+    const price = Number(override.price || 0);
+    if (heading) heading.textContent = name;
+    const priceNode = card.querySelector('.menu-heading strong');
+    if (priceNode) priceNode.textContent = money(price);
+    card.dataset.name = `${name} ${description}`.toLowerCase();
+    card.dataset.veg = isVeg ? 'veg' : 'nonveg';
+
+    const control = card.querySelector('[data-cart-control]');
+    if (!control) return;
+    const currentItem = control.dataset.cartItem ? JSON.parse(control.dataset.cartItem) : {};
+    const nextItem = {
+      ...currentItem,
+      name,
+      price,
+    };
+    const encodedItem = JSON.stringify(nextItem);
+    control.dataset.cartItem = encodedItem;
+    control.querySelectorAll('[data-add-cart]').forEach((button) => {
+      button.dataset.item = encodedItem;
+    });
+  });
 }
 
 function discountRateForSubtotal(subtotal, tiers) {
@@ -908,6 +982,7 @@ if (success) {
 
 hydrateStaticMenuAdditions();
 normalizeStaticMenuCategories();
+updateStaticMenuItemOverrides();
 renderCartControls();
 renderCheckout();
 updateCartCount();

@@ -566,6 +566,7 @@ function seed_data(PDO $pdo): void
             'Mix Pakoda',
             'Misal Pav',
             'Wada Usal Pav',
+            'Lorn Paratha',
         ]);
         retire_non_frontend_category_items($pdo);
         return;
@@ -586,6 +587,7 @@ function seed_data(PDO $pdo): void
         'Mix Pakoda',
         'Misal Pav',
         'Wada Usal Pav',
+        'Lorn Paratha',
     ]);
     retire_non_frontend_category_items($pdo);
 }
