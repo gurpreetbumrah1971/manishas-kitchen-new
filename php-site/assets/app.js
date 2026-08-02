@@ -1,6 +1,10 @@
 const CART_KEY = 'phpCart';
 const ORDER_SESSION_KEY = 'mkOrderSession';
-const INDEPENDENCE_BANNER_SEEN_KEY = 'mkIndependenceBannerSeenV2';
+const INDEPENDENCE_BANNER_SEEN_KEY = 'mkIndependenceBannerSeenV3';
+const APP_ASSET_BASE_URL = document.currentScript?.src
+  ? new URL('.', document.currentScript.src).toString()
+  : '/assets/';
+const INDEPENDENCE_BANNER_URL = new URL('banners/independence-month-banner.jpg', APP_ASSET_BASE_URL).toString();
 const DISCOUNT_TIERS = {
   400: 0.10,
   800: 0.15,
@@ -225,7 +229,7 @@ function showIndependenceBannerPopup() {
   overlay.innerHTML = `
     <div class="banner-lightbox-panel">
       <button class="banner-lightbox-close" type="button" aria-label="Close banner" data-banner-close>&times;</button>
-      <img src="/assets/banners/independence-month-banner.jpg" alt="Independence month special banner">
+      <img src="${escapeHtml(INDEPENDENCE_BANNER_URL)}" alt="Independence month special banner">
     </div>
   `;
 
