@@ -43,6 +43,11 @@ $bodyClasses = trim(($bodyClass !== '' ? $bodyClass . ' ' : '') . (in_admin_area
             <circle cx="17.5" cy="6.5" r="1.2"></circle>
         </svg>
     </a>
+    <a class="nav-icon-link location-link" href="https://www.google.com/maps/place/19%C2%B006'04.0%22N+72%C2%B059'53.5%22E/@19.1011162,72.9956195,17z/data=!3m1!4b1!4m4!3m3!8m2!3d19.1011111!4d72.9981944?hl=en&amp;entry=ttu&amp;g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener" aria-label="Locate Manisha's Kitchen on Google Maps" title="Locate us">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5Z"></path>
+        </svg>
+    </a>
     <button class="nav-toggle" type="button" data-nav-toggle>Menu</button>
     <nav class="site-nav" data-nav>
         <a href="<?= $assetBase ?>menu.php">Menu</a>

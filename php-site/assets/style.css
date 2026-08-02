@@ -154,6 +154,10 @@ button {
     transform: translateY(-1px);
 }
 
+.location-link {
+    background: var(--primary);
+}
+
 .order-nav-item {
     display: grid;
     flex: 0 1 auto;
@@ -243,39 +247,7 @@ button {
     box-shadow: 0 16px 36px rgba(18, 140, 126, 0.4);
 }
 
-.floating-location-button {
-    position: fixed;
-    left: 1.25rem;
-    bottom: 1.25rem;
-    z-index: 1200;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 58px;
-    height: 58px;
-    border-radius: 50%;
-    background: var(--primary);
-    color: #fff;
-    box-shadow: 0 12px 30px rgba(177, 84, 25, 0.28);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.floating-location-button svg {
-    width: 31px;
-    height: 31px;
-    fill: currentColor;
-}
-
-.floating-location-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 36px rgba(177, 84, 25, 0.38);
-}
-
 body:has(.floating-cart-bar:not([hidden])) .floating-whatsapp-button {
-    bottom: 5.8rem;
-}
-
-body:has(.floating-cart-bar:not([hidden])) .floating-location-button {
     bottom: 5.8rem;
 }
 
@@ -1226,7 +1198,7 @@ th {
 @media (max-width: 820px) {
     .site-header {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-columns: minmax(0, 1fr) auto auto auto;
         align-items: start;
         gap: 0.75rem 1rem;
         padding: 1rem 5vw;
@@ -1246,8 +1218,15 @@ th {
         justify-self: end;
     }
 
-    .nav-toggle {
+    .site-header > .location-link {
         grid-column: 3;
+        grid-row: 1;
+        align-self: center;
+        justify-self: end;
+    }
+
+    .nav-toggle {
+        grid-column: 4;
         grid-row: 1;
         justify-self: end;
         display: inline-flex;
@@ -1999,18 +1978,7 @@ th {
         height: 54px;
     }
 
-    .floating-location-button {
-        left: 0.9rem;
-        bottom: 0.9rem;
-        width: 54px;
-        height: 54px;
-    }
-
     body:has(.floating-cart-bar:not([hidden])) .floating-whatsapp-button {
-        bottom: 5.55rem;
-    }
-
-    body:has(.floating-cart-bar:not([hidden])) .floating-location-button {
         bottom: 5.55rem;
     }
 
