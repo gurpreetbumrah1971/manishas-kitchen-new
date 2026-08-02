@@ -19,6 +19,7 @@ const deliveryChargeForSubtotal = (subtotal: number) => {
 };
 
 const publicStatusLabel = (order: any) => {
+  if (order.status === 'CANCELLED') return 'CANCELLED';
   if (order.status === 'DELIVERED') return 'DELIVERED';
   if (order.status === 'COMPLETED') return 'READY';
   if (order.status === 'PREPARING') return 'PREPARING';

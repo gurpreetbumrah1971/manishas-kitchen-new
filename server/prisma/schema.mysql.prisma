@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  image     String?
+  foodItems FoodItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model FoodItem {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String?     @db.Text
+  price       Decimal     @db.Decimal(10, 2)
+  image       String?
+  isVeg       Boolean     @default(true)
+  isAvailable Boolean     @default(true)
+  categoryId  Int
+  category    Category    @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Order {
+  id                       Int           @id @default(autoincrement())
+  orderNumber              String        @unique
+  customerName             String
+  mobileNumber             String
+  whatsappNumber           String?
+  birthday                 DateTime?
+  anniversary              DateTime?
+  email                    String?
+  address                  String?       @db.Text
+  tableNumber              String?
+  orderType                OrderType
+  paymentMethod            PaymentMethod
+  totalAmount              Decimal       @db.Decimal(10, 2)
+  gstAmount                Decimal       @db.Decimal(10, 2)
+  discountAmount           Decimal       @default(0) @db.Decimal(10, 2)
+  grandTotal               Decimal       @db.Decimal(10, 2)
+  status                   OrderStatus   @default(PENDING)
+  confirmedAt              DateTime?
+  preparationStartedAt     DateTime?
+  preparationMinutes       Int?
+  readyAt                  DateTime?
+  deliveredAt              DateTime?
+  customerSessionToken     String?
+  customerSessionExpiresAt DateTime?
+  orderItems               OrderItem[]
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  order      Order    @relation(fields: [orderId], references: [id])
+  foodItemId Int
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
+  quantity   Int
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  subtotal   Decimal  @db.Decimal(10, 2)
+}
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  DELIVERY
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  COMPLETED
+  DELIVERED
+  CANCELLED
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}

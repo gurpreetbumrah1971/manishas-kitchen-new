@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import apiRoutes from './routes/api';
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;

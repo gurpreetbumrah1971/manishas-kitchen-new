@@ -14,6 +14,7 @@ import {
   Pencil,
   Trash2,
   X,
+  XCircle,
   MessageCircle
 } from 'lucide-react';
 import {
@@ -206,7 +207,7 @@ const AdminDashboard = () => {
     const applyOrders = (nextOrders: any[]) => {
       if (!active) return;
       setOrders(nextOrders);
-      setSelectedOrder(current => current ? nextOrders.find(order => order.id === current.id) || current : current);
+      setSelectedOrder((current: any | null) => current ? nextOrders.find(order => order.id === current.id) || current : current);
     };
 
     const fetchOrders = async () => {
@@ -393,6 +394,10 @@ const AdminDashboard = () => {
   };
 
   const updateOrderAction = async (order: any, action: string) => {
+    if (action === 'CANCELLED' && !window.confirm(`Cancel order ${order.orderNumber}?`)) {
+      return;
+    }
+
     setUpdatingOrderActionById(current => ({ ...current, [order.id]: action }));
     try {
       const payload: any = { action };
@@ -428,9 +433,14 @@ const AdminDashboard = () => {
     return (
       <div style={{ display: 'grid', gap: '8px', minWidth: '230px' }}>
         {statusLabel === 'PENDING' && (
-          <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'CONFIRM')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
-            <MessageCircle size={15} /> {updatingAction === 'CONFIRM' ? 'Confirming...' : 'Confirm Order'}
-          </button>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(110px, 1fr))', gap: '6px' }}>
+            <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'CONFIRM')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
+              <MessageCircle size={15} /> {updatingAction === 'CONFIRM' ? 'Confirming...' : 'Confirm Order'}
+            </button>
+            <button disabled={Boolean(updatingAction)} onClick={() => updateOrderAction(order, 'CANCELLED')} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #c62828', backgroundColor: '#fff', color: '#c62828', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
+              <XCircle size={15} /> {updatingAction === 'CANCELLED' ? 'Cancelling...' : 'Cancel Order'}
+            </button>
+          </div>
         )}
         {statusLabel === 'CONFIRMED' && (
           <div style={{ display: 'grid', gridTemplateColumns: '72px minmax(110px, 1fr)', gap: '6px', alignItems: 'center' }}>
