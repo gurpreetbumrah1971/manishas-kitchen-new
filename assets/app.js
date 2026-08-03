@@ -224,6 +224,7 @@ function renderAccount(account) {
       <section class="card wallet-summary-card">
         <div class="account-heading"><span class="account-avatar">&#128100;</span><span><h2>${escapeHtml(customer.name || 'Welcome back')}</h2><p>${escapeHtml(customer.mobileNumber || '')}</p></span></div>
         <div class="wallet-balance"><small>Cashback wallet balance</small><strong>${money(customer.cashbackBalance)}</strong><span>Available to redeem on your next order</span></div>
+        <a class="btn primary" href="/checkout.html">Redeem on next order</a>
         <button class="btn ghost" type="button" data-account-logout>Logout</button>
       </section>
       <section class="card account-history-card"><div class="account-section-title"><h2>Order History</h2><span>${orders.length} order${orders.length === 1 ? '' : 's'}</span></div>${orders.length ? `<div class="order-history-list">${orders.map((order) => `<article class="order-history-row"><div><strong>${escapeHtml(order.orderNumber)}</strong><small>${escapeHtml(new Date(order.createdAt).toLocaleDateString('en-IN'))} · ${escapeHtml(order.status)}</small><p>${escapeHtml((order.items || []).map((item) => `${item.quantity} x ${item.name}`).join(', '))}</p></div><div class="order-history-total"><strong>${money(order.grandTotal)}</strong><small>${order.cashbackEarned > 0 ? `+${money(order.cashbackEarned)} cashback` : 'No cashback'}</small></div></article>`).join('')}</div>` : '<p class="cashback-empty">No orders found for this mobile number yet.</p>'}</section>
