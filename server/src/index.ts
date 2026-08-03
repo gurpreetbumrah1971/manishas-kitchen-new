@@ -67,7 +67,7 @@ app.get(['/', '/index.html'], (req, res) => {
   sendPublicPage(res, 'index');
 });
 
-app.get(['/menu.html', '/checkout.html'], (req, res) => {
+app.get(['/menu.html', '/checkout.html', '/account.html'], (req, res) => {
   sendPublicPage(res, path.basename(req.path, '.html'));
 });
 

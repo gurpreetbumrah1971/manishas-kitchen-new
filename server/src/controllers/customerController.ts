@@ -60,6 +60,37 @@ const publicCustomerWallet = async (customerId: number) => {
   };
 };
 
+const publicCustomerOrders = async (customerId: number) => {
+  const orders = await prisma.order.findMany({
+    where: { customerId },
+    orderBy: { createdAt: 'desc' },
+    take: 30,
+    select: {
+      orderNumber: true,
+      customerName: true,
+      grandTotal: true,
+      cashbackEarned: true,
+      cashbackRedeemed: true,
+      paymentMethod: true,
+      status: true,
+      orderType: true,
+      createdAt: true,
+      orderItems: {
+        select: { quantity: true, foodItem: { select: { name: true } } },
+      },
+    },
+  });
+
+  return orders.map((order) => ({
+    ...order,
+    grandTotal: Number(order.grandTotal),
+    cashbackEarned: Number(order.cashbackEarned),
+    cashbackRedeemed: Number(order.cashbackRedeemed),
+    items: order.orderItems.map((item) => ({ name: item.foodItem.name, quantity: item.quantity })),
+    orderItems: undefined,
+  }));
+};
+
 export const requestCustomerOtp = async (req: Request, res: Response) => {
   try {
     const mobileNumber = normalizeMobileNumber(req.body.mobileNumber);
@@ -173,6 +204,23 @@ export const getCustomerWallet = async (req: Request, res: Response) => {
     }
 
     res.json(wallet);
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid customer token' });
+  }
+};
+
+export const getCustomerAccount = async (req: Request, res: Response) => {
+  try {
+    const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    if (!token) return res.status(401).json({ error: 'Customer login required' });
+
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    if (decoded.type !== 'customer' || !decoded.id) return res.status(401).json({ error: 'Invalid customer token' });
+
+    const wallet = await publicCustomerWallet(Number(decoded.id));
+    if (!wallet) return res.status(404).json({ error: 'Customer not found' });
+
+    res.json({ ...wallet, orders: await publicCustomerOrders(Number(decoded.id)) });
   } catch (error) {
     res.status(401).json({ error: 'Invalid customer token' });
   }

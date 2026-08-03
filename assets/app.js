@@ -201,6 +201,56 @@ function saveCustomerAuth(auth) {
   localStorage.setItem(CUSTOMER_AUTH_KEY, JSON.stringify(auth));
 }
 
+function renderAccount(account) {
+  const target = document.querySelector('[data-account-content]');
+  if (!target) return;
+  if (!account) {
+    const pending = getPendingCashbackOtp();
+    target.innerHTML = `
+      <section class="card account-login-card">
+        <div class="account-heading"><span class="account-avatar">&#128100;</span><span><h2>Login to your account</h2><p>Use your mobile number and one-time password to view orders and cashback.</p></span></div>
+        <form class="cashback-login-form" data-account-login-form>
+          <label>Mobile Number<input name="mobile_number" required inputmode="tel" placeholder="10-digit mobile number"></label>
+          <button class="btn primary" type="submit">Send OTP</button>
+        </form>
+        ${pending ? `<form class="cashback-login-form" data-account-verify-form><input type="hidden" name="mobile_number" value="${escapeHtml(pending.mobileNumber)}"><p class="cashback-test-otp">Testing OTP: <strong>${escapeHtml(pending.testOtp || '')}</strong></p><label>Enter OTP<input name="otp" required inputmode="numeric" maxlength="6" placeholder="6-digit OTP"></label><button class="btn primary" type="submit">Login</button></form>` : ''}
+      </section>`;
+    return;
+  }
+  const customer = account.customer || {};
+  const orders = account.orders || [];
+  target.innerHTML = `
+    <div class="account-grid">
+      <section class="card wallet-summary-card">
+        <div class="account-heading"><span class="account-avatar">&#128100;</span><span><h2>${escapeHtml(customer.name || 'Welcome back')}</h2><p>${escapeHtml(customer.mobileNumber || '')}</p></span></div>
+        <div class="wallet-balance"><small>Cashback wallet balance</small><strong>${money(customer.cashbackBalance)}</strong><span>Available to redeem on your next order</span></div>
+        <button class="btn ghost" type="button" data-account-logout>Logout</button>
+      </section>
+      <section class="card account-history-card"><div class="account-section-title"><h2>Order History</h2><span>${orders.length} order${orders.length === 1 ? '' : 's'}</span></div>${orders.length ? `<div class="order-history-list">${orders.map((order) => `<article class="order-history-row"><div><strong>${escapeHtml(order.orderNumber)}</strong><small>${escapeHtml(new Date(order.createdAt).toLocaleDateString('en-IN'))} · ${escapeHtml(order.status)}</small><p>${escapeHtml((order.items || []).map((item) => `${item.quantity} x ${item.name}`).join(', '))}</p></div><div class="order-history-total"><strong>${money(order.grandTotal)}</strong><small>${order.cashbackEarned > 0 ? `+${money(order.cashbackEarned)} cashback` : 'No cashback'}</small></div></article>`).join('')}</div>` : '<p class="cashback-empty">No orders found for this mobile number yet.</p>'}</section>
+      <section class="card account-history-card"><div class="account-section-title"><h2>Cashback Activity</h2><span>Latest credits and redemptions</span></div>${cashbackTransactionHtml(account.transactions || [])}</section>
+    </div>`;
+}
+
+async function loadCustomerAccount() {
+  const target = document.querySelector('[data-account-content]');
+  if (!target) return;
+  const auth = getCustomerAuth();
+  if (!auth) {
+    renderAccount(null);
+    return;
+  }
+  try {
+    const response = await fetch('/api/customer/account', { headers: { Accept: 'application/json', Authorization: `Bearer ${auth.token}` } });
+    if (!response.ok) throw new Error('Session expired');
+    const account = await response.json();
+    saveCustomerAuth({ token: auth.token, expiresAt: auth.expiresAt, customer: account.customer, transactions: account.transactions || [] });
+    renderAccount(account);
+  } catch {
+    localStorage.removeItem(CUSTOMER_AUTH_KEY);
+    renderAccount(null);
+  }
+}
+
 function getPendingCashbackOtp() {
   try {
     const pending = JSON.parse(localStorage.getItem(CASHBACK_OTP_KEY) || 'null');
@@ -928,6 +978,13 @@ document.addEventListener('click', (event) => {
     renderCheckout();
   }
 
+  const accountLogout = event.target.closest('[data-account-logout]');
+  if (accountLogout) {
+    localStorage.removeItem(CUSTOMER_AUTH_KEY);
+    localStorage.removeItem(CASHBACK_REDEEM_KEY);
+    renderAccount(null);
+  }
+
   const menuTab = event.target.closest('[data-menu-tab]');
   if (menuTab) {
     const tabGroup = menuTab.closest('[data-menu-tabs]');
@@ -954,6 +1011,45 @@ document.addEventListener('change', (event) => {
 });
 
 document.addEventListener('submit', async (event) => {
+  const accountLoginForm = event.target.closest('[data-account-login-form]');
+  if (accountLoginForm) {
+    event.preventDefault();
+    const mobileNumber = normalizeMobileNumber(new FormData(accountLoginForm).get('mobile_number'));
+    const submitButton = accountLoginForm.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
+    try {
+      const response = await fetch('/api/customer/request-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not send OTP.');
+      localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({ mobileNumber: result.mobileNumber || mobileNumber, testOtp: result.testOtp || '', expiresAt: result.expiresAt }));
+      renderAccount(null);
+    } catch (error) {
+      alert(error.message || 'Could not send OTP.');
+      if (submitButton) submitButton.disabled = false;
+    }
+    return;
+  }
+
+  const accountVerifyForm = event.target.closest('[data-account-verify-form]');
+  if (accountVerifyForm) {
+    event.preventDefault();
+    const formData = new FormData(accountVerifyForm);
+    const submitButton = accountVerifyForm.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
+    try {
+      const response = await fetch('/api/customer/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber: normalizeMobileNumber(formData.get('mobile_number')), otp: formData.get('otp') }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not verify OTP.');
+      localStorage.removeItem(CASHBACK_OTP_KEY);
+      saveCustomerAuth({ token: result.token, expiresAt: result.expiresAt, customer: result.customer, transactions: result.transactions || [] });
+      loadCustomerAccount();
+    } catch (error) {
+      alert(error.message || 'Could not verify OTP.');
+      if (submitButton) submitButton.disabled = false;
+    }
+    return;
+  }
+
   const loginForm = event.target.closest('[data-cashback-login-form]');
   if (loginForm) {
     event.preventDefault();
@@ -1527,6 +1623,7 @@ updateStaticMenuItemOverrides();
 ensureMenuSearchResults();
 renderCartControls();
 renderCheckout();
+loadCustomerAccount();
 updateCartCount();
 syncPaymentBox();
 applyMenuFilters();
