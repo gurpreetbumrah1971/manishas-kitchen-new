@@ -50,6 +50,7 @@
                     <div><span>GST (5%)</span><strong data-checkout-gst>Rs. 0.00</strong></div>
                     <div><span>Discount</span><strong data-checkout-discount>Rs. 0.00</strong></div>
                     <div><span>Delivery Charges <small class="delivery-nudge" data-delivery-nudge></small></span><strong data-checkout-delivery>Rs. 0.00</strong></div>
+                    <div data-checkout-cashback-row hidden><span>Cashback Redeemed</span><strong data-checkout-cashback>Rs. 0.00</strong></div>
                 </div>
                 <p class="delivery-note">Delivery charges apply for Kopar Khairane. For areas outside Kopar Khairane, please connect with us for delivery charges.</p>
                 <div class="total-row grand">
@@ -70,6 +71,10 @@
                 <input type="hidden" name="cart_json" data-cart-json>
                 <label>Full Name *<input name="customer_name" required placeholder="Enter your name"></label>
                 <label>WhatsApp Number *<input name="whatsapp_number" required inputmode="tel" placeholder="10-digit number"></label>
+                <section class="cashback-wallet" data-cashback-panel>
+                    <h2>Cashback Wallet</h2>
+                    <p>Login with mobile OTP to view earned cashback and redeem it on this order.</p>
+                </section>
                 <label>For home delivery, please enter address<textarea name="address" rows="3" placeholder="House / flat, street, landmark"></textarea></label>
                 <div class="special-day-fields">
                     <p><strong>Your special day deserves more than just wishes!</strong><br><span>Let us know your birthday and anniversary and get a personalized surprise from us.</span></p>

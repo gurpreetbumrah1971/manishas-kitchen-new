@@ -1,9 +1,12 @@
 import { Request, Response } from 'express';
 import { randomBytes } from 'crypto';
+import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
 import { sendAdminOrderWhatsApp } from '../services/whatsappService';
 
 const ORDER_SESSION_MINUTES = 30;
+const CASHBACK_RATE = 0.10;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 const orderInclude = {
   orderItems: {
@@ -12,6 +15,28 @@ const orderInclude = {
 };
 
 const orderSessionExpiry = () => new Date(Date.now() + ORDER_SESSION_MINUTES * 60 * 1000);
+
+const money = (value: number) => Math.max(0, Math.round(Number(value || 0) * 100) / 100);
+
+const normalizeMobileNumber = (value: string) => {
+  const digits = String(value || '').replace(/\D+/g, '');
+  if (digits.length === 10) return `91${digits}`;
+  return digits;
+};
+
+const customerFromToken = (token: string) => {
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    if (decoded.type !== 'customer' || !decoded.id || !decoded.mobileNumber) return null;
+    return {
+      id: Number(decoded.id),
+      mobileNumber: String(decoded.mobileNumber),
+    };
+  } catch {
+    return null;
+  }
+};
 
 const deliveryChargeForSubtotal = (subtotal: number) => {
   if (subtotal <= 0 || subtotal > 300) return 0;
@@ -43,6 +68,8 @@ const publicOrderStatus = (order: any) => {
     readyAt: order.readyAt,
     deliveredAt: order.deliveredAt,
     grandTotal: order.grandTotal,
+    cashbackEarned: order.cashbackEarned,
+    cashbackRedeemed: order.cashbackRedeemed,
     paymentMethod: order.paymentMethod,
     customerSessionExpiresAt: order.customerSessionExpiresAt,
   };
@@ -63,7 +90,9 @@ export const createOrder = async (req: Request, res: Response) => {
       paymentMethod,
       items, // Array of { foodItemId, name, quantity, unitPrice, subtotal }
       gstAmount,
-      discountAmount
+      discountAmount,
+      cashbackRedeemAmount,
+      customerAuthToken
     } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -116,32 +145,97 @@ export const createOrder = async (req: Request, res: Response) => {
     const normalizedTotalAmount = computedSubtotal;
     const normalizedGstAmount = Number(gstAmount) || 0;
     const normalizedDiscountAmount = Number(discountAmount) || 0;
-    const normalizedGrandTotal = computedSubtotal + normalizedGstAmount - normalizedDiscountAmount + computedDeliveryAmount;
+    const preCashbackGrandTotal = money(computedSubtotal + normalizedGstAmount - normalizedDiscountAmount + computedDeliveryAmount);
+    const requestedCashbackRedeem = money(Number(cashbackRedeemAmount) || 0);
+    const normalizedMobileNumber = normalizeMobileNumber(mobileNumber || whatsappNumber || '');
+    const authenticatedCustomer = customerFromToken(String(customerAuthToken || ''));
 
-    const order = await prisma.order.create({
-      data: {
-        orderNumber,
-        customerName,
-        mobileNumber,
-        whatsappNumber,
-        birthday: birthday ? new Date(birthday) : undefined,
-        anniversary: anniversary ? new Date(anniversary) : undefined,
-        email,
-        address,
-        tableNumber,
-        orderType: orderType || 'DINE_IN',
-        paymentMethod: paymentMethod || 'UPI',
-        totalAmount: normalizedTotalAmount,
-        gstAmount: normalizedGstAmount,
-        discountAmount: normalizedDiscountAmount,
-        grandTotal: normalizedGrandTotal,
-        customerSessionToken,
-        customerSessionExpiresAt: orderSessionExpiry(),
-        orderItems: {
-          create: orderItems
-        }
-      },
-      include: orderInclude
+    if (requestedCashbackRedeem > 0 && (!authenticatedCustomer || authenticatedCustomer.mobileNumber !== normalizedMobileNumber)) {
+      return res.status(401).json({ error: 'Please login with this mobile number to redeem cashback.' });
+    }
+
+    const order = await prisma.$transaction(async (tx) => {
+      const customer = normalizedMobileNumber
+        ? await tx.customer.upsert({
+          where: { mobileNumber: normalizedMobileNumber },
+          update: customerName ? { name: customerName } : {},
+          create: { mobileNumber: normalizedMobileNumber, name: customerName || undefined },
+        })
+        : null;
+      const currentBalance = customer ? Number(customer.cashbackBalance) : 0;
+      const normalizedCashbackRedeemed = customer && authenticatedCustomer
+        ? money(Math.min(requestedCashbackRedeem, currentBalance, preCashbackGrandTotal))
+        : 0;
+      const normalizedGrandTotal = money(preCashbackGrandTotal - normalizedCashbackRedeemed);
+      const normalizedCashbackEarned = money(normalizedGrandTotal * CASHBACK_RATE);
+      let balanceAfterRedemption = currentBalance;
+
+      const savedOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          customerId: customer ? customer.id : undefined,
+          customerName,
+          mobileNumber: normalizedMobileNumber || mobileNumber,
+          whatsappNumber,
+          birthday: birthday ? new Date(birthday) : undefined,
+          anniversary: anniversary ? new Date(anniversary) : undefined,
+          email,
+          address,
+          tableNumber,
+          orderType: orderType || 'DINE_IN',
+          paymentMethod: paymentMethod || 'UPI',
+          totalAmount: normalizedTotalAmount,
+          gstAmount: normalizedGstAmount,
+          discountAmount: normalizedDiscountAmount,
+          cashbackRedeemed: normalizedCashbackRedeemed,
+          cashbackEarned: normalizedCashbackEarned,
+          grandTotal: normalizedGrandTotal,
+          customerSessionToken,
+          customerSessionExpiresAt: orderSessionExpiry(),
+          orderItems: {
+            create: orderItems
+          }
+        },
+        include: orderInclude
+      });
+
+      if (customer && normalizedCashbackRedeemed > 0) {
+        balanceAfterRedemption = money(currentBalance - normalizedCashbackRedeemed);
+        await tx.customer.update({
+          where: { id: customer.id },
+          data: { cashbackBalance: balanceAfterRedemption },
+        });
+        await tx.cashbackTransaction.create({
+          data: {
+            customerId: customer.id,
+            orderId: savedOrder.id,
+            type: 'REDEEMED',
+            amount: normalizedCashbackRedeemed,
+            balanceAfter: balanceAfterRedemption,
+            note: `Redeemed on order ${orderNumber}`,
+          },
+        });
+      }
+
+      if (customer && normalizedCashbackEarned > 0) {
+        const balanceAfterEarn = money(balanceAfterRedemption + normalizedCashbackEarned);
+        await tx.customer.update({
+          where: { id: customer.id },
+          data: { cashbackBalance: balanceAfterEarn },
+        });
+        await tx.cashbackTransaction.create({
+          data: {
+            customerId: customer.id,
+            orderId: savedOrder.id,
+            type: 'EARNED',
+            amount: normalizedCashbackEarned,
+            balanceAfter: balanceAfterEarn,
+            note: `10% cashback earned on order ${orderNumber}`,
+          },
+        });
+      }
+
+      return savedOrder;
     });
 
     sendAdminOrderWhatsApp(order).catch((error) => {

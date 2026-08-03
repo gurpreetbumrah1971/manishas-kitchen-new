@@ -1,5 +1,8 @@
 const CART_KEY = 'phpCart';
 const ORDER_SESSION_KEY = 'mkOrderSession';
+const CUSTOMER_AUTH_KEY = 'mkCustomerAuth';
+const CASHBACK_REDEEM_KEY = 'mkCashbackRedeem';
+const CASHBACK_OTP_KEY = 'mkCashbackOtp';
 const INDEPENDENCE_BANNER_SEEN_KEY = 'mkIndependenceBannerSeenV3';
 const APP_ASSET_BASE_URL = document.currentScript && document.currentScript.src
   ? new URL('.', document.currentScript.src).toString()
@@ -172,6 +175,165 @@ function getActiveOrderSession() {
 
 function saveOrderSession(session) {
   localStorage.setItem(ORDER_SESSION_KEY, JSON.stringify(session));
+}
+
+function normalizeMobileNumber(value) {
+  const digits = String(value || '').replace(/\D+/g, '');
+  return digits.length === 10 ? `91${digits}` : digits;
+}
+
+function getCustomerAuth() {
+  try {
+    const auth = JSON.parse(localStorage.getItem(CUSTOMER_AUTH_KEY) || 'null');
+    if (!auth || !auth.token || !auth.customer || !auth.expiresAt) return null;
+    if (Date.now() >= new Date(auth.expiresAt).getTime()) {
+      localStorage.removeItem(CUSTOMER_AUTH_KEY);
+      return null;
+    }
+    return auth;
+  } catch {
+    localStorage.removeItem(CUSTOMER_AUTH_KEY);
+    return null;
+  }
+}
+
+function saveCustomerAuth(auth) {
+  localStorage.setItem(CUSTOMER_AUTH_KEY, JSON.stringify(auth));
+}
+
+function getPendingCashbackOtp() {
+  try {
+    const pending = JSON.parse(localStorage.getItem(CASHBACK_OTP_KEY) || 'null');
+    if (!pending || !pending.mobileNumber || !pending.expiresAt) return null;
+    if (Date.now() >= new Date(pending.expiresAt).getTime()) {
+      localStorage.removeItem(CASHBACK_OTP_KEY);
+      return null;
+    }
+    return pending;
+  } catch {
+    localStorage.removeItem(CASHBACK_OTP_KEY);
+    return null;
+  }
+}
+
+function customerCashbackBalance() {
+  const auth = getCustomerAuth();
+  return auth && auth.customer ? Number(auth.customer.cashbackBalance || 0) : 0;
+}
+
+function requestedCashbackRedeem() {
+  return Math.max(0, Number(localStorage.getItem(CASHBACK_REDEEM_KEY) || 0) || 0);
+}
+
+function cashbackAppliedFor(preCashbackTotal) {
+  const auth = getCustomerAuth();
+  if (!auth) return 0;
+  return Math.max(0, Math.min(requestedCashbackRedeem(), customerCashbackBalance(), Number(preCashbackTotal || 0)));
+}
+
+function cashbackTransactionHtml(transactions) {
+  if (!transactions || !transactions.length) {
+    return '<p class="cashback-empty">No cashback activity yet.</p>';
+  }
+  return `
+    <div class="cashback-transactions">
+      ${transactions.slice(0, 5).map((transaction) => {
+        const isRedeemed = transaction.type === 'REDEEMED';
+        const prefix = isRedeemed ? '-' : '+';
+        return `
+          <div class="cashback-transaction">
+            <span>
+              <strong>${escapeHtml(transaction.note || transaction.type)}</strong>
+              <small>${escapeHtml(new Date(transaction.createdAt).toLocaleDateString('en-IN'))}</small>
+            </span>
+            <b class="${isRedeemed ? 'cashback-debit' : 'cashback-credit'}">${prefix}${money(transaction.amount)}</b>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderCashbackPanel(preCashbackTotal = 0, applied = 0) {
+  const panel = document.querySelector('[data-cashback-panel]');
+  if (!panel) return;
+
+  const auth = getCustomerAuth();
+  const pendingOtp = getPendingCashbackOtp();
+
+  if (!auth) {
+    panel.innerHTML = `
+      <h2>Cashback Wallet</h2>
+      <p>Login with mobile OTP to view cashback and redeem it on this order.</p>
+      <form class="cashback-login-form" data-cashback-login-form>
+        <label>Mobile Number<input name="mobile_number" required inputmode="tel" placeholder="10-digit mobile number"></label>
+        <button class="btn secondary full" type="submit">Send Test OTP</button>
+      </form>
+      ${pendingOtp ? `
+        <form class="cashback-login-form" data-cashback-verify-form>
+          <input type="hidden" name="mobile_number" value="${escapeHtml(pendingOtp.mobileNumber)}">
+          <p class="cashback-test-otp">Testing OTP: <strong>${escapeHtml(pendingOtp.testOtp || '')}</strong></p>
+          <label>Enter OTP<input name="otp" required inputmode="numeric" maxlength="6" placeholder="6-digit OTP"></label>
+          <button class="btn primary full" type="submit">Login to Wallet</button>
+        </form>
+      ` : ''}
+    `;
+    return;
+  }
+
+  const customer = auth.customer || {};
+  const balance = Number(customer.cashbackBalance || 0);
+  const maxRedeem = Math.max(0, Math.min(balance, Number(preCashbackTotal || 0)));
+  const savedRedeem = Math.max(0, Math.min(requestedCashbackRedeem(), maxRedeem));
+  if (savedRedeem !== requestedCashbackRedeem()) {
+    localStorage.setItem(CASHBACK_REDEEM_KEY, String(savedRedeem));
+  }
+
+  panel.innerHTML = `
+    <h2>Cashback Wallet</h2>
+    <div class="cashback-balance-row">
+      <span>
+        <small>Logged in as ${escapeHtml(customer.mobileNumber || '')}</small>
+        <strong>${money(balance)}</strong>
+      </span>
+      <button class="btn ghost" type="button" data-cashback-logout>Logout</button>
+    </div>
+    <label>Redeem on this order
+      <input name="cashback_redeem" data-cashback-redeem type="number" min="0" max="${maxRedeem.toFixed(2)}" step="1" value="${savedRedeem ? savedRedeem.toFixed(2) : ''}" placeholder="0">
+    </label>
+    <p class="cashback-help">Available now: ${money(balance)}. Applied to this order: <strong>${money(applied)}</strong>.</p>
+    ${cashbackTransactionHtml(auth.transactions || [])}
+  `;
+}
+
+async function refreshCustomerWallet() {
+  const auth = getCustomerAuth();
+  if (!auth) {
+    renderCashbackPanel();
+    return null;
+  }
+
+  const response = await fetch('/api/customer/wallet', {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${auth.token}`,
+    },
+  });
+  if (!response.ok) {
+    localStorage.removeItem(CUSTOMER_AUTH_KEY);
+    renderCheckout();
+    return null;
+  }
+  const wallet = await response.json();
+  const nextAuth = {
+    token: auth.token,
+    expiresAt: auth.expiresAt,
+    customer: wallet.customer,
+    transactions: wallet.transactions || [],
+  };
+  saveCustomerAuth(nextAuth);
+  renderCheckout();
+  return nextAuth;
 }
 
 function formatCountdown(milliseconds) {
@@ -688,14 +850,19 @@ function renderCheckout() {
   const discountRate = discountRateForSubtotal(subtotal, discountTiers);
   const discount = Number((subtotal * discountRate).toFixed(2));
   const deliveryCharge = deliveryChargeForSubtotal(subtotal);
-  const grandTotal = subtotal + gst - discount + deliveryCharge;
+  const preCashbackGrandTotal = subtotal + gst - discount + deliveryCharge;
+  const cashbackRedeemed = cashbackAppliedFor(preCashbackGrandTotal);
+  const grandTotal = Math.max(0, Number((preCashbackGrandTotal - cashbackRedeemed).toFixed(2)));
   document.querySelectorAll('[data-checkout-subtotal]').forEach((node) => node.textContent = money(subtotal));
   document.querySelectorAll('[data-checkout-gst]').forEach((node) => node.textContent = money(gst));
   document.querySelectorAll('[data-checkout-discount]').forEach((node) => node.textContent = money(discount));
   document.querySelectorAll('[data-checkout-delivery]').forEach((node) => node.textContent = money(deliveryCharge));
+  document.querySelectorAll('[data-checkout-cashback]').forEach((node) => node.textContent = money(cashbackRedeemed));
+  document.querySelectorAll('[data-checkout-cashback-row]').forEach((node) => node.hidden = cashbackRedeemed <= 0);
   document.querySelectorAll('[data-delivery-nudge]').forEach((node) => node.textContent = deliveryNudgeForSubtotal(subtotal));
   document.querySelectorAll('[data-checkout-total], [data-upi-total]').forEach((node) => node.textContent = money(grandTotal));
   document.querySelectorAll('[data-cart-json]').forEach((node) => node.value = JSON.stringify(visibleCart));
+  renderCashbackPanel(preCashbackGrandTotal, cashbackRedeemed);
   if (!target) return;
 
   if (!visibleCart.length) {
@@ -754,6 +921,13 @@ document.addEventListener('click', (event) => {
     if (nav) nav.classList.toggle('open');
   }
 
+  const cashbackLogout = event.target.closest('[data-cashback-logout]');
+  if (cashbackLogout) {
+    localStorage.removeItem(CUSTOMER_AUTH_KEY);
+    localStorage.removeItem(CASHBACK_REDEEM_KEY);
+    renderCheckout();
+  }
+
   const menuTab = event.target.closest('[data-menu-tab]');
   if (menuTab) {
     const tabGroup = menuTab.closest('[data-menu-tabs]');
@@ -767,6 +941,103 @@ document.addEventListener('click', (event) => {
       panel.hidden = panel.dataset.menuPanel !== activeCategory;
     });
     applyMenuFilters();
+  }
+});
+
+document.addEventListener('change', (event) => {
+  const redeemInput = event.target.closest('[data-cashback-redeem]');
+  if (!redeemInput) return;
+
+  const amount = Math.max(0, Number(redeemInput.value || 0) || 0);
+  localStorage.setItem(CASHBACK_REDEEM_KEY, String(amount));
+  renderCheckout();
+});
+
+document.addEventListener('submit', async (event) => {
+  const loginForm = event.target.closest('[data-cashback-login-form]');
+  if (loginForm) {
+    event.preventDefault();
+    const formData = new FormData(loginForm);
+    const orderForm = document.querySelector('[data-checkout-form]');
+    const nameInput = orderForm && orderForm.querySelector('[name="customer_name"]');
+    const mobileNumber = normalizeMobileNumber(formData.get('mobile_number'));
+    const submitButton = loginForm.querySelector('button[type="submit"]');
+    const originalText = submitButton && submitButton.textContent || 'Send Test OTP';
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Sending...';
+    }
+
+    try {
+      const response = await fetch('/api/customer/request-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          mobileNumber,
+          name: nameInput ? nameInput.value : '',
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not send OTP.');
+      localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({
+        mobileNumber: result.mobileNumber || mobileNumber,
+        testOtp: result.testOtp || '',
+        expiresAt: result.expiresAt,
+      }));
+      renderCheckout();
+    } catch (error) {
+      alert(error.message || 'Could not send OTP.');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    }
+    return;
+  }
+
+  const verifyForm = event.target.closest('[data-cashback-verify-form]');
+  if (verifyForm) {
+    event.preventDefault();
+    const formData = new FormData(verifyForm);
+    const submitButton = verifyForm.querySelector('button[type="submit"]');
+    const originalText = submitButton && submitButton.textContent || 'Login to Wallet';
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Verifying...';
+    }
+
+    try {
+      const response = await fetch('/api/customer/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          mobileNumber: normalizeMobileNumber(formData.get('mobile_number')),
+          otp: formData.get('otp'),
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not verify OTP.');
+      localStorage.removeItem(CASHBACK_OTP_KEY);
+      saveCustomerAuth({
+        token: result.token,
+        expiresAt: result.expiresAt,
+        customer: result.customer,
+        transactions: result.transactions || [],
+      });
+      renderCheckout();
+    } catch (error) {
+      alert(error.message || 'Could not verify OTP.');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    }
   }
 });
 
@@ -982,6 +1253,8 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
 
   const orderNumber = order.orderNumber || order.order_number || '';
   const paymentAmount = Number(amount || parseMoney(total));
+  const cashbackEarned = Number(order.cashbackEarned || (paymentAmount * 0.10) || 0);
+  const cashbackRedeemed = Number(order.cashbackRedeemed || 0);
   const shouldShowUpi = String(paymentMethod || 'UPI').toUpperCase() === 'UPI';
   section.innerHTML = `
     <div class="success-panel checkout-thank-you">
@@ -990,6 +1263,12 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
       <div class="thank-you-total">
         <span>Total Amount</span>
         <strong>${escapeHtml(total)}</strong>
+      </div>
+      <div class="cashback-earned-card">
+        <span>Cashback for next order</span>
+        <strong>${money(cashbackEarned)}</strong>
+        <p>10% of your final bill has been added to your mobile wallet.</p>
+        ${cashbackRedeemed > 0 ? `<small>You redeemed ${money(cashbackRedeemed)} on this order.</small>` : ''}
       </div>
       ${shouldShowUpi ? `
         <div class="payment-box thank-you-payment">
@@ -1046,7 +1325,11 @@ function restoreStaticOrderSession() {
   if (!session) return;
 
   showStaticOrderThankYou({
-    order: { orderNumber: session.orderNumber },
+    order: {
+      orderNumber: session.orderNumber,
+      cashbackEarned: session.cashbackEarned || 0,
+      cashbackRedeemed: session.cashbackRedeemed || 0,
+    },
     total: session.total || 'Rs. 0.00',
     amount: session.amount || parseMoney(session.total),
     paymentMethod: session.paymentMethod || 'UPI',
@@ -1081,16 +1364,19 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
     const gstNode = document.querySelector('[data-checkout-gst]');
     const discountNode = document.querySelector('[data-checkout-discount]');
     const deliveryNode = document.querySelector('[data-checkout-delivery]');
+    const cashbackNode = document.querySelector('[data-checkout-cashback]');
     const checkoutTotalNode = document.querySelector('[data-checkout-total]');
     const subtotal = parseMoney(subtotalNode && subtotalNode.textContent);
     const gstAmount = parseMoney(gstNode && gstNode.textContent);
     const discountAmount = parseMoney(discountNode && discountNode.textContent);
     const deliveryAmount = parseMoney(deliveryNode && deliveryNode.textContent);
+    const cashbackRedeemAmount = parseMoney(cashbackNode && cashbackNode.textContent);
     const grandTotal = parseMoney(checkoutTotalNode && checkoutTotalNode.textContent);
     const total = checkoutTotalNode && checkoutTotalNode.textContent || money(grandTotal);
     const items = cart.map((item) => `${item.name} x ${item.quantity}`).join(', ');
     const number = String(formData.get('whatsapp_number') || '').replace(/\D+/g, '');
     const normalizedNumber = number.length === 10 ? `91${number}` : number;
+    const customerAuth = getCustomerAuth();
     const orderPayload = {
       customerName: String(formData.get('customer_name') || '').trim(),
       mobileNumber: String(formData.get('whatsapp_number') || '').trim(),
@@ -1104,6 +1390,8 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
       gstAmount,
       discountAmount,
       deliveryAmount,
+      cashbackRedeemAmount,
+      customerAuthToken: customerAuth ? customerAuth.token : '',
       grandTotal,
       items: cart.map((item) => ({
         foodItemId: Number(item.id),
@@ -1147,10 +1435,13 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
           amount: grandTotal,
           paymentMethod: orderPayload.paymentMethod,
           whatsappUrl,
+          cashbackEarned: result.cashbackEarned || 0,
+          cashbackRedeemed: result.cashbackRedeemed || 0,
         }
         : null;
 
       localStorage.removeItem(CART_KEY);
+      localStorage.removeItem(CASHBACK_REDEEM_KEY);
       if (session) saveOrderSession(session);
       updateCartCount();
       showStaticOrderThankYou({
@@ -1161,6 +1452,7 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
         whatsappUrl,
         session,
       });
+      refreshCustomerWallet().catch(() => {});
     } catch (error) {
       alert(error.message || 'Failed to place order. Please try again.');
       if (submitButton) {

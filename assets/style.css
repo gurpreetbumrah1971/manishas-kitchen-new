@@ -843,6 +843,100 @@ textarea {
     gap: 1rem;
 }
 
+.cashback-wallet {
+    display: grid;
+    gap: 0.85rem;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #f7fff9;
+}
+
+.cashback-wallet h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.cashback-wallet p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.cashback-login-form {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.cashback-balance-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.cashback-balance-row span {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.cashback-balance-row small,
+.cashback-help,
+.cashback-empty {
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.cashback-balance-row strong {
+    color: #17834a;
+    font-size: 1.45rem;
+}
+
+.btn.ghost {
+    border: 1px solid var(--line);
+    background: #fff;
+    color: var(--text);
+}
+
+.cashback-test-otp {
+    padding: 0.65rem 0.75rem;
+    border-radius: 8px;
+    background: #fff7d6;
+    color: #4a3210;
+}
+
+.cashback-transactions {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.cashback-transaction {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--line);
+}
+
+.cashback-transaction span {
+    display: grid;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.cashback-transaction small {
+    color: var(--muted);
+}
+
+.cashback-credit {
+    color: #17834a;
+}
+
+.cashback-debit {
+    color: #b91c1c;
+}
+
 .form-card label,
 .auth-card label {
     display: grid;
@@ -1047,6 +1141,37 @@ textarea {
 .thank-you-total strong {
     color: var(--accent);
     font-size: 1.55rem;
+}
+
+.cashback-earned-card {
+    display: grid;
+    gap: 0.35rem;
+    width: 100%;
+    max-width: 460px;
+    width: min(100%, 460px);
+    padding: 1rem;
+    border: 1px solid #bde7c8;
+    border-radius: 8px;
+    background: #f0fff4;
+}
+
+.cashback-earned-card span {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.cashback-earned-card strong {
+    color: #17834a;
+    font-size: 1.7rem;
+}
+
+.cashback-earned-card p,
+.cashback-earned-card small {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.45;
 }
 
 .thank-you-payment {
