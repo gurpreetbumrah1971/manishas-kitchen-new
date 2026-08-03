@@ -10,7 +10,9 @@ const UPI_ID = 'manishaskitchen2026@okaxis';
 const UPI_PAYEE = 'Manisha Chavan';
 const UPI_AID = 'uGICAgNCIlbShSw';
 
-const buildUpiUrl = (scheme: string, amount: number, orderNumber = '') => {
+const isAndroidBrowser = () => /Android/i.test(window.navigator.userAgent || '');
+
+const buildUpiUrl = (scheme: string, packageName: string, amount: number, orderNumber = '') => {
   const returnUrl = new URL('/checkout', window.location.origin);
   if (orderNumber) returnUrl.searchParams.set('order', orderNumber);
   returnUrl.hash = 'thank-you';
@@ -27,14 +29,19 @@ const buildUpiUrl = (scheme: string, amount: number, orderNumber = '') => {
     params.set('tr', orderNumber);
     params.set('tn', `Manisha's Kitchen order ${orderNumber}`);
   }
-  return `${scheme}?${params.toString()}`;
+  const queryString = params.toString();
+  const genericUpiUrl = `upi://pay?${queryString}`;
+  if (packageName && isAndroidBrowser()) {
+    return `intent://pay?${queryString}#Intent;scheme=upi;package=${packageName};S.browser_fallback_url=${encodeURIComponent(genericUpiUrl)};end`;
+  }
+  return `${scheme}?${queryString}`;
 };
 
 const upiProviders = [
-  { label: 'Google Pay', icon: 'G', scheme: 'tez://upi/pay', background: '#1a73e8' },
-  { label: 'PhonePe', icon: 'Pe', scheme: 'phonepe://pay', background: '#5f259f' },
-  { label: 'Paytm', icon: 'Pay', scheme: 'paytmmp://pay', background: '#00baf2' },
-  { label: 'BHIM / UPI', icon: 'UPI', scheme: 'upi://pay', background: '#17834a' },
+  { label: 'Google Pay', icon: 'G', scheme: 'tez://upi/pay', packageName: 'com.google.android.apps.nbu.paisa.user', background: '#1a73e8' },
+  { label: 'PhonePe', icon: 'Pe', scheme: 'phonepe://pay', packageName: 'com.phonepe.app', background: '#5f259f' },
+  { label: 'Paytm', icon: 'Pay', scheme: 'paytmmp://pay', packageName: 'net.one97.paytm', background: '#00baf2' },
+  { label: 'BHIM / UPI', icon: 'UPI', scheme: 'upi://pay', packageName: 'in.org.npci.upiapp', background: '#17834a' },
 ];
 
 const Checkout = () => {
@@ -138,7 +145,7 @@ const Checkout = () => {
               {upiProviders.map((provider) => (
                 <a
                   key={provider.label}
-                  href={buildUpiUrl(provider.scheme, placedOrder.amount, placedOrder.orderNumber)}
+                  href={buildUpiUrl(provider.scheme, provider.packageName, placedOrder.amount, placedOrder.orderNumber)}
                   style={{
                     alignItems: 'center',
                     background: provider.background,

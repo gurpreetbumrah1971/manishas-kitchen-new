@@ -100,7 +100,11 @@ function upiReturnUrl(orderNumber) {
   return url.toString();
 }
 
-function buildUpiUrl({ scheme = 'upi://pay', amount, orderNumber }) {
+function isAndroidBrowser() {
+  return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
+}
+
+function buildUpiUrl({ scheme = 'upi://pay', packageName = '', amount, orderNumber }) {
   const { upiId, payeeName, upiAid } = upiPaymentConfig();
   const payableAmount = Number(amount || 0);
   if (payableAmount <= 0 || !upiId) return '#';
@@ -119,20 +123,25 @@ function buildUpiUrl({ scheme = 'upi://pay', amount, orderNumber }) {
   if (upiAid) {
     upiParams.set('aid', upiAid);
   }
-  return `${scheme}?${upiParams.toString()}`;
+  const queryString = upiParams.toString();
+  const genericUpiUrl = `upi://pay?${queryString}`;
+  if (packageName && isAndroidBrowser()) {
+    return `intent://pay?${queryString}#Intent;scheme=upi;package=${packageName};S.browser_fallback_url=${encodeURIComponent(genericUpiUrl)};end`;
+  }
+  return `${scheme}?${queryString}`;
 }
 
 function upiProviderButtons(amount, orderNumber = '') {
   const providers = [
-    { label: 'Google Pay', icon: 'G', className: 'gpay', scheme: 'tez://upi/pay' },
-    { label: 'PhonePe', icon: 'Pe', className: 'phonepe', scheme: 'phonepe://pay' },
-    { label: 'Paytm', icon: 'Pay', className: 'paytm', scheme: 'paytmmp://pay' },
-    { label: 'BHIM / UPI', icon: 'UPI', className: 'bhim', scheme: 'upi://pay' },
+    { label: 'Google Pay', icon: 'G', className: 'gpay', scheme: 'tez://upi/pay', packageName: 'com.google.android.apps.nbu.paisa.user' },
+    { label: 'PhonePe', icon: 'Pe', className: 'phonepe', scheme: 'phonepe://pay', packageName: 'com.phonepe.app' },
+    { label: 'Paytm', icon: 'Pay', className: 'paytm', scheme: 'paytmmp://pay', packageName: 'net.one97.paytm' },
+    { label: 'BHIM / UPI', icon: 'UPI', className: 'bhim', scheme: 'upi://pay', packageName: 'in.org.npci.upiapp' },
   ];
   return `
     <div class="upi-provider-grid">
       ${providers.map((provider) => `
-        <a class="upi-provider ${provider.className}" href="${escapeHtml(buildUpiUrl({ scheme: provider.scheme, amount, orderNumber }))}" data-upi-link>
+        <a class="upi-provider ${provider.className}" href="${escapeHtml(buildUpiUrl({ scheme: provider.scheme, packageName: provider.packageName, amount, orderNumber }))}" data-upi-link data-upi-provider="${escapeHtml(provider.className)}">
           <span class="upi-provider-icon" aria-hidden="true">${escapeHtml(provider.icon)}</span>
           <span>${escapeHtml(provider.label)}</span>
         </a>
