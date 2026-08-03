@@ -15,14 +15,23 @@ const Navbar = () => {
   const { totalItems } = useCart();
   const location = useLocation();
   const isAdminArea = location.pathname.startsWith('/admin');
+  const logoImage = (
+    <img src={logo} alt="Manisha's Kitchen" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
+  );
   
   return (
     <>
       <nav style={{ backgroundColor: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '0.2rem 0', position: 'sticky', top: 0, zIndex: 1000 }}>
         <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
-            <img src={logo} alt="Manisha's Kitchen" style={{ height: '80px', width: 'auto', objectFit: 'contain' }} />
-          </Link>
+          {isAdminArea ? (
+            <a href="/menu.html" style={{ display: 'flex', alignItems: 'center' }}>
+              {logoImage}
+            </a>
+          ) : (
+            <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
+              {logoImage}
+            </Link>
+          )}
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
             <a href="https://www.instagram.com/manishaskitchen2026" target="_blank" rel="noreferrer" aria-label="Manisha's Kitchen on Instagram" title="Instagram" style={{
               display: 'inline-flex',
@@ -40,29 +49,39 @@ const Navbar = () => {
                 <circle cx="17.5" cy="6.5" r="1.2"></circle>
               </svg>
             </a>
-            <Link to="/menu" style={{ fontWeight: '600', fontSize: '1.1rem' }}>Menu</Link>
-            <Link to="/checkout" style={{ position: 'relative' }}>
-              <ShoppingCart size={28} />
-              {totalItems > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-8px',
-                  right: '-8px',
-                  backgroundColor: 'var(--primary-color)',
-                  color: '#fff',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  fontSize: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold'
-                }}>
-                  {totalItems}
-                </span>
-              )}
-            </Link>
+            {isAdminArea ? (
+              <a href="/menu.html" style={{ fontWeight: '600', fontSize: '1.1rem' }}>Menu</a>
+            ) : (
+              <Link to="/menu" style={{ fontWeight: '600', fontSize: '1.1rem' }}>Menu</Link>
+            )}
+            {isAdminArea ? (
+              <a href="/checkout.html" style={{ position: 'relative' }}>
+                <ShoppingCart size={28} />
+              </a>
+            ) : (
+              <Link to="/checkout" style={{ position: 'relative' }}>
+                <ShoppingCart size={28} />
+                {totalItems > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-8px',
+                    right: '-8px',
+                    backgroundColor: 'var(--primary-color)',
+                    color: '#fff',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold'
+                  }}>
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
+            )}
             <Link to="/admin/login"><User size={28} /></Link>
           </div>
         </div>

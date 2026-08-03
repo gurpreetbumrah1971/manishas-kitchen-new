@@ -1,7 +1,7 @@
 const CART_KEY = 'phpCart';
 const ORDER_SESSION_KEY = 'mkOrderSession';
 const INDEPENDENCE_BANNER_SEEN_KEY = 'mkIndependenceBannerSeenV3';
-const APP_ASSET_BASE_URL = document.currentScript?.src
+const APP_ASSET_BASE_URL = document.currentScript && document.currentScript.src
   ? new URL('.', document.currentScript.src).toString()
   : '/assets/';
 const INDEPENDENCE_BANNER_URL = new URL('banners/independence-month-banner.jpg', APP_ASSET_BASE_URL).toString();
@@ -69,7 +69,7 @@ function money(value) {
 }
 
 function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+  return String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
@@ -84,28 +84,61 @@ function rupeeCompact(value) {
   })}`;
 }
 
-function updatePaymentQr(amount) {
-  const qr = document.querySelector('[data-payment-qr]');
-  if (!qr) return;
+function upiPaymentConfig() {
+  const root = document.querySelector('[data-upi-payment]');
+  return {
+    upiId: ((root && root.dataset.upiId) || 'manishaskitchen2026@okaxis').trim(),
+    payeeName: (root && root.dataset.payeeName) || 'Manisha Chavan',
+    upiAid: (root && root.dataset.upiAid) || 'uGICAgNCIlbShSw',
+  };
+}
 
-  const upiId = (qr.dataset.upiId || '').trim();
+function upiReturnUrl(orderNumber) {
+  const url = new URL('/checkout.html', window.location.origin);
+  if (orderNumber) url.searchParams.set('order', orderNumber);
+  url.hash = 'thank-you';
+  return url.toString();
+}
+
+function buildUpiUrl({ scheme = 'upi://pay', amount, orderNumber }) {
+  const { upiId, payeeName, upiAid } = upiPaymentConfig();
   const payableAmount = Number(amount || 0);
-  if (payableAmount <= 0 || !upiId) {
-    qr.src = qr.dataset.staticSrc || qr.src;
-    return;
-  }
+  if (payableAmount <= 0 || !upiId) return '#';
 
   const upiParams = new URLSearchParams({
     pa: upiId,
-    pn: qr.dataset.payeeName || "Manisha's Kitchen",
+    pn: payeeName,
     am: payableAmount.toFixed(2),
     cu: 'INR',
+    url: upiReturnUrl(orderNumber),
   });
-  if (qr.dataset.upiAid) {
-    upiParams.set('aid', qr.dataset.upiAid);
+  if (orderNumber) {
+    upiParams.set('tr', orderNumber);
+    upiParams.set('tn', `Manisha's Kitchen order ${orderNumber}`);
   }
-  const upiUrl = `upi://pay?${upiParams.toString()}`;
-  qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUrl)}`;
+  if (upiAid) {
+    upiParams.set('aid', upiAid);
+  }
+  return `${scheme}?${upiParams.toString()}`;
+}
+
+function upiProviderButtons(amount, orderNumber = '') {
+  const providers = [
+    { label: 'Google Pay', icon: 'G', className: 'gpay', scheme: 'tez://upi/pay' },
+    { label: 'PhonePe', icon: 'Pe', className: 'phonepe', scheme: 'phonepe://pay' },
+    { label: 'Paytm', icon: 'Pay', className: 'paytm', scheme: 'paytmmp://pay' },
+    { label: 'BHIM / UPI', icon: 'UPI', className: 'bhim', scheme: 'upi://pay' },
+  ];
+  return `
+    <div class="upi-provider-grid">
+      ${providers.map((provider) => `
+        <a class="upi-provider ${provider.className}" href="${escapeHtml(buildUpiUrl({ scheme: provider.scheme, amount, orderNumber }))}" data-upi-link>
+          <span class="upi-provider-icon" aria-hidden="true">${escapeHtml(provider.icon)}</span>
+          <span>${escapeHtml(provider.label)}</span>
+        </a>
+      `).join('')}
+    </div>
+  `;
 }
 
 function parseMoney(value) {
@@ -116,7 +149,7 @@ function parseMoney(value) {
 function getActiveOrderSession() {
   try {
     const session = JSON.parse(localStorage.getItem(ORDER_SESSION_KEY) || 'null');
-    if (!session?.orderNumber || !session?.token || !session?.expiresAt) return null;
+    if (!session || !session.orderNumber || !session.token || !session.expiresAt) return null;
     if (Date.now() >= new Date(session.expiresAt).getTime()) {
       localStorage.removeItem(ORDER_SESSION_KEY);
       return null;
@@ -152,11 +185,12 @@ function updateCartCount() {
   document.querySelectorAll('[data-floating-cart]').forEach((node) => {
     node.hidden = count <= 0;
   });
+  document.body.classList.toggle('cart-active', count > 0);
   updateDiscountNudge(subtotal);
 }
 
 function applyCartItemOverride(item) {
-  const override = STATIC_MENU_ITEM_OVERRIDES.get(item?.name);
+  const override = STATIC_MENU_ITEM_OVERRIDES.get(item && item.name);
   if (!override) return item;
   if (override.remove) return null;
   return {
@@ -180,7 +214,7 @@ function updateStaticMenuItemOverrides() {
 
     const name = override.name || originalName;
     const description = categoryNameFromNode(card.querySelector('.menu-body p'));
-    const isVeg = override.isVeg ?? card.dataset.veg !== 'nonveg';
+    const isVeg = override.isVeg != null ? override.isVeg : card.dataset.veg !== 'nonveg';
     const price = Number(override.price || 0);
     if (heading) heading.textContent = name;
     const priceNode = card.querySelector('.menu-heading strong');
@@ -209,7 +243,7 @@ function discountRateForSubtotal(subtotal, tiers) {
     .map(([threshold, rate]) => [Number(threshold), Number(rate)])
     .filter(([threshold, rate]) => Number.isFinite(threshold) && Number.isFinite(rate))
     .sort((a, b) => b[0] - a[0])
-    .find(([threshold]) => subtotal >= threshold)?.[1] || 0;
+    .reduce((matchedRate, pair) => matchedRate || (subtotal >= pair[0] ? pair[1] : 0), 0);
 }
 
 function deliveryChargeForSubtotal(subtotal) {
@@ -322,11 +356,12 @@ function showIndependenceBannerPopup() {
   });
   document.addEventListener('keydown', handleEscape);
   document.body.appendChild(overlay);
-  overlay.querySelector('[data-banner-close]')?.focus();
+  const closeButton = overlay.querySelector('[data-banner-close]');
+  if (closeButton) closeButton.focus();
 }
 
 function categoryNameFromNode(node) {
-  return (node?.textContent || '').replace(/\s+/g, ' ').trim();
+  return ((node && node.textContent) || '').replace(/\s+/g, ' ').trim();
 }
 
 function normalizeStaticMenuCategories() {
@@ -354,7 +389,7 @@ function normalizeStaticMenuCategories() {
     entries.forEach((entry) => {
       if (FRONTEND_CATEGORY_INDEX.has(entry.name)) return;
       entry.tab.remove();
-      entry.panel?.remove();
+      if (entry.panel) entry.panel.remove();
     });
     orderedEntries.forEach((entry) => {
       tabsContainer.appendChild(entry.tab);
@@ -438,14 +473,16 @@ function ensureMenuSearchResults() {
 
 function menuItemFromCard(card) {
   const control = card.querySelector('[data-cart-control]');
-  const cartItem = control?.dataset.cartItem ? JSON.parse(control.dataset.cartItem) : {};
+  const cartItem = control && control.dataset.cartItem ? JSON.parse(control.dataset.cartItem) : {};
   const name = cartItem.name || categoryNameFromNode(card.querySelector('.menu-heading h3'));
   const description = categoryNameFromNode(card.querySelector('.menu-body p'));
-  const price = Number(cartItem.price || parseMoney(card.querySelector('.menu-heading strong')?.textContent));
-  const image = cartItem.image || card.querySelector('.image-wrap img')?.getAttribute('src') || '';
+  const priceNode = card.querySelector('.menu-heading strong');
+  const imageNode = card.querySelector('.image-wrap img');
+  const price = Number(cartItem.price || parseMoney(priceNode && priceNode.textContent));
+  const image = cartItem.image || (imageNode && imageNode.getAttribute('src')) || '';
 
   return {
-    id: Number(cartItem.id || control?.dataset.id || 0),
+    id: Number(cartItem.id || (control && control.dataset.id) || 0),
     name,
     description,
     price,
@@ -614,7 +651,8 @@ function renderCartControls() {
         button.dataset.addCart = '';
         button.dataset.item = control.dataset.cartItem;
         button.textContent = 'Add';
-        control.replaceChildren(button);
+        control.innerHTML = '';
+        control.appendChild(button);
       }
       return;
     }
@@ -631,9 +669,9 @@ function renderCartControls() {
 function renderCheckout() {
   const cart = getCart();
   const target = document.querySelector('[data-checkout-items]');
-  const activeIds = target?.dataset.activeItemIds ? JSON.parse(target.dataset.activeItemIds) : null;
-  const gstRate = Number(target?.dataset.gstRate || 0);
-  const discountTiers = target?.dataset.discountTiers ? JSON.parse(target.dataset.discountTiers) : {};
+  const activeIds = target && target.dataset.activeItemIds ? JSON.parse(target.dataset.activeItemIds) : null;
+  const gstRate = Number((target && target.dataset.gstRate) || 0);
+  const discountTiers = target && target.dataset.discountTiers ? JSON.parse(target.dataset.discountTiers) : {};
   const visibleCart = activeIds ? cart.filter((item) => activeIds.includes(Number(item.id))) : cart;
   const removedCount = activeIds ? cart.length - visibleCart.length : 0;
   const subtotal = visibleCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -648,7 +686,6 @@ function renderCheckout() {
   document.querySelectorAll('[data-checkout-delivery]').forEach((node) => node.textContent = money(deliveryCharge));
   document.querySelectorAll('[data-delivery-nudge]').forEach((node) => node.textContent = deliveryNudgeForSubtotal(subtotal));
   document.querySelectorAll('[data-checkout-total], [data-upi-total]').forEach((node) => node.textContent = money(grandTotal));
-  updatePaymentQr(grandTotal);
   document.querySelectorAll('[data-cart-json]').forEach((node) => node.value = JSON.stringify(visibleCart));
   if (!target) return;
 
@@ -704,19 +741,20 @@ document.addEventListener('click', (event) => {
 
   const navToggle = event.target.closest('[data-nav-toggle]');
   if (navToggle) {
-    document.querySelector('[data-nav]')?.classList.toggle('open');
+    const nav = document.querySelector('[data-nav]');
+    if (nav) nav.classList.toggle('open');
   }
 
   const menuTab = event.target.closest('[data-menu-tab]');
   if (menuTab) {
     const tabGroup = menuTab.closest('[data-menu-tabs]');
     const activeCategory = menuTab.dataset.menuTab;
-    tabGroup?.querySelectorAll('[data-menu-tab]').forEach((tab) => {
+    if (tabGroup) tabGroup.querySelectorAll('[data-menu-tab]').forEach((tab) => {
       const isActive = tab === menuTab;
       tab.classList.toggle('active', isActive);
       tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
-    tabGroup?.querySelectorAll('[data-menu-panel]').forEach((panel) => {
+    if (tabGroup) tabGroup.querySelectorAll('[data-menu-panel]').forEach((panel) => {
       panel.hidden = panel.dataset.menuPanel !== activeCategory;
     });
     applyMenuFilters();
@@ -724,8 +762,10 @@ document.addEventListener('click', (event) => {
 });
 
 function applyMenuFilters() {
-  const query = document.querySelector('[data-menu-search]')?.value.trim().toLowerCase() || '';
-  const vegMode = document.querySelector('[data-veg-filter] .active')?.dataset.vegValue || 'all';
+  const searchInput = document.querySelector('[data-menu-search]');
+  const activeVeg = document.querySelector('[data-veg-filter] .active');
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const vegMode = activeVeg ? activeVeg.dataset.vegValue : 'all';
   document.querySelectorAll('.menu-tabs-layout [data-menu-item], .menu-accordion-layout [data-menu-item]').forEach((item) => {
     const matchesSearch = item.dataset.name.includes(query);
     const matchesVeg = vegMode === 'all' || item.dataset.veg === vegMode;
@@ -734,9 +774,11 @@ function applyMenuFilters() {
   renderMenuSearchResults(query, vegMode);
 }
 
-document.querySelector('[data-menu-search]')?.addEventListener('input', applyMenuFilters);
+const menuSearchInput = document.querySelector('[data-menu-search]');
+if (menuSearchInput) menuSearchInput.addEventListener('input', applyMenuFilters);
 
-document.querySelector('[data-veg-filter]')?.addEventListener('click', (event) => {
+const vegFilter = document.querySelector('[data-veg-filter]');
+if (vegFilter) vegFilter.addEventListener('click', (event) => {
   const button = event.target.closest('[data-veg-value]');
   if (!button) return;
 
@@ -746,15 +788,23 @@ document.querySelector('[data-veg-filter]')?.addEventListener('click', (event) =
   applyMenuFilters();
 });
 
-document.querySelector('[data-payment-method]')?.addEventListener('change', (event) => {
+function syncPaymentBox() {
   const box = document.querySelector('[data-payment-box]');
-  if (box) box.hidden = event.target.value !== 'UPI';
-});
+  const paymentMethod = document.querySelector('[data-payment-method]');
+  const method = paymentMethod ? paymentMethod.value : 'UPI';
+  if (box) box.hidden = method !== 'UPI';
+}
+
+const paymentMethodSelect = document.querySelector('[data-payment-method]');
+if (paymentMethodSelect) paymentMethodSelect.addEventListener('change', syncPaymentBox);
 
 function syncDateGroup(group) {
-  const day = group.querySelector('[data-date-day]')?.value;
-  const month = group.querySelector('[data-date-month]')?.value;
-  const year = group.querySelector('[data-date-year]')?.value;
+  const daySelect = group.querySelector('[data-date-day]');
+  const monthSelect = group.querySelector('[data-date-month]');
+  const yearSelect = group.querySelector('[data-date-year]');
+  const day = daySelect && daySelect.value;
+  const month = monthSelect && monthSelect.value;
+  const year = yearSelect && yearSelect.value;
   const target = group.querySelector('[data-date-value]');
   if (!target) return;
 
@@ -799,15 +849,15 @@ function shortTime(value) {
 }
 
 function orderStepText(step, status) {
-  const label = status?.statusLabel || 'PENDING';
+  const label = status && status.statusLabel || 'PENDING';
   if (step === 'CONFIRMED') {
     if (label === 'PENDING') return 'Waiting for kitchen confirmation.';
-    if (status?.confirmedAt) return `Confirmed at ${shortTime(status.confirmedAt)}.`;
+    if (status && status.confirmedAt) return `Confirmed at ${shortTime(status.confirmedAt)}.`;
     return 'Order confirmed.';
   }
   if (step === 'PREPARING') {
     if (label === 'PENDING' || label === 'CONFIRMED') return 'Preparation time will show here.';
-    if (label === 'PREPARING' && status?.preparationEndsAt) {
+    if (label === 'PREPARING' && status && status.preparationEndsAt) {
       const remaining = new Date(status.preparationEndsAt).getTime() - Date.now();
       return remaining > 0
         ? `Preparation time: ${status.preparationMinutes || '-'} min. Ready in ${formatCountdown(remaining)}.`
@@ -817,7 +867,7 @@ function orderStepText(step, status) {
     return 'Preparation not active.';
   }
   if (step === 'DELIVERED') {
-    if (label === 'DELIVERED') return status?.deliveredAt ? `Delivered at ${shortTime(status.deliveredAt)}.` : 'Delivered.';
+    if (label === 'DELIVERED') return status && status.deliveredAt ? `Delivered at ${shortTime(status.deliveredAt)}.` : 'Delivered.';
     if (label === 'CANCELLED') return 'Order cancelled.';
     return 'Delivery pending.';
   }
@@ -825,7 +875,7 @@ function orderStepText(step, status) {
 }
 
 function updateOrderStatusSteps(status) {
-  const label = status?.statusLabel || 'PENDING';
+  const label = status && status.statusLabel || 'PENDING';
   const completedByLabel = {
     PENDING: [],
     CONFIRMED: ['CONFIRMED'],
@@ -864,8 +914,8 @@ function updateOrderStatusPanel(status) {
   const updated = document.querySelector('[data-order-status-updated]');
   if (!label || !message || !countdown) return;
 
-  label.textContent = status?.statusLabel || 'PENDING';
-  label.dataset.status = status?.statusLabel || 'PENDING';
+  label.textContent = status && status.statusLabel || 'PENDING';
+  label.dataset.status = status && status.statusLabel || 'PENDING';
   message.textContent = statusMessage(status);
   updateOrderStatusSteps(status);
   if (updated) {
@@ -874,7 +924,7 @@ function updateOrderStatusPanel(status) {
       : 'Checking status...';
   }
 
-  if (status?.statusLabel === 'PREPARING' && status.preparationEndsAt) {
+  if (status && status.statusLabel === 'PREPARING' && status.preparationEndsAt) {
     const remaining = new Date(status.preparationEndsAt).getTime() - Date.now();
     countdown.hidden = false;
     countdown.textContent = remaining > 0
@@ -888,7 +938,7 @@ function updateOrderStatusPanel(status) {
 }
 
 async function fetchOrderStatus(session) {
-  if (!session?.orderNumber || !session?.token) return;
+  if (!session || !session.orderNumber || !session.token) return;
   try {
     const params = new URLSearchParams({ token: session.token });
     const response = await fetch(`/api/orders/${encodeURIComponent(session.orderNumber)}/status?${params.toString()}`, {
@@ -917,11 +967,13 @@ function startOrderStatusTracking(session) {
   }, 1000);
 }
 
-function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl, session }) {
+function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsappUrl, session }) {
   const section = document.querySelector('.checkout-page .section.compact');
   if (!section) return;
 
-  const paymentQrSrc = qrSrc || '/assets/payment/mk-qrcode.jpg';
+  const orderNumber = order.orderNumber || order.order_number || '';
+  const paymentAmount = Number(amount || parseMoney(total));
+  const shouldShowUpi = String(paymentMethod || 'UPI').toUpperCase() === 'UPI';
   section.innerHTML = `
     <div class="success-panel checkout-thank-you">
       <h1>Thank you for your order!</h1>
@@ -930,11 +982,22 @@ function showStaticOrderThankYou({ order, total, qrSrc, whatsappUrl, session }) 
         <span>Total Amount</span>
         <strong>${escapeHtml(total)}</strong>
       </div>
-      <div class="payment-box thank-you-payment">
-        <img class="qr" src="${escapeHtml(paymentQrSrc)}" alt="UPI payment QR code">
-        <p>Scan QR / use UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
-        <p>Order ID: <strong>${escapeHtml(order.orderNumber || order.order_number || '')}</strong></p>
-      </div>
+      ${shouldShowUpi ? `
+        <div class="payment-box thank-you-payment">
+          <h2>Pay with UPI</h2>
+          <p>Choose your preferred UPI app. When you return, this thank-you page and order status will still be here.</p>
+          <div data-upi-payment data-locked="1">
+            ${upiProviderButtons(paymentAmount, orderNumber)}
+          </div>
+          <p>UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
+          <p>Order ID: <strong>${escapeHtml(orderNumber)}</strong></p>
+        </div>
+      ` : `
+        <div class="payment-box thank-you-payment">
+          <p>Payment method: <strong>Cash</strong></p>
+          <p>Order ID: <strong>${escapeHtml(orderNumber)}</strong></p>
+        </div>
+      `}
       <div class="order-status-card">
         <span class="status-pill" data-order-status-label data-status="PENDING">PENDING</span>
         <strong data-order-status-message>Waiting for kitchen confirmation.</strong>
@@ -976,14 +1039,17 @@ function restoreStaticOrderSession() {
   showStaticOrderThankYou({
     order: { orderNumber: session.orderNumber },
     total: session.total || 'Rs. 0.00',
-    qrSrc: session.qrSrc || '/assets/payment/mk-qrcode.jpg',
+    amount: session.amount || parseMoney(session.total),
+    paymentMethod: session.paymentMethod || 'UPI',
     whatsappUrl: session.whatsappUrl || '/menu.html',
     session,
   });
 }
 
-document.querySelector('[data-checkout-form]')?.addEventListener('submit', async (event) => {
-  const cartJson = document.querySelector('[data-cart-json]')?.value || '[]';
+const checkoutForm = document.querySelector('[data-checkout-form]');
+if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
+  const cartJsonNode = document.querySelector('[data-cart-json]');
+  const cartJson = cartJsonNode ? cartJsonNode.value : '[]';
   const cart = JSON.parse(cartJson);
   if (!cart.length) {
     event.preventDefault();
@@ -992,22 +1058,27 @@ document.querySelector('[data-checkout-form]')?.addEventListener('submit', async
   }
 
   const form = event.target;
-  if (form?.hasAttribute('data-static-checkout')) {
+  if (form && form.hasAttribute('data-static-checkout')) {
     event.preventDefault();
     const submitButton = form.querySelector('button[type="submit"]');
-    const originalButtonText = submitButton?.textContent || 'Book Order';
+    const originalButtonText = submitButton && submitButton.textContent || 'Book Order';
     if (submitButton) {
       submitButton.disabled = true;
       submitButton.textContent = 'Placing Order...';
     }
 
     const formData = new FormData(form);
-    const subtotal = parseMoney(document.querySelector('[data-checkout-subtotal]')?.textContent);
-    const gstAmount = parseMoney(document.querySelector('[data-checkout-gst]')?.textContent);
-    const discountAmount = parseMoney(document.querySelector('[data-checkout-discount]')?.textContent);
-    const deliveryAmount = parseMoney(document.querySelector('[data-checkout-delivery]')?.textContent);
-    const grandTotal = parseMoney(document.querySelector('[data-checkout-total]')?.textContent);
-    const total = document.querySelector('[data-checkout-total]')?.textContent || money(grandTotal);
+    const subtotalNode = document.querySelector('[data-checkout-subtotal]');
+    const gstNode = document.querySelector('[data-checkout-gst]');
+    const discountNode = document.querySelector('[data-checkout-discount]');
+    const deliveryNode = document.querySelector('[data-checkout-delivery]');
+    const checkoutTotalNode = document.querySelector('[data-checkout-total]');
+    const subtotal = parseMoney(subtotalNode && subtotalNode.textContent);
+    const gstAmount = parseMoney(gstNode && gstNode.textContent);
+    const discountAmount = parseMoney(discountNode && discountNode.textContent);
+    const deliveryAmount = parseMoney(deliveryNode && deliveryNode.textContent);
+    const grandTotal = parseMoney(checkoutTotalNode && checkoutTotalNode.textContent);
+    const total = checkoutTotalNode && checkoutTotalNode.textContent || money(grandTotal);
     const items = cart.map((item) => `${item.name} x ${item.quantity}`).join(', ');
     const number = String(formData.get('whatsapp_number') || '').replace(/\D+/g, '');
     const normalizedNumber = number.length === 10 ? `91${number}` : number;
@@ -1049,7 +1120,6 @@ document.querySelector('[data-checkout-form]')?.addEventListener('submit', async
       }
 
       const orderNumber = result.orderNumber || result.order_number || `ORD-${Date.now()}`;
-      const qrSrc = '/assets/payment/mk-qrcode.jpg';
       const whatsappUrl = `https://wa.me/${normalizedNumber}?text=${encodeURIComponent([
         'Order Confirmed!',
         `Order ID: ${orderNumber}`,
@@ -1065,7 +1135,8 @@ document.querySelector('[data-checkout-form]')?.addEventListener('submit', async
           token: result.customerSessionToken,
           expiresAt: result.customerSessionExpiresAt,
           total,
-          qrSrc,
+          amount: grandTotal,
+          paymentMethod: orderPayload.paymentMethod,
           whatsappUrl,
         }
         : null;
@@ -1073,7 +1144,14 @@ document.querySelector('[data-checkout-form]')?.addEventListener('submit', async
       localStorage.removeItem(CART_KEY);
       if (session) saveOrderSession(session);
       updateCartCount();
-      showStaticOrderThankYou({ order: result, total, qrSrc, whatsappUrl, session });
+      showStaticOrderThankYou({
+        order: result,
+        total,
+        amount: grandTotal,
+        paymentMethod: orderPayload.paymentMethod,
+        whatsappUrl,
+        session,
+      });
     } catch (error) {
       alert(error.message || 'Failed to place order. Please try again.');
       if (submitButton) {
@@ -1149,6 +1227,7 @@ ensureMenuSearchResults();
 renderCartControls();
 renderCheckout();
 updateCartCount();
+syncPaymentBox();
 applyMenuFilters();
 restoreStaticOrderSession();
 showIndependenceBannerPopup();

@@ -1,17 +1,45 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
-import { Trash2, ShoppingBag, QrCode } from 'lucide-react';
+import { ExternalLink, Trash2, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../utils/api';
-import QRCode from 'qrcode';
 import { buildOrderConfirmationMessage, openWhatsAppMessage } from '../utils/whatsapp';
+
+const UPI_ID = 'manishaskitchen2026@okaxis';
+const UPI_PAYEE = 'Manisha Chavan';
+const UPI_AID = 'uGICAgNCIlbShSw';
+
+const buildUpiUrl = (scheme: string, amount: number, orderNumber = '') => {
+  const returnUrl = new URL('/checkout', window.location.origin);
+  if (orderNumber) returnUrl.searchParams.set('order', orderNumber);
+  returnUrl.hash = 'thank-you';
+
+  const params = new URLSearchParams({
+    pa: UPI_ID,
+    pn: UPI_PAYEE,
+    am: Number(amount || 0).toFixed(2),
+    cu: 'INR',
+    url: returnUrl.toString(),
+    aid: UPI_AID,
+  });
+  if (orderNumber) {
+    params.set('tr', orderNumber);
+    params.set('tn', `Manisha's Kitchen order ${orderNumber}`);
+  }
+  return `${scheme}?${params.toString()}`;
+};
+
+const upiProviders = [
+  { label: 'Google Pay', icon: 'G', scheme: 'tez://upi/pay', background: '#1a73e8' },
+  { label: 'PhonePe', icon: 'Pe', scheme: 'phonepe://pay', background: '#5f259f' },
+  { label: 'Paytm', icon: 'Pay', scheme: 'paytmmp://pay', background: '#00baf2' },
+  { label: 'BHIM / UPI', icon: 'UPI', scheme: 'upi://pay', background: '#17834a' },
+];
 
 const Checkout = () => {
   const { cart, totalAmount, removeFromCart, updateQuantity, clearCart } = useCart();
   const navigate = useNavigate();
-  const upiId = 'manishaskitchen@upi';
-  const [paymentQr, setPaymentQr] = useState('');
   const [formData, setFormData] = useState({
     customerName: '',
     whatsappNumber: '',
@@ -25,13 +53,12 @@ const Checkout = () => {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent('Manisha Kitchen')}&am=${encodeURIComponent(totalAmount.toString())}&cu=INR`;
-    QRCode.toDataURL(upiUrl, { width: 220, margin: 1 })
-      .then(setPaymentQr)
-      .catch(() => setPaymentQr('/payment-qr.svg'));
-  }, [totalAmount]);
+  const [placedOrder, setPlacedOrder] = useState({
+    orderNumber: '',
+    amount: 0,
+    paymentMethod: 'UPI',
+    whatsappUrl: '',
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -76,14 +103,21 @@ const Checkout = () => {
       clearCart();
       
       const message = buildOrderConfirmationMessage(res.data);
+      const orderNumber = res.data.orderNumber || res.data.order_number || `ORD-${Date.now()}`;
+      const digits = formData.whatsappNumber.replace(/\D+/g, '');
+      const normalizedNumber = digits.length === 10 ? `91${digits}` : digits;
+      const whatsappUrl = `https://wa.me/${normalizedNumber}?text=${encodeURIComponent(message)}`;
+      setPlacedOrder({
+        orderNumber,
+        amount: grandTotal,
+        paymentMethod: formData.paymentMethod,
+        whatsappUrl,
+      });
 
-      setTimeout(() => {
-        openWhatsAppMessage(formData.whatsappNumber, message);
-        navigate('/');
-      }, 3000);
+      setTimeout(() => openWhatsAppMessage(formData.whatsappNumber, message), 800);
     } catch (err: any) {
       console.error(err);
-      const errorMsg = err.response?.data?.error || 'Failed to place order';
+      const errorMsg = err.response && err.response.data && err.response.data.error || 'Failed to place order';
       alert(errorMsg);
     } finally {
       setLoading(false);
@@ -91,11 +125,68 @@ const Checkout = () => {
   };
 
   if (success) {
+    const shouldShowUpi = placedOrder.paymentMethod === 'UPI';
     return (
-      <div className="container" style={{ textAlign: 'center', padding: '5rem 0' }}>
-        <h1 style={{ color: '#4caf50', marginBottom: '1rem' }}>Order Placed Successfully!</h1>
-        <p>Your order is being prepared. You will receive a WhatsApp notification shortly.</p>
-        <p>Redirecting to home...</p>
+      <div id="thank-you" className="container" style={{ textAlign: 'center', padding: '5rem 0' }}>
+        <h1 style={{ color: '#4caf50', marginBottom: '1rem' }}>Thank you for your order!</h1>
+        <p>Your order has been received. You will receive a WhatsApp notification shortly.</p>
+        {shouldShowUpi && (
+          <div style={{ maxWidth: '520px', margin: '2rem auto', border: '1px solid #eee', borderRadius: '8px', padding: '1.25rem', backgroundColor: '#fafafa' }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Pay with UPI</h2>
+            <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem' }}>Choose your preferred UPI app. When you return, this thank-you page will still be here.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
+              {upiProviders.map((provider) => (
+                <a
+                  key={provider.label}
+                  href={buildUpiUrl(provider.scheme, placedOrder.amount, placedOrder.orderNumber)}
+                  style={{
+                    alignItems: 'center',
+                    background: provider.background,
+                    borderRadius: '8px',
+                    color: '#fff',
+                    display: 'inline-flex',
+                    fontWeight: 700,
+                    gap: '10px',
+                    justifyContent: 'center',
+                    minHeight: '44px',
+                    padding: '10px 12px',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      alignItems: 'center',
+                      background: '#fff',
+                      borderRadius: '8px',
+                      boxShadow: 'inset 0 0 0 1px rgba(17, 24, 39, 0.08)',
+                      color: provider.background,
+                      display: 'inline-flex',
+                      flex: '0 0 30px',
+                      fontSize: '0.72rem',
+                      fontWeight: 900,
+                      height: '30px',
+                      justifyContent: 'center',
+                      letterSpacing: 0,
+                      width: '30px',
+                    }}
+                  >
+                    {provider.icon}
+                  </span>
+                  {provider.label}
+                  <ExternalLink size={16} />
+                </a>
+              ))}
+            </div>
+            <div style={{ fontSize: '0.9rem', color: '#555', marginTop: '1rem' }}>Amount: <strong style={{ color: 'var(--primary-color)' }}>₹{placedOrder.amount}</strong></div>
+            <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>UPI ID: {UPI_ID}</div>
+            <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>Order ID: {placedOrder.orderNumber}</div>
+          </div>
+        )}
+        {placedOrder.whatsappUrl && (
+          <a href={placedOrder.whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ display: 'inline-flex', marginRight: '0.75rem' }}>Send WhatsApp Confirmation</a>
+        )}
+        <button onClick={() => navigate('/menu')} className="btn-primary">Back to Menu</button>
       </div>
     );
   }
@@ -221,18 +312,16 @@ const Checkout = () => {
                 <option value="UPI">UPI</option>
               </select>
               <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '5px' }}>
-                * Scan the QR code for UPI payment, or choose Cash for payment at counter / delivery.
+                Choose UPI to pay from your preferred app after booking, or choose Cash for payment at counter / delivery.
               </p>
             </div>
 
             {formData.paymentMethod === 'UPI' && (
               <div style={{ border: '1px solid #eee', borderRadius: '8px', padding: '1rem', backgroundColor: '#fafafa', textAlign: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '0.75rem', fontWeight: '700' }}>
-                  <QrCode size={18} /> Scan QR to Pay
-                </div>
-                <img src={paymentQr || '/payment-qr.svg'} alt="UPI payment QR code" style={{ width: '180px', height: '180px', objectFit: 'contain', margin: '0 auto 0.75rem', display: 'block' }} />
+                <div style={{ marginBottom: '0.75rem', fontWeight: '700' }}>UPI payment available after order booking</div>
+                <p style={{ fontSize: '0.85rem', color: '#555', marginBottom: '0.75rem' }}>After placing your order, choose Google Pay, PhonePe, Paytm, or BHIM / UPI.</p>
                 <div style={{ fontSize: '0.9rem', color: '#555' }}>Amount: <strong style={{ color: 'var(--primary-color)' }}>₹{totalAmount}</strong></div>
-                <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>UPI ID: {upiId}</div>
+                <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>UPI ID: {UPI_ID}</div>
               </div>
             )}
 

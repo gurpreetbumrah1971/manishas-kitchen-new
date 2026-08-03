@@ -12,7 +12,7 @@ const PORT = Number(process.env.PORT) || 5000;
 const publicRootPath = path.resolve(__dirname, '../..');
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
 const uploadsPath = path.resolve(__dirname, '../uploads');
-const phpAssetsPath = path.join(publicRootPath, 'php-site/assets');
+const publicAssetsPath = path.join(publicRootPath, 'assets');
 const sendPublicPage = (res: express.Response, pageName: string) => {
   res.sendFile(path.join(publicRootPath, `${pageName}.html`));
 };
@@ -36,9 +36,9 @@ if (fs.existsSync(clientDistPath)) {
   app.use('/assets', express.static(path.join(clientDistPath, 'assets')));
 }
 
-if (fs.existsSync(phpAssetsPath)) {
-  app.use('/assets', express.static(phpAssetsPath));
-  app.use('/food', express.static(path.join(phpAssetsPath, 'food')));
+if (fs.existsSync(publicAssetsPath)) {
+  app.use('/assets', express.static(publicAssetsPath));
+  app.use('/food', express.static(path.join(publicAssetsPath, 'food')));
 }
 
 app.get('/admin/login.php', (req, res) => {
@@ -52,6 +52,14 @@ app.get('/admin/dashboard.php', (req, res) => {
 if (fs.existsSync(clientDistPath)) {
   app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
     sendAdminApp(res);
+  });
+
+  app.get('/menu', (req, res) => {
+    res.redirect(302, '/menu.html');
+  });
+
+  app.get('/checkout', (req, res) => {
+    res.redirect(302, '/checkout.html');
   });
 }
 

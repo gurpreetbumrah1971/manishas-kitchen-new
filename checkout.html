@@ -404,13 +404,15 @@
                 </div>
                 <label>Payment Method
                     <select name="payment_method" data-payment-method>
-                        <option value="CASH">Cash</option>
                         <option value="UPI">UPI</option>
+                        <option value="CASH">Cash</option>
                     </select>
                 </label>
                 <div class="payment-box" data-payment-box>
-                    <img class="qr" src="/assets/payment/mk-qrcode.jpg" alt="UPI payment QR code" data-payment-qr data-static-src="/assets/payment/mk-qrcode.jpg" data-upi-id="manishaskitchen2026@okaxis" data-payee-name="Manisha Chavan" data-upi-aid="uGICAgNCIlbShSw">
-                    <p>Scan QR / use UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
+                    <div data-upi-payment data-upi-id="manishaskitchen2026@okaxis" data-payee-name="Manisha Chavan" data-upi-aid="uGICAgNCIlbShSw">
+                        <p>Pay using your preferred UPI app after placing the order.</p>
+                    </div>
+                    <p>UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
                     <p>Amount: <strong data-upi-total>Rs. 0.00</strong></p>
                 </div>
                 <button class="btn primary full" type="submit">Book Order</button>

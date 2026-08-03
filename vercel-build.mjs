@@ -9,4 +9,4 @@ for (const file of staticFiles) {
   await cp(file, `dist/${file}`);
 }
 
-await cp('php-site/assets', 'dist/assets', { recursive: true });
+await cp('assets', 'dist/assets', { recursive: true });
