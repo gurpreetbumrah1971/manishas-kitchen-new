@@ -7,6 +7,37 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const OTP_MINUTES = 10;
 const CUSTOMER_TOKEN_DAYS = 30;
 
+const twilioConfig = () => ({
+  enabled: process.env.OTP_PROVIDER === 'twilio',
+  accountSid: process.env.TWILIO_ACCOUNT_SID || '',
+  authToken: process.env.TWILIO_AUTH_TOKEN || '',
+  verifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID || '',
+});
+
+const twilioRequest = async (endpoint: string, mobileNumber: string, code?: string) => {
+  const config = twilioConfig();
+  if (!config.accountSid || !config.authToken || !config.verifyServiceSid) {
+    throw new Error('Twilio OTP is enabled but its credentials are incomplete');
+  }
+
+  const body = new URLSearchParams({ To: `+${mobileNumber}` });
+  if (code) body.set('Code', code);
+  const response = await fetch(
+    `https://verify.twilio.com/v2/Services/${config.verifyServiceSid}/${endpoint}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${config.accountSid}:${config.authToken}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body,
+    },
+  );
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.message || 'Twilio OTP request failed');
+  return result;
+};
+
 const normalizeMobileNumber = (value: string) => {
   const digits = String(value || '').replace(/\D+/g, '');
   if (digits.length === 10) return `91${digits}`;
@@ -105,8 +136,20 @@ export const requestCustomerOtp = async (req: Request, res: Response) => {
       update: name ? { name } : {},
       create: { mobileNumber, name: name || undefined },
     });
-    const code = process.env.OTP_TEST_CODE || String(randomInt(100000, 1000000));
     const expiresAt = new Date(Date.now() + OTP_MINUTES * 60 * 1000);
+
+    if (twilioConfig().enabled) {
+      await twilioRequest('Verifications', mobileNumber, undefined).then(() => undefined);
+      return res.status(201).json({
+        ok: true,
+        mobileNumber,
+        expiresAt,
+        provider: 'twilio',
+        message: 'OTP sent by SMS.',
+      });
+    }
+
+    const code = process.env.OTP_TEST_CODE || String(randomInt(100000, 1000000));
 
     await prisma.customerOtp.create({
       data: {
@@ -139,18 +182,22 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Mobile number and OTP are required' });
     }
 
-    const otp = await prisma.customerOtp.findFirst({
-      where: {
-        mobileNumber,
-        code,
-        consumedAt: null,
-        expiresAt: { gt: new Date() },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    let otp: { id: number } | null = null;
+    if (twilioConfig().enabled) {
+      const verification = await twilioRequest('VerificationCheck', mobileNumber, code);
+      if (verification.status !== 'approved') return res.status(401).json({ error: 'Invalid or expired OTP' });
+    } else {
+      otp = await prisma.customerOtp.findFirst({
+        where: {
+          mobileNumber,
+          code,
+          consumedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
 
-    if (!otp) {
-      return res.status(401).json({ error: 'Invalid or expired OTP' });
+      if (!otp) return res.status(401).json({ error: 'Invalid or expired OTP' });
     }
 
     const customer = await prisma.customer.upsert({
@@ -159,13 +206,15 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
       create: { mobileNumber },
     });
 
-    await prisma.customerOtp.update({
-      where: { id: otp.id },
-      data: {
-        consumedAt: new Date(),
-        customerId: customer.id,
-      },
-    });
+    if (otp) {
+      await prisma.customerOtp.update({
+        where: { id: otp.id },
+        data: {
+          consumedAt: new Date(),
+          customerId: customer.id,
+        },
+      });
+    }
 
     const expiresAt = new Date(Date.now() + CUSTOMER_TOKEN_DAYS * 24 * 60 * 60 * 1000);
     const token = jwt.sign(

@@ -213,7 +213,7 @@ function renderAccount(account) {
           <label>Mobile Number<input name="mobile_number" required inputmode="tel" placeholder="10-digit mobile number"></label>
           <button class="btn primary" type="submit">Send OTP</button>
         </form>
-        ${pending ? `<form class="cashback-login-form" data-account-verify-form><input type="hidden" name="mobile_number" value="${escapeHtml(pending.mobileNumber)}"><p class="cashback-test-otp">Testing OTP: <strong>${escapeHtml(pending.testOtp || '')}</strong></p><label>Enter OTP<input name="otp" required inputmode="numeric" maxlength="6" placeholder="6-digit OTP"></label><button class="btn primary" type="submit">Login</button></form>` : ''}
+        ${pending ? `<form class="cashback-login-form" data-account-verify-form><input type="hidden" name="mobile_number" value="${escapeHtml(pending.mobileNumber)}">${pending.testOtp ? `<p class="cashback-test-otp">Testing OTP: <strong>${escapeHtml(pending.testOtp)}</strong></p>` : '<p class="cashback-test-otp">OTP sent by SMS. Check your phone.</p>'}<label>Enter OTP<input name="otp" required inputmode="numeric" maxlength="6" placeholder="6-digit OTP"></label><button class="btn primary" type="submit">Login</button></form>` : ''}
       </section>`;
     return;
   }
@@ -318,12 +318,12 @@ function renderCashbackPanel(preCashbackTotal = 0, applied = 0) {
       <p>Login with mobile OTP to view cashback and redeem it on this order.</p>
       <form class="cashback-login-form" data-cashback-login-form>
         <label>Mobile Number<input name="mobile_number" required inputmode="tel" placeholder="10-digit mobile number"></label>
-        <button class="btn secondary full" type="submit">Send Test OTP</button>
+        <button class="btn secondary full" type="submit">Send OTP</button>
       </form>
       ${pendingOtp ? `
         <form class="cashback-login-form" data-cashback-verify-form>
           <input type="hidden" name="mobile_number" value="${escapeHtml(pendingOtp.mobileNumber)}">
-          <p class="cashback-test-otp">Testing OTP: <strong>${escapeHtml(pendingOtp.testOtp || '')}</strong></p>
+          ${pendingOtp.testOtp ? `<p class="cashback-test-otp">Testing OTP: <strong>${escapeHtml(pendingOtp.testOtp)}</strong></p>` : '<p class="cashback-test-otp">OTP sent by SMS. Check your phone.</p>'}
           <label>Enter OTP<input name="otp" required inputmode="numeric" maxlength="6" placeholder="6-digit OTP"></label>
           <button class="btn primary full" type="submit">Login to Wallet</button>
         </form>
@@ -1022,7 +1022,7 @@ document.addEventListener('submit', async (event) => {
       const response = await fetch('/api/customer/request-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not send OTP.');
-      localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({ mobileNumber: result.mobileNumber || mobileNumber, testOtp: result.testOtp || '', expiresAt: result.expiresAt }));
+      localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({ mobileNumber: result.mobileNumber || mobileNumber, testOtp: result.testOtp || '', provider: result.provider || 'test', expiresAt: result.expiresAt }));
       renderAccount(null);
     } catch (error) {
       alert(error.message || 'Could not send OTP.');
@@ -1059,7 +1059,7 @@ document.addEventListener('submit', async (event) => {
     const nameInput = orderForm && orderForm.querySelector('[name="customer_name"]');
     const mobileNumber = normalizeMobileNumber(formData.get('mobile_number'));
     const submitButton = loginForm.querySelector('button[type="submit"]');
-    const originalText = submitButton && submitButton.textContent || 'Send Test OTP';
+    const originalText = submitButton && submitButton.textContent || 'Send OTP';
     if (submitButton) {
       submitButton.disabled = true;
       submitButton.textContent = 'Sending...';
@@ -1082,6 +1082,7 @@ document.addEventListener('submit', async (event) => {
       localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({
         mobileNumber: result.mobileNumber || mobileNumber,
         testOtp: result.testOtp || '',
+        provider: result.provider || 'test',
         expiresAt: result.expiresAt,
       }));
       renderCheckout();
