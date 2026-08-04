@@ -29,7 +29,7 @@ const buildUpiUrl = (scheme: string, packageName: string, amount: number, orderN
     params.set('tr', orderNumber);
     params.set('tn', `Manisha's Kitchen order ${orderNumber}`);
   }
-  const queryString = params.toString();
+  const queryString = params.toString().replace(/\+/g, '%20');
   const genericUpiUrl = `upi://pay?${queryString}`;
   if (packageName && isAndroidBrowser()) {
     return `intent://pay?${queryString}#Intent;scheme=upi;package=${packageName};S.browser_fallback_url=${encodeURIComponent(genericUpiUrl)};end`;
