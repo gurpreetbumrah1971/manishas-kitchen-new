@@ -1319,6 +1319,36 @@ textarea {
     margin: 0.9rem 0;
 }
 
+.upi-qr-card {
+    display: grid;
+    justify-items: center;
+    gap: 0.6rem;
+    margin: 0.9rem 0;
+    padding: 1rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    text-align: center;
+}
+
+.upi-qr-label {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.upi-qr-image {
+    width: 180px;
+    height: 180px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+}
+
+.upi-qr-download {
+    width: 100%;
+}
+
 .alert {
     border: 1px solid #ffcdd2;
     background: #fff2f3;

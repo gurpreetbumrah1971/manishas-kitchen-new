@@ -107,10 +107,6 @@ function upiReturnUrl(orderNumber) {
   return url.toString();
 }
 
-function isAndroidBrowser() {
-  return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
-}
-
 function buildUpiUrl({ amount, orderNumber }) {
   const { upiId, payeeName, upiAid } = upiPaymentConfig();
   const payableAmount = Number(amount || 0);
@@ -131,16 +127,36 @@ function buildUpiUrl({ amount, orderNumber }) {
     upiParams.set('aid', upiAid);
   }
   const queryString = upiParams.toString().replace(/\+/g, '%20');
-  const genericUpiUrl = `upi://pay?${queryString}`;
-  if (isAndroidBrowser()) {
-    return `intent://pay?${queryString}#Intent;scheme=upi;S.browser_fallback_url=${encodeURIComponent(genericUpiUrl)};end`;
+  return `upi://pay?${queryString}`;
+}
+
+function buildUpiQrDataUrl(upiUrl) {
+  if (typeof qrcode !== 'function' || !upiUrl || upiUrl === '#') return '';
+  for (let typeNumber = 4; typeNumber <= 40; typeNumber += 1) {
+    try {
+      const qr = qrcode(typeNumber, 'M');
+      qr.addData(upiUrl);
+      qr.make();
+      return qr.createDataURL(6, 2);
+    } catch {
+      // data doesn't fit at this type number, try a larger one
+    }
   }
-  return genericUpiUrl;
+  return '';
 }
 
 function upiProviderButtons(amount, orderNumber = '') {
+  const upiUrl = buildUpiUrl({ amount, orderNumber });
+  const qrDataUrl = buildUpiQrDataUrl(upiUrl);
   return `
-    <a class="btn primary full upi-pay-btn" href="${escapeHtml(buildUpiUrl({ amount, orderNumber }))}" data-upi-link>Pay</a>
+    <a class="btn primary full upi-pay-btn" href="${escapeHtml(upiUrl)}" data-upi-link>Pay</a>
+    ${qrDataUrl ? `
+      <div class="upi-qr-card">
+        <p class="upi-qr-label">Or scan to pay with any UPI app</p>
+        <img class="upi-qr-image" src="${escapeHtml(qrDataUrl)}" alt="Manisha's Kitchen UPI payment QR code" width="180" height="180">
+        <a class="btn secondary upi-qr-download" href="${escapeHtml(qrDataUrl)}" download="manishas-kitchen-payment-qr.gif">Download QR code</a>
+      </div>
+    ` : ''}
   `;
 }
 
@@ -1044,6 +1060,15 @@ document.addEventListener('click', (event) => {
   if (navToggle) {
     const nav = document.querySelector('[data-nav]');
     if (nav) nav.classList.toggle('open');
+  }
+
+  const upiLink = event.target.closest('[data-upi-link]');
+  if (upiLink) {
+    const href = upiLink.getAttribute('href');
+    if (href && href !== '#') {
+      event.preventDefault();
+      window.location.href = href;
+    }
   }
 
   const cashbackLogout = event.target.closest('[data-cashback-logout]');
