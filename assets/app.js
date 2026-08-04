@@ -1077,7 +1077,8 @@ document.addEventListener('click', (event) => {
     }
     const walletPanel = document.querySelector('[data-cashback-panel]');
     const numberInput = walletPanel && walletPanel.querySelector('[data-wallet-number]');
-    const mobileNumber = ((numberInput && numberInput.value) || '').trim();
+    const referralAuth = getCustomerAuth();
+    const mobileNumber = String((referralAuth && referralAuth.customer && referralAuth.customer.mobileNumber) || (numberInput && numberInput.value) || '').trim();
     const originalText = referralApply.textContent;
     referralApply.disabled = true;
     referralApply.textContent = 'Checking...';
