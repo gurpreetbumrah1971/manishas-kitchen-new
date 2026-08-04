@@ -95,43 +95,17 @@ function upiPaymentConfig() {
   const root = document.querySelector('[data-upi-payment]');
   return {
     upiId: ((root && root.dataset.upiId) || 'manishaskitchen2026@okaxis').trim(),
-    payeeName: (root && root.dataset.payeeName) || 'Manisha Chavan',
-    upiAid: (root && root.dataset.upiAid) || 'uGICAgNCIlbShSw',
   };
 }
 
-function upiReturnUrl(orderNumber) {
-  const url = new URL('/checkout.html', window.location.origin);
-  if (orderNumber) url.searchParams.set('order', orderNumber);
-  url.hash = 'thank-you';
-  return url.toString();
+function buildUpiUrl() {
+  const { upiId } = upiPaymentConfig();
+  if (!upiId) return '#';
+  return `upi://pay?pa=${upiId}`;
 }
 
-function buildUpiUrl({ amount, orderNumber }) {
-  const { upiId, payeeName, upiAid } = upiPaymentConfig();
-  const payableAmount = Number(amount || 0);
-  if (payableAmount <= 0 || !upiId) return '#';
-
-  const upiParams = new URLSearchParams({
-    pa: upiId,
-    pn: payeeName,
-    am: payableAmount.toFixed(2),
-    cu: 'INR',
-    url: upiReturnUrl(orderNumber),
-  });
-  if (orderNumber) {
-    upiParams.set('tr', orderNumber);
-    upiParams.set('tn', `Manisha's Kitchen order ${orderNumber}`);
-  }
-  if (upiAid) {
-    upiParams.set('aid', upiAid);
-  }
-  const queryString = upiParams.toString().replace(/\+/g, '%20');
-  return `upi://pay?${queryString}`;
-}
-
-function upiProviderButtons(amount, orderNumber = '') {
-  const upiUrl = buildUpiUrl({ amount, orderNumber });
+function upiProviderButtons() {
+  const upiUrl = buildUpiUrl();
   return `
     <a class="btn primary full upi-pay-btn" href="${escapeHtml(upiUrl)}" data-upi-link>Pay</a>
     <div class="upi-qr-card">
@@ -1549,9 +1523,9 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
           <h2>Pay with UPI</h2>
           <p>Choose your preferred UPI app. When you return, this thank-you page and order status will still be here.</p>
           <div data-upi-payment data-locked="1">
-            ${upiProviderButtons(paymentAmount, orderNumber)}
+            ${upiProviderButtons()}
           </div>
-          <p>UPI ID: <strong>manishaskitchen2026@okaxis</strong></p>
+          <p>UPI ID: <a href="upi://pay?pa=manishaskitchen2026@okaxis" data-upi-link><strong>manishaskitchen2026@okaxis</strong></a></p>
           <p>Order ID: <strong>${escapeHtml(orderNumber)}</strong></p>
         </div>
       ` : `

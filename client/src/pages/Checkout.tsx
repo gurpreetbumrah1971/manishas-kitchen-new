@@ -7,29 +7,7 @@ import API_URL from '../utils/api';
 import { buildOrderConfirmationMessage, openWhatsAppMessage } from '../utils/whatsapp';
 
 const UPI_ID = 'manishaskitchen2026@okaxis';
-const UPI_PAYEE = 'Manisha Chavan';
-const UPI_AID = 'uGICAgNCIlbShSw';
-
-const buildUpiUrl = (amount: number, orderNumber = '') => {
-  const returnUrl = new URL('/checkout', window.location.origin);
-  if (orderNumber) returnUrl.searchParams.set('order', orderNumber);
-  returnUrl.hash = 'thank-you';
-
-  const params = new URLSearchParams({
-    pa: UPI_ID,
-    pn: UPI_PAYEE,
-    am: Number(amount || 0).toFixed(2),
-    cu: 'INR',
-    url: returnUrl.toString(),
-    aid: UPI_AID,
-  });
-  if (orderNumber) {
-    params.set('tr', orderNumber);
-    params.set('tn', `Manisha's Kitchen order ${orderNumber}`);
-  }
-  const queryString = params.toString().replace(/\+/g, '%20');
-  return `upi://pay?${queryString}`;
-};
+const UPI_PAY_LINK = `upi://pay?pa=${UPI_ID}`;
 
 const Checkout = () => {
   const { cart, totalAmount, removeFromCart, updateQuantity, clearCart } = useCart();
@@ -129,10 +107,10 @@ const Checkout = () => {
             <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Pay with UPI</h2>
             <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem' }}>Tap Pay and choose your UPI app. When you return, this thank-you page will still be here.</p>
             <a
-              href={buildUpiUrl(placedOrder.amount, placedOrder.orderNumber)}
+              href={UPI_PAY_LINK}
               onClick={(event) => {
                 event.preventDefault();
-                window.location.href = buildUpiUrl(placedOrder.amount, placedOrder.orderNumber);
+                window.location.href = UPI_PAY_LINK;
               }}
               style={{
                 alignItems: 'center',
@@ -152,7 +130,7 @@ const Checkout = () => {
               <ExternalLink size={16} />
             </a>
             <div style={{ fontSize: '0.9rem', color: '#555', marginTop: '1rem' }}>Amount: <strong style={{ color: 'var(--primary-color)' }}>₹{placedOrder.amount}</strong></div>
-            <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>UPI ID: {UPI_ID}</div>
+            <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>UPI ID: <a href={UPI_PAY_LINK} onClick={(event) => { event.preventDefault(); window.location.href = UPI_PAY_LINK; }}>{UPI_ID}</a></div>
             <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>Order ID: {placedOrder.orderNumber}</div>
           </div>
         )}
@@ -294,7 +272,7 @@ const Checkout = () => {
                 <div style={{ marginBottom: '0.75rem', fontWeight: '700' }}>UPI payment available after order booking</div>
                 <p style={{ fontSize: '0.85rem', color: '#555', marginBottom: '0.75rem' }}>After placing your order, choose Google Pay, PhonePe, Paytm, or BHIM / UPI.</p>
                 <div style={{ fontSize: '0.9rem', color: '#555' }}>Amount: <strong style={{ color: 'var(--primary-color)' }}>₹{totalAmount}</strong></div>
-                <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>UPI ID: {UPI_ID}</div>
+                <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>UPI ID: <a href={UPI_PAY_LINK} onClick={(event) => { event.preventDefault(); window.location.href = UPI_PAY_LINK; }}>{UPI_ID}</a></div>
               </div>
             )}
 
