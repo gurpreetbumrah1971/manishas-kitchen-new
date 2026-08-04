@@ -130,33 +130,15 @@ function buildUpiUrl({ amount, orderNumber }) {
   return `upi://pay?${queryString}`;
 }
 
-function buildUpiQrDataUrl(upiUrl) {
-  if (typeof qrcode !== 'function' || !upiUrl || upiUrl === '#') return '';
-  for (let typeNumber = 4; typeNumber <= 40; typeNumber += 1) {
-    try {
-      const qr = qrcode(typeNumber, 'M');
-      qr.addData(upiUrl);
-      qr.make();
-      return qr.createDataURL(6, 2);
-    } catch {
-      // data doesn't fit at this type number, try a larger one
-    }
-  }
-  return '';
-}
-
 function upiProviderButtons(amount, orderNumber = '') {
   const upiUrl = buildUpiUrl({ amount, orderNumber });
-  const qrDataUrl = buildUpiQrDataUrl(upiUrl);
   return `
     <a class="btn primary full upi-pay-btn" href="${escapeHtml(upiUrl)}" data-upi-link>Pay</a>
-    ${qrDataUrl ? `
-      <div class="upi-qr-card">
-        <p class="upi-qr-label">Or scan to pay with any UPI app</p>
-        <img class="upi-qr-image" src="${escapeHtml(qrDataUrl)}" alt="Manisha's Kitchen UPI payment QR code" width="180" height="180">
-        <a class="btn secondary upi-qr-download" href="${escapeHtml(qrDataUrl)}" download="manishas-kitchen-payment-qr.gif">Download QR code</a>
-      </div>
-    ` : ''}
+    <div class="upi-qr-card">
+      <p class="upi-qr-label">Or scan to pay with any UPI app</p>
+      <img class="upi-qr-image" src="/assets/upi-qr.jpg" alt="Manisha's Kitchen UPI payment QR code" width="180" height="180">
+      <a class="btn secondary upi-qr-download" href="/assets/upi-qr.jpg" download="manishas-kitchen-upi-qr.jpg">Download QR code</a>
+    </div>
   `;
 }
 
