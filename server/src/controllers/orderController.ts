@@ -3,9 +3,12 @@ import { randomBytes } from 'crypto';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
 import { sendAdminOrderWhatsApp } from '../services/whatsappService';
+import { ensureCustomerReferralCode, normalizeReferralCode } from '../utils/referral';
 
 const ORDER_SESSION_MINUTES = 30;
 const CASHBACK_RATE = 0.10;
+const REFERRAL_DISCOUNT_RATE = 0.10;
+const REFERRAL_REWARD_RATE = 0.10;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 const orderInclude = {
@@ -92,6 +95,7 @@ export const createOrder = async (req: Request, res: Response) => {
       gstAmount,
       discountAmount,
       cashbackRedeemAmount,
+      referralCode,
       customerAuthToken
     } = req.body;
 
@@ -149,6 +153,7 @@ export const createOrder = async (req: Request, res: Response) => {
     const requestedCashbackRedeem = money(Number(cashbackRedeemAmount) || 0);
     const normalizedMobileNumber = normalizeMobileNumber(mobileNumber || whatsappNumber || '');
     const authenticatedCustomer = customerFromToken(String(customerAuthToken || ''));
+    const normalizedReferralCode = normalizeReferralCode(referralCode);
 
     if (requestedCashbackRedeem > 0 && (!authenticatedCustomer || authenticatedCustomer.mobileNumber !== normalizedMobileNumber)) {
       return res.status(401).json({ error: 'Please login with this mobile number to redeem cashback.' });
@@ -162,6 +167,27 @@ export const createOrder = async (req: Request, res: Response) => {
           create: { mobileNumber: normalizedMobileNumber, name: customerName || undefined },
         })
         : null;
+      let customerReferralCode: string | null = null;
+      if (customer) {
+        customerReferralCode = await ensureCustomerReferralCode(tx, customer);
+      }
+
+      let referrerCustomer: any = null;
+      let referralDiscount = 0;
+      let referralApplied = false;
+      if (normalizedReferralCode) {
+        referrerCustomer = await tx.customer.findUnique({ where: { referralCode: normalizedReferralCode } });
+        if (referrerCustomer) {
+          const isSelfReferral = customer && referrerCustomer.id === customer.id;
+          const priorOrders = customer ? await tx.order.count({ where: { customerId: customer.id } }) : 0;
+          if (!isSelfReferral && priorOrders === 0) {
+            referralDiscount = money(computedSubtotal * REFERRAL_DISCOUNT_RATE);
+            referralApplied = true;
+          }
+        }
+      }
+
+      const preCashbackGrandTotal = money(computedSubtotal + normalizedGstAmount - normalizedDiscountAmount - referralDiscount + computedDeliveryAmount);
       const currentBalance = customer ? Number(customer.cashbackBalance) : 0;
       const normalizedCashbackRedeemed = customer && authenticatedCustomer
         ? money(Math.min(requestedCashbackRedeem, currentBalance, preCashbackGrandTotal))
@@ -187,6 +213,9 @@ export const createOrder = async (req: Request, res: Response) => {
           totalAmount: normalizedTotalAmount,
           gstAmount: normalizedGstAmount,
           discountAmount: normalizedDiscountAmount,
+          referralCode: referralApplied ? normalizedReferralCode : null,
+          referrerId: referralApplied && referrerCustomer ? referrerCustomer.id : undefined,
+          referralDiscount: referralApplied ? referralDiscount : 0,
           cashbackRedeemed: normalizedCashbackRedeemed,
           cashbackEarned: normalizedCashbackEarned,
           grandTotal: normalizedGrandTotal,
@@ -235,14 +264,40 @@ export const createOrder = async (req: Request, res: Response) => {
         });
       }
 
-      return savedOrder;
+      if (referralApplied && referrerCustomer) {
+        const referrerReward = money(normalizedGrandTotal * REFERRAL_REWARD_RATE);
+        if (referrerReward > 0) {
+          const referrerBalance = Number(referrerCustomer.cashbackBalance);
+          const referrerBalanceAfter = money(referrerBalance + referrerReward);
+          await tx.customer.update({
+            where: { id: referrerCustomer.id },
+            data: { cashbackBalance: referrerBalanceAfter },
+          });
+          await tx.cashbackTransaction.create({
+            data: {
+              customerId: referrerCustomer.id,
+              orderId: savedOrder.id,
+              type: 'EARNED',
+              amount: referrerReward,
+              balanceAfter: referrerBalanceAfter,
+              note: `Referral reward from order ${orderNumber}`,
+            },
+          });
+        }
+      }
+
+      return { order: savedOrder, customerReferralCode, referralApplied };
     });
 
-    sendAdminOrderWhatsApp(order).catch((error) => {
+    sendAdminOrderWhatsApp(order.order).catch((error) => {
       console.error('WhatsApp admin notification error:', error);
     });
 
-    res.status(201).json(order);
+    res.status(201).json({
+      ...order.order,
+      customerReferralCode: order.customerReferralCode,
+      referralApplied: order.referralApplied,
+    });
   } catch (error: any) {
     console.error('Order creation error:', error);
     if (error.code === 'P2003' || error.code === 'INVALID_FOOD_ITEM') {

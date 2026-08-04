@@ -5,7 +5,7 @@ import multer from 'multer';
 import { createFoodItem, deleteFoodItem, getCategories, getMenu, getMenuImage, updateFoodItem, updateFoodItemAvailability } from '../controllers/menuController';
 import { createOrder, getOrderStatus, getOrders, updateOrderStatus } from '../controllers/orderController';
 import { login } from '../controllers/adminController';
-import { getCustomerAccount, getCustomerWallet, requestCustomerOtp, verifyCustomerOtp } from '../controllers/customerController';
+import { getCustomerAccount, getCustomerWallet, requestCustomerOtp, validateReferral, verifyCustomerOtp } from '../controllers/customerController';
 import { authenticateAdmin } from '../middleware/auth';
 
 const router = Router();
@@ -82,6 +82,7 @@ router.patch('/admin/orders/:id/status', authenticateAdmin, updateOrderStatus);
 // Customer Wallet Routes
 router.post('/customer/request-otp', requestCustomerOtp);
 router.post('/customer/verify-otp', verifyCustomerOtp);
+router.post('/customer/referral/validate', validateReferral);
 router.get('/customer/wallet', getCustomerWallet);
 router.get('/customer/account', getCustomerAccount);
 

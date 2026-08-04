@@ -2,10 +2,12 @@ import { Request, Response } from 'express';
 import { randomInt } from 'crypto';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
+import { ensureCustomerReferralCode, normalizeReferralCode } from '../utils/referral';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const OTP_MINUTES = 10;
 const CUSTOMER_TOKEN_DAYS = 30;
+const REFERRAL_DISCOUNT_RATE = 0.10;
 
 const twilioConfig = () => ({
   enabled: process.env.OTP_PROVIDER === 'twilio',
@@ -71,6 +73,7 @@ const publicCustomerWallet = async (customerId: number) => {
       id: customer.id,
       mobileNumber: customer.mobileNumber,
       name: customer.name,
+      referralCode: customer.referralCode,
       cashbackBalance: Number(customer.cashbackBalance),
     },
     transactions: customer.cashbackTransactions.map((transaction) => ({
@@ -136,6 +139,7 @@ export const requestCustomerOtp = async (req: Request, res: Response) => {
       update: name ? { name } : {},
       create: { mobileNumber, name: name || undefined },
     });
+    await ensureCustomerReferralCode(prisma, customer);
     const expiresAt = new Date(Date.now() + OTP_MINUTES * 60 * 1000);
 
     if (twilioConfig().enabled) {
@@ -205,6 +209,7 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
       update: {},
       create: { mobileNumber },
     });
+    await ensureCustomerReferralCode(prisma, customer);
 
     if (otp) {
       await prisma.customerOtp.update({
@@ -232,6 +237,51 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Customer OTP verification error:', error);
     res.status(500).json({ error: 'Could not verify OTP' });
+  }
+};
+
+export const validateReferral = async (req: Request, res: Response) => {
+  try {
+    const code = normalizeReferralCode(req.body.code);
+    const mobileNumber = normalizeMobileNumber(String(req.body.mobileNumber || ''));
+
+    if (!code) {
+      return res.status(400).json({ error: 'Referral code is required' });
+    }
+
+    const referrer = await prisma.customer.findUnique({ where: { referralCode: code } });
+    if (!referrer) {
+      return res.json({ valid: false, message: 'Invalid referral code. Please check and try again.' });
+    }
+
+    let selfReferral = false;
+    let priorOrders = 0;
+    if (mobileNumber) {
+      const selfCustomer = await prisma.customer.findUnique({ where: { mobileNumber } });
+      if (selfCustomer) {
+        if (selfCustomer.id === referrer.id) selfReferral = true;
+        priorOrders = await prisma.order.count({ where: { customerId: selfCustomer.id } });
+      }
+    }
+
+    if (selfReferral) {
+      return res.json({ valid: false, message: 'You cannot use your own referral code.' });
+    }
+    if (priorOrders > 0) {
+      return res.json({ valid: false, message: 'Referral discount applies only to your first order.' });
+    }
+
+    res.json({
+      valid: true,
+      discountPercent: Math.round(REFERRAL_DISCOUNT_RATE * 100),
+      referrerName: referrer.name || null,
+      message: referrer.name
+        ? `Referral accepted! 10% off from ${referrer.name}.`
+        : 'Referral accepted! You get 10% off on this order.',
+    });
+  } catch (error) {
+    console.error('Referral validation error:', error);
+    res.status(500).json({ error: 'Could not validate referral code' });
   }
 };
 

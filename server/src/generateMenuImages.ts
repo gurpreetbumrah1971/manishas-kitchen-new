@@ -35,15 +35,29 @@ const menuItemNames = [
   'Chocolate Milkshake',
   'Mango Milkshake',
   'Custom Party Box',
+  'Veg Biryani',
+  'Single Egg Burjee + 2 Butter Pav',
+  'Single Egg Omelet + 2 Butter Pav',
+  'Double Egg Burjee + 4 Butter Pav',
+  'Double Omelet + 4 Butter Pav',
+  'Boiled Egg (1 Egg)',
+  'Aloo Frankie',
+  'Paneer Frankie',
+  'Moong Daal Chilla',
 ];
 
-const outputDir = path.resolve(__dirname, '../../client/public/food/generated');
+const outputDirs = [
+  path.resolve(__dirname, '../../assets/food/generated'),
+  path.resolve(__dirname, '../../client/public/food/generated'),
+];
 
-fs.mkdirSync(outputDir, { recursive: true });
+for (const outputDir of outputDirs) {
+  fs.mkdirSync(outputDir, { recursive: true });
 
-for (const name of menuItemNames) {
-  const filePath = path.join(outputDir, `${slugifyMenuImageName(name)}.svg`);
-  fs.writeFileSync(filePath, renderMenuImageSvg(name), 'utf8');
+  for (const name of menuItemNames) {
+    const filePath = path.join(outputDir, `${slugifyMenuImageName(name)}.svg`);
+    fs.writeFileSync(filePath, renderMenuImageSvg(name), 'utf8');
+  }
+
+  console.log(`Generated ${menuItemNames.length} menu images in ${outputDir}`);
 }
-
-console.log(`Generated ${menuItemNames.length} menu images in ${outputDir}`);

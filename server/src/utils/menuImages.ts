@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 const palette = [
   ['#fff7ed', '#c2410c', '#fed7aa'],
   ['#fefce8', '#a16207', '#fde68a'],
@@ -10,14 +13,36 @@ const palette = [
 export const menuImageUrl = (name: string) =>
   `/api/menu-image/${encodeURIComponent(name)}.svg`;
 
-export const generatedMenuAssetUrl = (name: string) =>
-  `/food/generated/${slugifyMenuImageName(name)}.svg`;
-
 export const slugifyMenuImageName = (name: string) =>
   name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+
+const realisticFileOverrides: Record<string, string> = {
+  'Single Egg Burjee + 2 Butter Pav': 'egg-burji-realistic.png',
+  'Double Egg Burjee + 4 Butter Pav': 'egg-burji-realistic.png',
+  'Single Egg Omelet + 2 Butter Pav': 'egg-omelet-realistic.png',
+  'Double Omelet + 4 Butter Pav': 'egg-omelet-realistic.png',
+  'Egg Burji + 2 Pav (Single)': 'egg-burji-realistic.png',
+  'Egg Burji + 2 Pav (Double)': 'egg-burji-realistic.png',
+  'Egg Omelet + 2 Pav (Single)': 'egg-omelet-realistic.png',
+  'Egg Omelet + 2 Pav (Double)': 'egg-omelet-realistic.png',
+  'Aloo Frankie': 'aloo-paratha-realistic.png',
+  'Paneer Frankie': 'paneer-paratha-realistic.png',
+  'Paneer Pakoda': 'paneer-paratha-realistic.png',
+  'Moong Daal Chilla': 'uttapam-realistic.png',
+};
+
+const generatedAssetDir = path.resolve(__dirname, '../../../assets/food/generated');
+
+export const generatedMenuAssetUrl = (name: string) => {
+  const slug = slugifyMenuImageName(name);
+  const realisticFile = realisticFileOverrides[name] || `${slug}-realistic.png`;
+  const svgFile = `${slug}.svg`;
+  const useRealistic = fs.existsSync(path.join(generatedAssetDir, realisticFile));
+  return `/food/generated/${useRealistic ? realisticFile : svgFile}`;
+};
 
 export const renderMenuImageSvg = (name: string) => {
   const hash = Array.from(name).reduce((sum, char) => sum + char.charCodeAt(0), 0);

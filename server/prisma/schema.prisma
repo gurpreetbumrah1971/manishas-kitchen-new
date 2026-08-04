@@ -60,6 +60,10 @@ model Order {
   customerSessionToken     String?
   customerSessionExpiresAt DateTime?
   customer                 Customer?     @relation(fields: [customerId], references: [id])
+  referrer                 Customer?     @relation("ReferredBy", fields: [referrerId], references: [id])
+  referralCode             String?
+  referrerId               Int?
+  referralDiscount         Decimal       @default(0) @db.Decimal(10, 2)
   cashbackTransactions     CashbackTransaction[]
   orderItems               OrderItem[]
   createdAt                DateTime      @default(now())
@@ -108,8 +112,10 @@ model Customer {
   id                   Int                   @id @default(autoincrement())
   mobileNumber         String                @unique
   name                 String?
+  referralCode         String?               @unique
   cashbackBalance      Decimal               @default(0) @db.Decimal(10, 2)
   orders               Order[]
+  referredOrders       Order[]               @relation("ReferredBy")
   otpCodes             CustomerOtp[]
   cashbackTransactions CashbackTransaction[]
   createdAt            DateTime              @default(now())

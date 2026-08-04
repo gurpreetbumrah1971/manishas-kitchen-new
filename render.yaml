@@ -5,6 +5,7 @@ services:
     plan: free
     buildCommand: npm --prefix server install --legacy-peer-deps && npm --prefix client install --legacy-peer-deps && npm --prefix client run build:only && npm --prefix server run build
     startCommand: npm --prefix server run deploy && npm --prefix server start
+    healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: 20

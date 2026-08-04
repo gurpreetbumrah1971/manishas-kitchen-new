@@ -3,6 +3,10 @@ const ORDER_SESSION_KEY = 'mkOrderSession';
 const CUSTOMER_AUTH_KEY = 'mkCustomerAuth';
 const CASHBACK_REDEEM_KEY = 'mkCashbackRedeem';
 const CASHBACK_OTP_KEY = 'mkCashbackOtp';
+const CASHBACK_WALLET_MODE_KEY = 'mkCashbackWalletMode';
+const CASHBACK_NUMBER_KEY = 'mkCashbackNumber';
+const CASHBACK_NAME_KEY = 'mkCashbackName';
+const CASHBACK_REFERRAL_KEY = 'mkReferralCode';
 const INDEPENDENCE_BANNER_SEEN_KEY = 'mkIndependenceBannerSeenV3';
 const APP_ASSET_BASE_URL = document.currentScript && document.currentScript.src
   ? new URL('.', document.currentScript.src).toString()
@@ -282,9 +286,52 @@ function cashbackAppliedFor(preCashbackTotal) {
   return Math.max(0, Math.min(requestedCashbackRedeem(), customerCashbackBalance(), Number(preCashbackTotal || 0)));
 }
 
+function appliedReferralCode() {
+  return (localStorage.getItem(CASHBACK_REFERRAL_KEY) || '').trim().toUpperCase();
+}
+
+function referralDiscountForSubtotal(subtotal) {
+  return appliedReferralCode() ? Math.round(Number(subtotal || 0) * 0.10 * 100) / 100 : 0;
+}
+
+function fallbackCopyText(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand('copy');
+  } catch {
+    // ignore copy failures
+  }
+  document.body.removeChild(textarea);
+}
+
+function renderReferralState() {
+  const input = document.querySelector('[data-referral-code]');
+  const status = document.querySelector('[data-referral-status]');
+  const applyBtn = document.querySelector('[data-referral-apply]');
+  if (!input) return;
+  const code = appliedReferralCode();
+  if (code) {
+    input.value = code;
+    if (applyBtn) applyBtn.textContent = 'Remove';
+    if (status) {
+      status.textContent = '10% referral discount applied to this order.';
+      status.classList.add('ok');
+      status.classList.remove('error');
+    }
+  } else {
+    if (applyBtn) applyBtn.textContent = 'Apply';
+  }
+}
+
 function cashbackTransactionHtml(transactions) {
   if (!transactions || !transactions.length) {
-    return '<p class="cashback-empty">No cashback activity yet.</p>';
+    return '<p class="cashback-empty">No cashback available? Go ahead and order from our tasty menu, save some money with discounts and get cashback of 10% of your final bill amount in your wallet. Use it to save more next time.</p>';
   }
   return `
     <div class="cashback-transactions">
@@ -313,11 +360,24 @@ function renderCashbackPanel(preCashbackTotal = 0, applied = 0) {
   const pendingOtp = getPendingCashbackOtp();
 
   if (!auth) {
+    const mode = panel.dataset.walletMode || localStorage.getItem(CASHBACK_WALLET_MODE_KEY) || 'existing';
+    const syncedNumber = (localStorage.getItem(CASHBACK_NUMBER_KEY) || '').trim();
+    panel.dataset.walletMode = mode;
+    try {
+      localStorage.setItem(CASHBACK_WALLET_MODE_KEY, mode);
+    } catch {
+      // ignore storage errors
+    }
     panel.innerHTML = `
       <h2>Cashback Wallet</h2>
-      <p>Login with mobile OTP to view cashback and redeem it on this order.</p>
+      <p>${mode === 'new' ? 'Create a wallet profile to earn cashback on this order.' : 'Login to view your cashback and redeem it on this order.'}</p>
+      <div class="wallet-mode-toggle" role="group" aria-label="Wallet login type">
+        <button type="button" class="${mode === 'existing' ? 'active' : ''}" data-wallet-mode-btn="existing">Existing User</button>
+        <button type="button" class="${mode === 'new' ? 'active' : ''}" data-wallet-mode-btn="new">New User</button>
+      </div>
       <form class="cashback-login-form" data-cashback-login-form>
-        <label>Mobile Number<input name="mobile_number" required inputmode="tel" placeholder="10-digit mobile number"></label>
+        <label>Mobile Number<input name="mobile_number" data-wallet-number required inputmode="tel" placeholder="10-digit mobile number" value="${escapeHtml(syncedNumber)}"></label>
+        ${mode === 'new' ? `<label>Your Name<input name="customer_name" required autocomplete="name" placeholder="Enter your name" value="${escapeHtml((localStorage.getItem(CASHBACK_NAME_KEY) || '').trim())}"></label>` : ''}
         <button class="btn secondary full" type="submit">Send OTP</button>
       </form>
       ${pendingOtp ? `
@@ -325,7 +385,7 @@ function renderCashbackPanel(preCashbackTotal = 0, applied = 0) {
           <input type="hidden" name="mobile_number" value="${escapeHtml(pendingOtp.mobileNumber)}">
           ${pendingOtp.testOtp ? `<p class="cashback-test-otp">Testing OTP: <strong>${escapeHtml(pendingOtp.testOtp)}</strong></p>` : '<p class="cashback-test-otp">OTP sent by SMS. Check your phone.</p>'}
           <label>Enter OTP<input name="otp" required inputmode="numeric" maxlength="6" placeholder="6-digit OTP"></label>
-          <button class="btn primary full" type="submit">Login to Wallet</button>
+          <button class="btn primary full" type="submit">Verify &amp; Login</button>
         </form>
       ` : ''}
     `;
@@ -340,6 +400,19 @@ function renderCashbackPanel(preCashbackTotal = 0, applied = 0) {
     localStorage.setItem(CASHBACK_REDEEM_KEY, String(savedRedeem));
   }
 
+  const redeemBlock = savedRedeem > 0
+    ? `
+      <div class="cashback-redeem-applied">
+        <span>Redeemed on this order: <strong>${money(savedRedeem)}</strong></span>
+        <button class="btn ghost" type="button" data-cashback-redeem-remove>Remove</button>
+      </div>`
+    : maxRedeem > 0
+      ? `
+      <div class="cashback-redeem-cta">
+        <button class="btn primary full" type="button" data-cashback-redeem-all data-amount="${maxRedeem.toFixed(2)}">Redeem ${money(maxRedeem)} on this order</button>
+      </div>`
+      : '<p class="cashback-help">No cashback to redeem on this order.</p>';
+
   panel.innerHTML = `
     <h2>Cashback Wallet</h2>
     <div class="cashback-balance-row">
@@ -349,11 +422,8 @@ function renderCashbackPanel(preCashbackTotal = 0, applied = 0) {
       </span>
       <button class="btn ghost" type="button" data-cashback-logout>Logout</button>
     </div>
-    <label>Redeem on this order
-      <input name="cashback_redeem" data-cashback-redeem type="number" min="0" max="${maxRedeem.toFixed(2)}" step="1" value="${savedRedeem ? savedRedeem.toFixed(2) : ''}" placeholder="0">
-    </label>
-    <p class="cashback-help">Available now: ${money(balance)}. Applied to this order: <strong>${money(applied)}</strong>.</p>
-    ${cashbackTransactionHtml(auth.transactions || [])}
+    ${redeemBlock}
+    <p class="cashback-help">Cashback in wallet: ${money(balance)}.</p>
   `;
 }
 
@@ -900,13 +970,16 @@ function renderCheckout() {
   const gst = Number((subtotal * gstRate).toFixed(2));
   const discountRate = discountRateForSubtotal(subtotal, discountTiers);
   const discount = Number((subtotal * discountRate).toFixed(2));
+  const referralDiscount = referralDiscountForSubtotal(subtotal);
   const deliveryCharge = deliveryChargeForSubtotal(subtotal);
-  const preCashbackGrandTotal = subtotal + gst - discount + deliveryCharge;
+  const preCashbackGrandTotal = subtotal + gst - discount - referralDiscount + deliveryCharge;
   const cashbackRedeemed = cashbackAppliedFor(preCashbackGrandTotal);
   const grandTotal = Math.max(0, Number((preCashbackGrandTotal - cashbackRedeemed).toFixed(2)));
   document.querySelectorAll('[data-checkout-subtotal]').forEach((node) => node.textContent = money(subtotal));
   document.querySelectorAll('[data-checkout-gst]').forEach((node) => node.textContent = money(gst));
   document.querySelectorAll('[data-checkout-discount]').forEach((node) => node.textContent = money(discount));
+  document.querySelectorAll('[data-checkout-referral-discount]').forEach((node) => node.textContent = money(referralDiscount));
+  document.querySelectorAll('[data-checkout-referral-row]').forEach((node) => node.hidden = referralDiscount <= 0);
   document.querySelectorAll('[data-checkout-delivery]').forEach((node) => node.textContent = money(deliveryCharge));
   document.querySelectorAll('[data-checkout-cashback]').forEach((node) => node.textContent = money(cashbackRedeemed));
   document.querySelectorAll('[data-checkout-cashback-row]').forEach((node) => node.hidden = cashbackRedeemed <= 0);
@@ -966,6 +1039,20 @@ document.addEventListener('click', (event) => {
     changeQuantity(Number(remove.dataset.remove), 0);
   }
 
+  const walletModeBtn = event.target.closest('[data-wallet-mode-btn]');
+  if (walletModeBtn) {
+    const panel = walletModeBtn.closest('[data-cashback-panel]');
+    if (panel) {
+      panel.dataset.walletMode = walletModeBtn.dataset.walletModeBtn;
+      try {
+        localStorage.setItem(CASHBACK_WALLET_MODE_KEY, walletModeBtn.dataset.walletModeBtn);
+      } catch {
+        // ignore storage errors
+      }
+      renderCashbackPanel();
+    }
+  }
+
   const navToggle = event.target.closest('[data-nav-toggle]');
   if (navToggle) {
     const nav = document.querySelector('[data-nav]');
@@ -977,6 +1064,94 @@ document.addEventListener('click', (event) => {
     localStorage.removeItem(CUSTOMER_AUTH_KEY);
     localStorage.removeItem(CASHBACK_REDEEM_KEY);
     renderCheckout();
+  }
+
+  const redeemAll = event.target.closest('[data-cashback-redeem-all]');
+  if (redeemAll) {
+    localStorage.setItem(CASHBACK_REDEEM_KEY, String(Number(redeemAll.dataset.amount) || 0));
+    renderCheckout();
+  }
+
+  const redeemRemove = event.target.closest('[data-cashback-redeem-remove]');
+  if (redeemRemove) {
+    localStorage.removeItem(CASHBACK_REDEEM_KEY);
+    renderCheckout();
+  }
+
+  const referralApply = event.target.closest('[data-referral-apply]');
+  if (referralApply) {
+    event.preventDefault();
+    const input = document.querySelector('[data-referral-code]');
+    const status = document.querySelector('[data-referral-status]');
+    if (appliedReferralCode()) {
+      localStorage.removeItem(CASHBACK_REFERRAL_KEY);
+      if (input) input.value = '';
+      if (status) { status.textContent = ''; status.className = 'referral-status'; }
+      renderCheckout();
+      renderReferralState();
+      return;
+    }
+    const code = ((input && input.value) || '').trim().toUpperCase();
+    if (!code) {
+      if (status) { status.textContent = 'Please enter a referral code.'; status.classList.add('error'); status.classList.remove('ok'); }
+      return;
+    }
+    const walletPanel = document.querySelector('[data-cashback-panel]');
+    const numberInput = walletPanel && walletPanel.querySelector('[data-wallet-number]');
+    const mobileNumber = ((numberInput && numberInput.value) || '').trim();
+    const originalText = referralApply.textContent;
+    referralApply.disabled = true;
+    referralApply.textContent = 'Checking...';
+    fetch('/api/customer/referral/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ code, mobileNumber }),
+    })
+      .then((response) => response.json().catch(() => ({})))
+      .then((result) => {
+        if (result.valid) {
+          localStorage.setItem(CASHBACK_REFERRAL_KEY, code);
+          if (status) { status.textContent = result.message || '10% referral discount applied!'; status.classList.add('ok'); status.classList.remove('error'); }
+        } else {
+          localStorage.removeItem(CASHBACK_REFERRAL_KEY);
+          if (status) { status.textContent = result.message || 'Invalid referral code.'; status.classList.add('error'); status.classList.remove('ok'); }
+        }
+        renderCheckout();
+        renderReferralState();
+      })
+      .catch(() => {
+        localStorage.removeItem(CASHBACK_REFERRAL_KEY);
+        if (status) { status.textContent = 'Could not validate referral code. Please try again.'; status.classList.add('error'); status.classList.remove('ok'); }
+      })
+      .finally(() => {
+        referralApply.disabled = false;
+        referralApply.textContent = originalText;
+      });
+  }
+
+  const copyReferral = event.target.closest('[data-copy-referral]');
+  if (copyReferral) {
+    const card = copyReferral.closest('[data-referral-share-card]');
+    const code = card && card.querySelector('[data-referral-code-value]');
+    const copied = card && card.querySelector('[data-referral-copied]');
+    if (code && code.textContent) {
+      const text = code.textContent.trim();
+      const done = () => {
+        if (copied) {
+          copied.hidden = false;
+          setTimeout(() => { copied.hidden = true; }, 1800);
+        }
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(() => {
+          fallbackCopyText(text);
+          done();
+        });
+      } else {
+        fallbackCopyText(text);
+        done();
+      }
+    }
   }
 
   const accountLogout = event.target.closest('[data-account-logout]');
@@ -1000,15 +1175,6 @@ document.addEventListener('click', (event) => {
     });
     applyMenuFilters();
   }
-});
-
-document.addEventListener('change', (event) => {
-  const redeemInput = event.target.closest('[data-cashback-redeem]');
-  if (!redeemInput) return;
-
-  const amount = Math.max(0, Number(redeemInput.value || 0) || 0);
-  localStorage.setItem(CASHBACK_REDEEM_KEY, String(amount));
-  renderCheckout();
 });
 
 document.addEventListener('submit', async (event) => {
@@ -1055,8 +1221,7 @@ document.addEventListener('submit', async (event) => {
   if (loginForm) {
     event.preventDefault();
     const formData = new FormData(loginForm);
-    const orderForm = document.querySelector('[data-checkout-form]');
-    const nameInput = orderForm && orderForm.querySelector('[name="customer_name"]');
+    const customerName = String(formData.get('customer_name') || '').trim();
     const mobileNumber = normalizeMobileNumber(formData.get('mobile_number'));
     const submitButton = loginForm.querySelector('button[type="submit"]');
     const originalText = submitButton && submitButton.textContent || 'Send OTP';
@@ -1074,7 +1239,7 @@ document.addEventListener('submit', async (event) => {
         },
         body: JSON.stringify({
           mobileNumber,
-          name: nameInput ? nameInput.value : '',
+          name: customerName,
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -1354,6 +1519,10 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
   const cashbackEarned = Number(order.cashbackEarned || (paymentAmount * 0.10) || 0);
   const cashbackRedeemed = Number(order.cashbackRedeemed || 0);
   const shouldShowUpi = String(paymentMethod || 'UPI').toUpperCase() === 'UPI';
+  const auth = getCustomerAuth();
+  const referralCode = String(order.customerReferralCode || order.referralCode || (auth && auth.customer && auth.customer.referralCode) || '').trim().toUpperCase();
+  const shareUrl = `${window.location.origin}/menu.html`;
+  const shareText = `Order from Manisha's Kitchen and get 10% off your first order with my referral code ${referralCode}! ${shareUrl}`;
   section.innerHTML = `
     <div class="success-panel checkout-thank-you">
       <h1>Thank you for your order!</h1>
@@ -1368,6 +1537,18 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
         <p>10% of your final bill has been added to your mobile wallet.</p>
         ${cashbackRedeemed > 0 ? `<small>You redeemed ${money(cashbackRedeemed)} on this order.</small>` : ''}
       </div>
+      ${referralCode ? `
+        <div class="referral-share-card" data-referral-share-card>
+          <h2>Refer &amp; earn cashback</h2>
+          <p>Share your code with friends. They get 10% off their first order, and you earn 10% cashback on their bill.</p>
+          <div class="referral-code-box">
+            <strong data-referral-code-value>${escapeHtml(referralCode)}</strong>
+            <button type="button" class="btn secondary" data-copy-referral>Copy</button>
+          </div>
+          <a class="btn primary" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener">Share on WhatsApp</a>
+          <p class="referral-copied" data-referral-copied hidden>Copied!</p>
+        </div>
+      ` : ''}
       ${shouldShowUpi ? `
         <div class="payment-box thank-you-payment">
           <h2>Pay with UPI</h2>
@@ -1407,7 +1588,6 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
         </div>
         <span class="order-status-meta" data-order-status-updated>Checking status...</span>
       </div>
-      <a class="btn primary" href="${escapeHtml(whatsappUrl)}" target="_blank" rel="noopener">Send WhatsApp Confirmation</a>
       <a class="btn secondary" href="/menu.html">Back to Menu</a>
     </div>
   `;
@@ -1427,6 +1607,7 @@ function restoreStaticOrderSession() {
       orderNumber: session.orderNumber,
       cashbackEarned: session.cashbackEarned || 0,
       cashbackRedeemed: session.cashbackRedeemed || 0,
+      customerReferralCode: session.referralCode || '',
     },
     total: session.total || 'Rs. 0.00',
     amount: session.amount || parseMoney(session.total),
@@ -1472,16 +1653,31 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
     const grandTotal = parseMoney(checkoutTotalNode && checkoutTotalNode.textContent);
     const total = checkoutTotalNode && checkoutTotalNode.textContent || money(grandTotal);
     const items = cart.map((item) => `${item.name} x ${item.quantity}`).join(', ');
-    const number = String(formData.get('whatsapp_number') || '').replace(/\D+/g, '');
-    const normalizedNumber = number.length === 10 ? `91${number}` : number;
     const customerAuth = getCustomerAuth();
+    const walletPanel = document.querySelector('[data-cashback-panel]');
+    const walletNumberInput = walletPanel && walletPanel.querySelector('[data-wallet-number]');
+    const walletNameInput = walletPanel && walletPanel.querySelector('[name="customer_name"]');
+    const authCustomer = (customerAuth && customerAuth.customer) || {};
+    const number = String(authCustomer.mobileNumber || (walletNumberInput && walletNumberInput.value) || '').replace(/\D+/g, '');
+    const normalizedNumber = number.length === 10 ? `91${number}` : number;
+    const customerName = String(authCustomer.name || (walletNameInput && walletNameInput.value) || '').trim();
+    if (!customerName || !number) {
+      alert('Please enter your name and mobile number in the Cashback Wallet section above (switch to "New User" if you have not logged in) to continue.');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+      }
+      return;
+    }
+    const address = String((document.querySelector('[name="address"]') || {}).value || '').trim() || null;
     const orderPayload = {
-      customerName: String(formData.get('customer_name') || '').trim(),
-      mobileNumber: String(formData.get('whatsapp_number') || '').trim(),
-      whatsappNumber: String(formData.get('whatsapp_number') || '').trim(),
+      customerName,
+      mobileNumber: number,
+      whatsappNumber: number,
       birthday: formData.get('birthday') || null,
       anniversary: formData.get('anniversary') || null,
-      address: String(formData.get('address') || '').trim() || null,
+      address,
+      referralCode: appliedReferralCode() || null,
       orderType: 'DINE_IN',
       paymentMethod: formData.get('payment_method') || 'UPI',
       totalAmount: subtotal,
@@ -1533,6 +1729,7 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
           amount: grandTotal,
           paymentMethod: orderPayload.paymentMethod,
           whatsappUrl,
+          referralCode: result.customerReferralCode || '',
           cashbackEarned: result.cashbackEarned || 0,
           cashbackRedeemed: result.cashbackRedeemed || 0,
         }
@@ -1540,6 +1737,7 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
 
       localStorage.removeItem(CART_KEY);
       localStorage.removeItem(CASHBACK_REDEEM_KEY);
+      localStorage.removeItem(CASHBACK_REFERRAL_KEY);
       if (session) saveOrderSession(session);
       updateCartCount();
       showStaticOrderThankYou({
@@ -1619,12 +1817,32 @@ if (success) {
   }
 }
 
+document.addEventListener('input', (event) => {
+  const walletNumber = event.target.closest('[data-wallet-number]');
+  if (walletNumber) {
+    try {
+      localStorage.setItem(CASHBACK_NUMBER_KEY, walletNumber.value);
+    } catch {
+      // ignore storage errors
+    }
+  }
+  const walletName = event.target.closest('[data-cashback-panel] [name="customer_name"]');
+  if (walletName) {
+    try {
+      localStorage.setItem(CASHBACK_NAME_KEY, walletName.value);
+    } catch {
+      // ignore storage errors
+    }
+  }
+});
+
 hydrateStaticMenuAdditions();
 normalizeStaticMenuCategories();
 updateStaticMenuItemOverrides();
 ensureMenuSearchResults();
 renderCartControls();
 renderCheckout();
+renderReferralState();
 loadCustomerAccount();
 updateCartCount();
 syncPaymentBox();
