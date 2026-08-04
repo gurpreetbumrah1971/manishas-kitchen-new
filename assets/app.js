@@ -107,6 +107,10 @@ function upiReturnUrl(orderNumber) {
   return url.toString();
 }
 
+function isAndroidBrowser() {
+  return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
+}
+
 function buildUpiUrl({ amount, orderNumber }) {
   const { upiId, payeeName, upiAid } = upiPaymentConfig();
   const payableAmount = Number(amount || 0);
@@ -127,7 +131,11 @@ function buildUpiUrl({ amount, orderNumber }) {
     upiParams.set('aid', upiAid);
   }
   const queryString = upiParams.toString().replace(/\+/g, '%20');
-  return `upi://pay?${queryString}`;
+  const genericUpiUrl = `upi://pay?${queryString}`;
+  if (isAndroidBrowser()) {
+    return `intent://pay?${queryString}#Intent;scheme=upi;S.browser_fallback_url=${encodeURIComponent(genericUpiUrl)};end`;
+  }
+  return genericUpiUrl;
 }
 
 function upiProviderButtons(amount, orderNumber = '') {
@@ -1572,6 +1580,7 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
     </div>
   `;
 
+  window.scrollTo(0, 0);
   if (session) startOrderStatusTracking(session);
 }
 

@@ -10,6 +10,8 @@ const UPI_ID = 'manishaskitchen2026@okaxis';
 const UPI_PAYEE = 'Manisha Chavan';
 const UPI_AID = 'uGICAgNCIlbShSw';
 
+const isAndroidBrowser = () => /Android/i.test(window.navigator.userAgent || '');
+
 const buildUpiUrl = (amount: number, orderNumber = '') => {
   const returnUrl = new URL('/checkout', window.location.origin);
   if (orderNumber) returnUrl.searchParams.set('order', orderNumber);
@@ -28,7 +30,11 @@ const buildUpiUrl = (amount: number, orderNumber = '') => {
     params.set('tn', `Manisha's Kitchen order ${orderNumber}`);
   }
   const queryString = params.toString().replace(/\+/g, '%20');
-  return `upi://pay?${queryString}`;
+  const genericUpiUrl = `upi://pay?${queryString}`;
+  if (isAndroidBrowser()) {
+    return `intent://pay?${queryString}#Intent;scheme=upi;S.browser_fallback_url=${encodeURIComponent(genericUpiUrl)};end`;
+  }
+  return genericUpiUrl;
 };
 
 const Checkout = () => {
