@@ -1314,73 +1314,9 @@ textarea {
     background: #fffdf8;
 }
 
-.upi-provider-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.7rem;
+.upi-pay-btn {
+    display: flex;
     margin: 0.9rem 0;
-}
-
-.upi-provider {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.55rem;
-    min-height: 44px;
-    padding: 0.65rem 0.75rem;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    color: #fff;
-    font-weight: 900;
-    text-align: center;
-}
-
-.upi-provider-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    flex: 0 0 30px;
-    border-radius: 8px;
-    background: #fff;
-    color: #111827;
-    font-size: 0.72rem;
-    font-weight: 900;
-    letter-spacing: 0;
-    box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.08);
-}
-
-.upi-provider.gpay {
-    background: #1a73e8;
-}
-
-.upi-provider.gpay .upi-provider-icon {
-    color: #1a73e8;
-}
-
-.upi-provider.phonepe {
-    background: #5f259f;
-}
-
-.upi-provider.phonepe .upi-provider-icon {
-    color: #5f259f;
-}
-
-.upi-provider.paytm {
-    background: #00baf2;
-}
-
-.upi-provider.paytm .upi-provider-icon {
-    color: #00baf2;
-}
-
-.upi-provider.bhim {
-    background: #138808;
-}
-
-.upi-provider.bhim .upi-provider-icon {
-    color: #138808;
 }
 
 .alert {
@@ -3033,15 +2969,8 @@ th {
         margin: 0.35rem 0;
     }
 
-    .checkout-page .upi-provider-grid {
-        gap: 0.45rem;
+    .checkout-page .upi-pay-btn {
         margin: 0.65rem 0;
-    }
-
-    .checkout-page .upi-provider {
-        min-height: 38px;
-        padding: 0.55rem 0.45rem;
-        font-size: 0.78rem;
     }
 
     .checkout-page .form-card .btn.primary {

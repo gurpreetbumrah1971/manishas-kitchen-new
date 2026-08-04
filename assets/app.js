@@ -107,11 +107,7 @@ function upiReturnUrl(orderNumber) {
   return url.toString();
 }
 
-function isAndroidBrowser() {
-  return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
-}
-
-function buildUpiUrl({ scheme = 'upi://pay', packageName = '', amount, orderNumber }) {
+function buildUpiUrl({ amount, orderNumber }) {
   const { upiId, payeeName, upiAid } = upiPaymentConfig();
   const payableAmount = Number(amount || 0);
   if (payableAmount <= 0 || !upiId) return '#';
@@ -131,29 +127,12 @@ function buildUpiUrl({ scheme = 'upi://pay', packageName = '', amount, orderNumb
     upiParams.set('aid', upiAid);
   }
   const queryString = upiParams.toString().replace(/\+/g, '%20');
-  const genericUpiUrl = `upi://pay?${queryString}`;
-  if (packageName && isAndroidBrowser()) {
-    return `intent://pay?${queryString}#Intent;scheme=upi;package=${packageName};S.browser_fallback_url=${encodeURIComponent(genericUpiUrl)};end`;
-  }
-  return `${scheme}?${queryString}`;
+  return `upi://pay?${queryString}`;
 }
 
 function upiProviderButtons(amount, orderNumber = '') {
-  const providers = [
-    { label: 'Google Pay', icon: 'G', className: 'gpay', scheme: 'tez://upi/pay', packageName: 'com.google.android.apps.nbu.paisa.user' },
-    { label: 'PhonePe', icon: 'Pe', className: 'phonepe', scheme: 'phonepe://pay', packageName: 'com.phonepe.app' },
-    { label: 'Paytm', icon: 'Pay', className: 'paytm', scheme: 'paytmmp://pay', packageName: 'net.one97.paytm' },
-    { label: 'BHIM / UPI', icon: 'UPI', className: 'bhim', scheme: 'upi://pay', packageName: 'in.org.npci.upiapp' },
-  ];
   return `
-    <div class="upi-provider-grid">
-      ${providers.map((provider) => `
-        <a class="upi-provider ${provider.className}" href="${escapeHtml(buildUpiUrl({ scheme: provider.scheme, packageName: provider.packageName, amount, orderNumber }))}" data-upi-link data-upi-provider="${escapeHtml(provider.className)}">
-          <span class="upi-provider-icon" aria-hidden="true">${escapeHtml(provider.icon)}</span>
-          <span>${escapeHtml(provider.label)}</span>
-        </a>
-      `).join('')}
-    </div>
+    <a class="btn primary full upi-pay-btn" href="${escapeHtml(buildUpiUrl({ amount, orderNumber }))}" data-upi-link>Pay</a>
   `;
 }
 
@@ -1522,7 +1501,7 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
   const auth = getCustomerAuth();
   const referralCode = String(order.customerReferralCode || order.referralCode || (auth && auth.customer && auth.customer.referralCode) || '').trim().toUpperCase();
   const shareUrl = `${window.location.origin}/menu.html`;
-  const shareText = `Order from Manisha's Kitchen and get 10% off your first order with my referral code ${referralCode}! ${shareUrl}`;
+  const shareText = `Order from Manisha's Kitchen and get 10% off your first order with my referral code\n\n${referralCode}\n\nVisit - ${shareUrl}`;
   section.innerHTML = `
     <div class="success-panel checkout-thank-you">
       <h1>Thank you for your order!</h1>

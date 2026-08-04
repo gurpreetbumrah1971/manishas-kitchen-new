@@ -10,9 +10,7 @@ const UPI_ID = 'manishaskitchen2026@okaxis';
 const UPI_PAYEE = 'Manisha Chavan';
 const UPI_AID = 'uGICAgNCIlbShSw';
 
-const isAndroidBrowser = () => /Android/i.test(window.navigator.userAgent || '');
-
-const buildUpiUrl = (scheme: string, packageName: string, amount: number, orderNumber = '') => {
+const buildUpiUrl = (amount: number, orderNumber = '') => {
   const returnUrl = new URL('/checkout', window.location.origin);
   if (orderNumber) returnUrl.searchParams.set('order', orderNumber);
   returnUrl.hash = 'thank-you';
@@ -30,19 +28,8 @@ const buildUpiUrl = (scheme: string, packageName: string, amount: number, orderN
     params.set('tn', `Manisha's Kitchen order ${orderNumber}`);
   }
   const queryString = params.toString().replace(/\+/g, '%20');
-  const genericUpiUrl = `upi://pay?${queryString}`;
-  if (packageName && isAndroidBrowser()) {
-    return `intent://pay?${queryString}#Intent;scheme=upi;package=${packageName};S.browser_fallback_url=${encodeURIComponent(genericUpiUrl)};end`;
-  }
-  return `${scheme}?${queryString}`;
+  return `upi://pay?${queryString}`;
 };
-
-const upiProviders = [
-  { label: 'Google Pay', icon: 'G', scheme: 'tez://upi/pay', packageName: 'com.google.android.apps.nbu.paisa.user', background: '#1a73e8' },
-  { label: 'PhonePe', icon: 'Pe', scheme: 'phonepe://pay', packageName: 'com.phonepe.app', background: '#5f259f' },
-  { label: 'Paytm', icon: 'Pay', scheme: 'paytmmp://pay', packageName: 'net.one97.paytm', background: '#00baf2' },
-  { label: 'BHIM / UPI', icon: 'UPI', scheme: 'upi://pay', packageName: 'in.org.npci.upiapp', background: '#17834a' },
-];
 
 const Checkout = () => {
   const { cart, totalAmount, removeFromCart, updateQuantity, clearCart } = useCart();
@@ -140,51 +127,26 @@ const Checkout = () => {
         {shouldShowUpi && (
           <div style={{ maxWidth: '520px', margin: '2rem auto', border: '1px solid #eee', borderRadius: '8px', padding: '1.25rem', backgroundColor: '#fafafa' }}>
             <h2 style={{ fontSize: '1.25rem', marginBottom: '0.75rem' }}>Pay with UPI</h2>
-            <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem' }}>Choose your preferred UPI app. When you return, this thank-you page will still be here.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
-              {upiProviders.map((provider) => (
-                <a
-                  key={provider.label}
-                  href={buildUpiUrl(provider.scheme, provider.packageName, placedOrder.amount, placedOrder.orderNumber)}
-                  style={{
-                    alignItems: 'center',
-                    background: provider.background,
-                    borderRadius: '8px',
-                    color: '#fff',
-                    display: 'inline-flex',
-                    fontWeight: 700,
-                    gap: '10px',
-                    justifyContent: 'center',
-                    minHeight: '44px',
-                    padding: '10px 12px',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      alignItems: 'center',
-                      background: '#fff',
-                      borderRadius: '8px',
-                      boxShadow: 'inset 0 0 0 1px rgba(17, 24, 39, 0.08)',
-                      color: provider.background,
-                      display: 'inline-flex',
-                      flex: '0 0 30px',
-                      fontSize: '0.72rem',
-                      fontWeight: 900,
-                      height: '30px',
-                      justifyContent: 'center',
-                      letterSpacing: 0,
-                      width: '30px',
-                    }}
-                  >
-                    {provider.icon}
-                  </span>
-                  {provider.label}
-                  <ExternalLink size={16} />
-                </a>
-              ))}
-            </div>
+            <p style={{ fontSize: '0.9rem', color: '#555', marginBottom: '1rem' }}>Tap Pay and choose your UPI app. When you return, this thank-you page will still be here.</p>
+            <a
+              href={buildUpiUrl(placedOrder.amount, placedOrder.orderNumber)}
+              style={{
+                alignItems: 'center',
+                background: 'var(--primary-color)',
+                borderRadius: '8px',
+                color: '#fff',
+                display: 'flex',
+                fontWeight: 700,
+                gap: '10px',
+                justifyContent: 'center',
+                minHeight: '44px',
+                padding: '10px 12px',
+                textDecoration: 'none',
+              }}
+            >
+              Pay
+              <ExternalLink size={16} />
+            </a>
             <div style={{ fontSize: '0.9rem', color: '#555', marginTop: '1rem' }}>Amount: <strong style={{ color: 'var(--primary-color)' }}>₹{placedOrder.amount}</strong></div>
             <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>UPI ID: {UPI_ID}</div>
             <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>Order ID: {placedOrder.orderNumber}</div>
