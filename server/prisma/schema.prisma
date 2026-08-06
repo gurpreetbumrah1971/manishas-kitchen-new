@@ -112,14 +112,29 @@ model Customer {
   id                   Int                   @id @default(autoincrement())
   mobileNumber         String                @unique
   name                 String?
+  birthday             DateTime?
+  anniversary          DateTime?
   referralCode         String?               @unique
   cashbackBalance      Decimal               @default(0) @db.Decimal(10, 2)
   orders               Order[]
   referredOrders       Order[]               @relation("ReferredBy")
   otpCodes             CustomerOtp[]
   cashbackTransactions CashbackTransaction[]
+  savedAddresses       CustomerAddress[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
+}
+
+model CustomerAddress {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  label      String
+  address    String   @db.Text
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId])
 }
 
 model CustomerOtp {

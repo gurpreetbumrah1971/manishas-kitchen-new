@@ -181,6 +181,14 @@ const Checkout = () => {
                 <span>Grand Total</span>
                 <span style={{ color: 'var(--primary-color)' }}>₹{totalAmount}</span>
               </div>
+              {formData.paymentMethod === 'UPI' && (
+                <div style={{ border: '1px solid #eee', borderRadius: '8px', padding: '1rem', backgroundColor: '#fafafa', textAlign: 'center', marginTop: '1rem' }}>
+                  <div style={{ marginBottom: '0.75rem', fontWeight: '700' }}>UPI payment available after order booking</div>
+                  <p style={{ fontSize: '0.85rem', color: '#555', marginBottom: '0.75rem' }}>After placing your order, choose Google Pay, PhonePe, Paytm, or BHIM / UPI.</p>
+                  <div style={{ fontSize: '0.9rem', color: '#555' }}>Amount: <strong style={{ color: 'var(--primary-color)' }}>₹{totalAmount}</strong></div>
+                  <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>UPI ID: <a href={UPI_PAY_LINK} onClick={(event) => { event.preventDefault(); window.location.href = UPI_PAY_LINK; }}>{UPI_ID}</a></div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -266,15 +274,6 @@ const Checkout = () => {
                 Choose UPI to pay from your preferred app after booking, or choose Cash for payment at counter / delivery.
               </p>
             </div>
-
-            {formData.paymentMethod === 'UPI' && (
-              <div style={{ border: '1px solid #eee', borderRadius: '8px', padding: '1rem', backgroundColor: '#fafafa', textAlign: 'center' }}>
-                <div style={{ marginBottom: '0.75rem', fontWeight: '700' }}>UPI payment available after order booking</div>
-                <p style={{ fontSize: '0.85rem', color: '#555', marginBottom: '0.75rem' }}>After placing your order, choose Google Pay, PhonePe, Paytm, or BHIM / UPI.</p>
-                <div style={{ fontSize: '0.9rem', color: '#555' }}>Amount: <strong style={{ color: 'var(--primary-color)' }}>₹{totalAmount}</strong></div>
-                <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>UPI ID: <a href={UPI_PAY_LINK} onClick={(event) => { event.preventDefault(); window.location.href = UPI_PAY_LINK; }}>{UPI_ID}</a></div>
-              </div>
-            )}
 
             <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', marginTop: '1rem', padding: '15px' }}>
               {loading ? 'Processing...' : 'Book Order'}

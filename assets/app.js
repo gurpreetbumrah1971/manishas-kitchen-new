@@ -4,6 +4,13 @@ const CUSTOMER_AUTH_KEY = 'mkCustomerAuth';
 const CASHBACK_REDEEM_KEY = 'mkCashbackRedeem';
 const CASHBACK_OTP_KEY = 'mkCashbackOtp';
 const CASHBACK_WALLET_MODE_KEY = 'mkCashbackWalletMode';
+const API_BASE_URL = ['localhost', '127.0.0.1'].includes(window.location.hostname) && window.location.port !== '5000'
+  ? `${window.location.protocol}//${window.location.hostname}:5000/api`
+  : '/api';
+
+function apiUrl(path) {
+  return `${API_BASE_URL}${path}`;
+}
 const CASHBACK_NUMBER_KEY = 'mkCashbackNumber';
 const CASHBACK_NAME_KEY = 'mkCashbackName';
 const CASHBACK_REFERRAL_KEY = 'mkReferralCode';
@@ -104,10 +111,36 @@ function buildUpiUrl() {
   return `upi://pay?pa=${upiId}`;
 }
 
+function isIOSBrowser() {
+  return typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+}
+
+function upiProviderLinks() {
+  const { upiId } = upiPaymentConfig();
+  const pa = encodeURIComponent(upiId);
+  return [
+    { label: 'Google Pay', href: `tez://upi/pay?pa=${pa}` },
+    { label: 'PhonePe', href: `phonepe://pay?pa=${pa}` },
+    { label: 'Paytm', href: `paytmmp://pay?pa=${pa}` },
+    { label: 'BHIM / Other UPI', href: `upi://pay?pa=${pa}` },
+  ];
+}
+
 function upiProviderButtons() {
-  const upiUrl = buildUpiUrl();
+  // iOS has no OS-level chooser for a bare upi:// link like Android does -
+  // it just hands off to whichever single app has registered that scheme
+  // (usually WhatsApp), so list each UPI app's own scheme as separate buttons.
+  const payMarkup = isIOSBrowser()
+    ? `
+      <div class="upi-provider-grid">
+        ${upiProviderLinks().map((provider) => `
+          <a class="btn secondary upi-provider" href="${escapeHtml(provider.href)}" data-upi-link>${escapeHtml(provider.label)}</a>
+        `).join('')}
+      </div>
+    `
+    : `<a class="btn primary full upi-pay-btn" href="${escapeHtml(buildUpiUrl())}" data-upi-link>Pay</a>`;
   return `
-    <a class="btn primary full upi-pay-btn" href="${escapeHtml(upiUrl)}" data-upi-link>Pay</a>
+    ${payMarkup}
     <div class="upi-qr-card">
       <p class="upi-qr-label">Or scan to pay with any UPI app</p>
       <img class="upi-qr-image" src="/assets/upi-qr.jpg" alt="Manisha's Kitchen UPI payment QR code" width="180" height="180">
@@ -164,6 +197,29 @@ function saveCustomerAuth(auth) {
   localStorage.setItem(CUSTOMER_AUTH_KEY, JSON.stringify(auth));
 }
 
+function savedAddressesForCustomer() {
+  const auth = getCustomerAuth();
+  return auth && auth.customer && Array.isArray(auth.customer.savedAddresses) ? auth.customer.savedAddresses : [];
+}
+
+function savedAddressCardsHtml(addresses, selectable = false) {
+  if (!addresses.length) return '<p class="cashback-empty">No saved addresses yet.</p>';
+  return `<div class="saved-address-list">${addresses.map((savedAddress) => `
+    <article class="saved-address-card">
+      <div><strong>${escapeHtml(savedAddress.label)}</strong><p>${escapeHtml(savedAddress.address)}</p></div>
+      ${selectable ? `<button class="btn secondary" type="button" data-saved-address-select="${Number(savedAddress.id)}">Use this address</button>` : `<button class="btn ghost" type="button" data-saved-address-delete="${Number(savedAddress.id)}">Remove</button>`}
+    </article>
+  `).join('')}</div>`;
+}
+
+function renderSavedAddressPicker() {
+  const picker = document.querySelector('[data-saved-address-picker]');
+  if (!picker) return;
+  const addresses = savedAddressesForCustomer();
+  picker.hidden = !addresses.length;
+  picker.innerHTML = addresses.length ? `<strong>Saved locations</strong>${savedAddressCardsHtml(addresses, true)}` : '';
+}
+
 function renderAccount(account) {
   const target = document.querySelector('[data-account-content]');
   if (!target) return;
@@ -191,8 +247,11 @@ function renderAccount(account) {
         <button class="btn ghost" type="button" data-account-logout>Logout</button>
       </section>
       <section class="card account-history-card"><div class="account-section-title"><h2>Order History</h2><span>${orders.length} order${orders.length === 1 ? '' : 's'}</span></div>${orders.length ? `<div class="order-history-list">${orders.map((order) => `<article class="order-history-row"><div><strong>${escapeHtml(order.orderNumber)}</strong><small>${escapeHtml(new Date(order.createdAt).toLocaleDateString('en-IN'))} · ${escapeHtml(order.status)}</small><p>${escapeHtml((order.items || []).map((item) => `${item.quantity} x ${item.name}`).join(', '))}</p></div><div class="order-history-total"><strong>${money(order.grandTotal)}</strong><small>${order.cashbackEarned > 0 ? `+${money(order.cashbackEarned)} cashback` : 'No cashback'}</small></div></article>`).join('')}</div>` : '<p class="cashback-empty">No orders found for this mobile number yet.</p>'}</section>
+      <section class="card account-history-card"><div class="account-section-title"><h2>Saved Addresses</h2><span>${(customer.savedAddresses || []).length} saved</span></div>${savedAddressCardsHtml(customer.savedAddresses || [])}</section>
+      <section class="card account-history-card"><div class="account-section-title"><h2>Special Days</h2><span>Birthday &amp; anniversary</span></div><form class="special-day-save-form" data-special-day-save-form>${specialDayFieldsHtml(customer)}</form></section>
       <section class="card account-history-card"><div class="account-section-title"><h2>Cashback Activity</h2><span>Latest credits and redemptions</span></div>${cashbackTransactionHtml(account.transactions || [])}</section>
     </div>`;
+  document.querySelector('[data-account-content]').querySelectorAll('[data-date-group]').forEach(bindDateGroup);
 }
 
 async function loadCustomerAccount() {
@@ -204,7 +263,7 @@ async function loadCustomerAccount() {
     return;
   }
   try {
-    const response = await fetch('/api/customer/account', { headers: { Accept: 'application/json', Authorization: `Bearer ${auth.token}` } });
+    const response = await fetch(apiUrl('/customer/account'), { headers: { Accept: 'application/json', Authorization: `Bearer ${auth.token}` } });
     if (!response.ok) throw new Error('Session expired');
     const account = await response.json();
     saveCustomerAuth({ token: auth.token, expiresAt: auth.expiresAt, customer: account.customer, transactions: account.transactions || [] });
@@ -393,7 +452,7 @@ async function refreshCustomerWallet() {
     return null;
   }
 
-  const response = await fetch('/api/customer/wallet', {
+  const response = await fetch(apiUrl('/customer/wallet'), {
     headers: {
       Accept: 'application/json',
       Authorization: `Bearer ${auth.token}`,
@@ -946,6 +1005,7 @@ function renderCheckout() {
   document.querySelectorAll('[data-checkout-total], [data-upi-total]').forEach((node) => node.textContent = money(grandTotal));
   document.querySelectorAll('[data-cart-json]').forEach((node) => node.value = JSON.stringify(visibleCart));
   renderCashbackPanel(preCashbackGrandTotal, cashbackRedeemed);
+  renderSavedAddressPicker();
   if (!target) return;
 
   if (!visibleCart.length) {
@@ -1071,7 +1131,7 @@ document.addEventListener('click', (event) => {
     const originalText = referralApply.textContent;
     referralApply.disabled = true;
     referralApply.textContent = 'Checking...';
-    fetch('/api/customer/referral/validate', {
+    fetch(apiUrl('/customer/referral/validate'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ code, mobileNumber }),
@@ -1130,6 +1190,38 @@ document.addEventListener('click', (event) => {
     renderAccount(null);
   }
 
+  const savedAddressSelect = event.target.closest('[data-saved-address-select]');
+  if (savedAddressSelect) {
+    const savedAddress = savedAddressesForCustomer().find((entry) => Number(entry.id) === Number(savedAddressSelect.dataset.savedAddressSelect));
+    const addressInput = document.querySelector('[name="address"]');
+    const labelSelect = document.querySelector('[data-address-label]');
+    const customLabel = document.querySelector('[data-custom-address-label]');
+    const customLabelInput = document.querySelector('[name="custom_address_label"]');
+    if (savedAddress && addressInput) {
+      addressInput.value = savedAddress.address;
+      const presetLabels = ['Home', 'Office', 'Shop'];
+      if (labelSelect) labelSelect.value = presetLabels.includes(savedAddress.label) ? savedAddress.label : 'Custom';
+      if (customLabel) customLabel.hidden = presetLabels.includes(savedAddress.label);
+      if (customLabelInput) customLabelInput.value = presetLabels.includes(savedAddress.label) ? '' : savedAddress.label;
+    }
+  }
+
+  const savedAddressDelete = event.target.closest('[data-saved-address-delete]');
+  if (savedAddressDelete) {
+    const auth = getCustomerAuth();
+    if (!auth) return;
+    fetch(apiUrl(`/customer/addresses/${Number(savedAddressDelete.dataset.savedAddressDelete)}`), {
+      method: 'DELETE',
+      headers: { Accept: 'application/json', Authorization: `Bearer ${auth.token}` },
+    }).then(async (response) => {
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not remove the address.');
+      saveCustomerAuth({ token: auth.token, expiresAt: auth.expiresAt, customer: result.customer, transactions: result.transactions || [] });
+      loadCustomerAccount();
+      renderSavedAddressPicker();
+    }).catch((error) => alert(error.message || 'Could not remove the address.'));
+  }
+
   const menuTab = event.target.closest('[data-menu-tab]');
   if (menuTab) {
     const tabGroup = menuTab.closest('[data-menu-tabs]');
@@ -1146,6 +1238,13 @@ document.addEventListener('click', (event) => {
   }
 });
 
+document.addEventListener('change', (event) => {
+  const labelSelect = event.target.closest('[data-address-label]');
+  if (!labelSelect) return;
+  const customLabel = document.querySelector('[data-custom-address-label]');
+  if (customLabel) customLabel.hidden = labelSelect.value !== 'Custom';
+});
+
 document.addEventListener('submit', async (event) => {
   const accountLoginForm = event.target.closest('[data-account-login-form]');
   if (accountLoginForm) {
@@ -1154,7 +1253,7 @@ document.addEventListener('submit', async (event) => {
     const submitButton = accountLoginForm.querySelector('button[type="submit"]');
     if (submitButton) submitButton.disabled = true;
     try {
-      const response = await fetch('/api/customer/request-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber }) });
+      const response = await fetch(apiUrl('/customer/request-otp'), { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not send OTP.');
       localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({ mobileNumber: result.mobileNumber || mobileNumber, testOtp: result.testOtp || '', provider: result.provider || 'test', expiresAt: result.expiresAt }));
@@ -1173,7 +1272,7 @@ document.addEventListener('submit', async (event) => {
     const submitButton = accountVerifyForm.querySelector('button[type="submit"]');
     if (submitButton) submitButton.disabled = true;
     try {
-      const response = await fetch('/api/customer/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber: normalizeMobileNumber(formData.get('mobile_number')), otp: formData.get('otp') }) });
+      const response = await fetch(apiUrl('/customer/verify-otp'), { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber: normalizeMobileNumber(formData.get('mobile_number')), otp: formData.get('otp') }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not verify OTP.');
       localStorage.removeItem(CASHBACK_OTP_KEY);
@@ -1192,6 +1291,8 @@ document.addEventListener('submit', async (event) => {
     const formData = new FormData(loginForm);
     const customerName = String(formData.get('customer_name') || '').trim();
     const mobileNumber = normalizeMobileNumber(formData.get('mobile_number'));
+    const panel = loginForm.closest('[data-cashback-panel]');
+    const walletMode = (panel && panel.dataset.walletMode) || 'existing';
     const submitButton = loginForm.querySelector('button[type="submit"]');
     const originalText = submitButton && submitButton.textContent || 'Send OTP';
     if (submitButton) {
@@ -1200,7 +1301,7 @@ document.addEventListener('submit', async (event) => {
     }
 
     try {
-      const response = await fetch('/api/customer/request-otp', {
+      const response = await fetch(apiUrl('/customer/request-otp'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1209,10 +1310,22 @@ document.addEventListener('submit', async (event) => {
         body: JSON.stringify({
           mobileNumber,
           name: customerName,
+          intent: walletMode,
         }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || 'Could not send OTP.');
+      if (!response.ok) {
+        if (result.notRegistered && panel) {
+          panel.dataset.walletMode = 'new';
+          try {
+            localStorage.setItem(CASHBACK_WALLET_MODE_KEY, 'new');
+          } catch {
+            // ignore storage errors
+          }
+          renderCheckout();
+        }
+        throw new Error(result.error || 'Could not send OTP.');
+      }
       localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({
         mobileNumber: result.mobileNumber || mobileNumber,
         testOtp: result.testOtp || '',
@@ -1242,7 +1355,7 @@ document.addEventListener('submit', async (event) => {
     }
 
     try {
-      const response = await fetch('/api/customer/verify-otp', {
+      const response = await fetch(apiUrl('/customer/verify-otp'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1265,6 +1378,70 @@ document.addEventListener('submit', async (event) => {
       renderCheckout();
     } catch (error) {
       alert(error.message || 'Could not verify OTP.');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    }
+  }
+
+  const specialDayForm = event.target.closest('[data-special-day-save-form]');
+  if (specialDayForm) {
+    event.preventDefault();
+    const submitButton = specialDayForm.querySelector('button[type="submit"]');
+    const statusNode = specialDayForm.querySelector('[data-special-day-status]');
+    const originalText = submitButton ? submitButton.textContent : '';
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Saving...';
+    }
+
+    const birthday = specialDayForm.querySelector('[data-date-group="birthday"] [data-date-value]').value || null;
+    const anniversary = specialDayForm.querySelector('[data-date-group="anniversary"] [data-date-value]').value || null;
+    const auth = getCustomerAuth();
+    const session = getActiveOrderSession();
+    const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+    if (auth && auth.token) headers.Authorization = `Bearer ${auth.token}`;
+    const body = { birthday, anniversary };
+    if (!(auth && auth.token)) {
+      if (!session) {
+        if (statusNode) {
+          statusNode.textContent = 'Please login to save your special days.';
+          statusNode.classList.add('error');
+        }
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        }
+        return;
+      }
+      body.orderNumber = session.orderNumber;
+      body.orderSessionToken = session.token;
+    }
+
+    try {
+      const response = await fetch(apiUrl('/customer/profile'), {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(body),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not save your special days.');
+      if (result.customer && auth) {
+        saveCustomerAuth({ token: auth.token, expiresAt: auth.expiresAt, customer: result.customer, transactions: result.transactions || [] });
+      }
+      if (statusNode) {
+        statusNode.textContent = 'Saved! We will surprise you on your special day.';
+        statusNode.classList.add('ok');
+        statusNode.classList.remove('error');
+      }
+    } catch (error) {
+      if (statusNode) {
+        statusNode.textContent = error.message || 'Could not save your special days.';
+        statusNode.classList.add('error');
+        statusNode.classList.remove('ok');
+      }
+    } finally {
       if (submitButton) {
         submitButton.disabled = false;
         submitButton.textContent = originalText;
@@ -1325,10 +1502,55 @@ function syncDateGroup(group) {
     : '';
 }
 
-document.querySelectorAll('[data-date-group]').forEach((group) => {
+function bindDateGroup(group) {
   group.addEventListener('change', () => syncDateGroup(group));
   syncDateGroup(group);
-});
+}
+
+document.querySelectorAll('[data-date-group]').forEach(bindDateGroup);
+
+function formatDateValue(value) {
+  if (!value) return '';
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : '';
+}
+
+function dateSelectGroupHtml(key, label, value) {
+  const parts = formatDateValue(value).split('-');
+  const year = parts[0] || '';
+  const month = parts[1] ? String(Number(parts[1])) : '';
+  const day = parts[2] ? String(Number(parts[2])) : '';
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = currentYear; y >= 1920; y--) years.push(y);
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+  const option = (val, text, selected) => `<option value="${val}"${selected ? ' selected' : ''}>${text}</option>`;
+  return `
+    <fieldset class="date-select-group" data-date-group="${escapeHtml(key)}">
+      <legend>${escapeHtml(label)}</legend>
+      <input type="hidden" name="${escapeHtml(key)}" data-date-value>
+      <select data-date-day aria-label="${escapeHtml(label)} day">${option('', 'Day', !day)}${days.map((d) => option(d, d, String(d) === day)).join('')}</select>
+      <select data-date-month aria-label="${escapeHtml(label)} month">${option('', 'Month', !month)}${monthNames.map((m, i) => option(i + 1, m, String(i + 1) === month)).join('')}</select>
+      <select data-date-year aria-label="${escapeHtml(label)} year">${option('', 'Year', !year)}${years.map((y) => option(y, y, String(y) === year)).join('')}</select>
+    </fieldset>
+  `;
+}
+
+function specialDayFieldsHtml(customer) {
+  const info = customer || {};
+  return `
+    <div class="special-day-fields">
+      <p><strong>Your special day deserves more than just wishes!</strong><br><span>Let us know your birthday and anniversary and get a personalized surprise from us.</span></p>
+      <div class="form-row">
+        ${dateSelectGroupHtml('birthday', 'Birthday Date', info.birthday)}
+        ${dateSelectGroupHtml('anniversary', 'Anniversary Date', info.anniversary)}
+      </div>
+      <button class="btn primary full" type="submit" data-special-day-save>Save My Special Days</button>
+      <p class="special-day-status" data-special-day-status></p>
+    </div>
+  `;
+}
 
 let orderStatusPollTimer = null;
 let orderCountdownTimer = null;
@@ -1453,7 +1675,7 @@ async function fetchOrderStatus(session) {
   if (!session || !session.orderNumber || !session.token) return;
   try {
     const params = new URLSearchParams({ token: session.token });
-    const response = await fetch(`/api/orders/${encodeURIComponent(session.orderNumber)}/status?${params.toString()}`, {
+    const response = await fetch(apiUrl(`/orders/${encodeURIComponent(session.orderNumber)}/status?${params.toString()}`), {
       headers: { Accept: 'application/json' },
     });
     if (!response.ok) {
@@ -1489,6 +1711,7 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
   const cashbackRedeemed = Number(order.cashbackRedeemed || 0);
   const shouldShowUpi = String(paymentMethod || 'UPI').toUpperCase() === 'UPI';
   const auth = getCustomerAuth();
+  const customer = (auth && auth.customer) || {};
   const referralCode = String(order.customerReferralCode || order.referralCode || (auth && auth.customer && auth.customer.referralCode) || '').trim().toUpperCase();
   const shareUrl = `${window.location.origin}/menu.html`;
   const shareText = `Order from Manisha's Kitchen and get 10% off your first order with my referral code\n\n${referralCode}\n\nVisit - ${shareUrl}`;
@@ -1500,24 +1723,6 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
         <span>Total Amount</span>
         <strong>${escapeHtml(total)}</strong>
       </div>
-      <div class="cashback-earned-card">
-        <span>Cashback for next order</span>
-        <strong>${money(cashbackEarned)}</strong>
-        <p>10% of your final bill has been added to your mobile wallet.</p>
-        ${cashbackRedeemed > 0 ? `<small>You redeemed ${money(cashbackRedeemed)} on this order.</small>` : ''}
-      </div>
-      ${referralCode ? `
-        <div class="referral-share-card" data-referral-share-card>
-          <h2>Refer &amp; earn cashback</h2>
-          <p>Share your code with friends. They get 10% off their first order, and you earn 10% cashback on their bill.</p>
-          <div class="referral-code-box">
-            <strong data-referral-code-value>${escapeHtml(referralCode)}</strong>
-            <button type="button" class="btn secondary" data-copy-referral>Copy</button>
-          </div>
-          <a class="btn primary" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener">Share on WhatsApp</a>
-          <p class="referral-copied" data-referral-copied hidden>Copied!</p>
-        </div>
-      ` : ''}
       ${shouldShowUpi ? `
         <div class="payment-box thank-you-payment">
           <h2>Pay with UPI</h2>
@@ -1534,6 +1739,27 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
           <p>Order ID: <strong>${escapeHtml(orderNumber)}</strong></p>
         </div>
       `}
+      <div class="cashback-earned-card">
+        <span>Cashback for next order</span>
+        <strong>${money(cashbackEarned)}</strong>
+        <p>10% of your final bill has been added to your mobile wallet.</p>
+        ${cashbackRedeemed > 0 ? `<small>You redeemed ${money(cashbackRedeemed)} on this order.</small>` : ''}
+      </div>
+      <form class="special-day-save-form" data-special-day-save-form>
+        ${specialDayFieldsHtml(customer)}
+      </form>
+      ${referralCode ? `
+        <div class="referral-share-card" data-referral-share-card>
+          <h2>Refer &amp; earn cashback</h2>
+          <p>Share your code with friends. They get 10% off their first order, and you earn 10% cashback on their bill.</p>
+          <div class="referral-code-box">
+            <strong data-referral-code-value>${escapeHtml(referralCode)}</strong>
+            <button type="button" class="btn secondary" data-copy-referral>Copy</button>
+          </div>
+          <a class="btn primary" href="https://wa.me/?text=${encodeURIComponent(shareText)}" target="_blank" rel="noopener">Share on WhatsApp</a>
+          <p class="referral-copied" data-referral-copied hidden>Copied!</p>
+        </div>
+      ` : ''}
       <div class="order-status-card">
         <span class="status-pill" data-order-status-label data-status="PENDING">PENDING</span>
         <strong data-order-status-message>Waiting for kitchen confirmation.</strong>
@@ -1562,6 +1788,7 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
   `;
 
   window.scrollTo(0, 0);
+  section.querySelectorAll('[data-date-group]').forEach(bindDateGroup);
   if (session) startOrderStatusTracking(session);
 }
 
@@ -1640,12 +1867,30 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
       return;
     }
     const address = String((document.querySelector('[name="address"]') || {}).value || '').trim() || null;
+    const selectedAddressLabel = String((document.querySelector('[name="address_label"]') || {}).value || 'Home').trim();
+    const customAddressLabel = String((document.querySelector('[name="custom_address_label"]') || {}).value || '').trim();
+    const addressLabel = selectedAddressLabel === 'Custom' ? customAddressLabel : selectedAddressLabel;
+    const shouldSaveAddress = Boolean((document.querySelector('[name="save_address"]') || {}).checked);
+    if (shouldSaveAddress && (!address || !addressLabel)) {
+      alert('Enter both an address title and delivery address before saving.');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+      }
+      return;
+    }
+    if (shouldSaveAddress && !customerAuth) {
+      alert('Please log in to save an address to your account.');
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+      }
+      return;
+    }
     const orderPayload = {
       customerName,
       mobileNumber: number,
       whatsappNumber: number,
-      birthday: formData.get('birthday') || null,
-      anniversary: formData.get('anniversary') || null,
       address,
       referralCode: appliedReferralCode() || null,
       orderType: 'DINE_IN',
@@ -1667,7 +1912,21 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
     };
 
     try {
-      const response = await fetch('/api/orders', {
+      if (shouldSaveAddress) {
+        const saveAddressResponse = await fetch(apiUrl('/customer/addresses'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Authorization: `Bearer ${customerAuth.token}`,
+          },
+          body: JSON.stringify({ label: addressLabel, address }),
+        });
+        const savedAddressResult = await saveAddressResponse.json().catch(() => ({}));
+        if (!saveAddressResponse.ok) throw new Error(savedAddressResult.error || 'Could not save the address.');
+        saveCustomerAuth({ token: customerAuth.token, expiresAt: customerAuth.expiresAt, customer: savedAddressResult.customer, transactions: savedAddressResult.transactions || [] });
+      }
+      const response = await fetch(apiUrl('/orders'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

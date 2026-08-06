@@ -17,6 +17,14 @@
       "destination": "/checkout.html"
     },
     {
+      "source": "/menu",
+      "destination": "/menu.html"
+    },
+    {
+      "source": "/checkout",
+      "destination": "/checkout.html"
+    },
+    {
       "source": "/admin/:path*",
       "destination": "/index.html"
     },

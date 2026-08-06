@@ -53,15 +53,15 @@ if (fs.existsSync(clientDistPath)) {
   app.get(/^\/admin(?:\/.*)?$/, (req, res) => {
     sendAdminApp(res);
   });
-
-  app.get('/menu', (req, res) => {
-    res.redirect(302, '/menu.html');
-  });
-
-  app.get('/checkout', (req, res) => {
-    res.redirect(302, '/checkout.html');
-  });
 }
+
+app.get('/menu', (req, res) => {
+  res.redirect(302, '/menu.html');
+});
+
+app.get('/checkout', (req, res) => {
+  res.redirect(302, '/checkout.html');
+});
 
 app.get(['/', '/index.html'], (req, res) => {
   sendPublicPage(res, 'index');

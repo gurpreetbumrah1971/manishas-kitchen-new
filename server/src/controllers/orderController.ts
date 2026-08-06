@@ -163,8 +163,17 @@ export const createOrder = async (req: Request, res: Response) => {
       const customer = normalizedMobileNumber
         ? await tx.customer.upsert({
           where: { mobileNumber: normalizedMobileNumber },
-          update: customerName ? { name: customerName } : {},
-          create: { mobileNumber: normalizedMobileNumber, name: customerName || undefined },
+          update: {
+            ...(customerName ? { name: customerName } : {}),
+            ...(birthday ? { birthday: new Date(birthday) } : {}),
+            ...(anniversary ? { anniversary: new Date(anniversary) } : {}),
+          },
+          create: {
+            mobileNumber: normalizedMobileNumber,
+            name: customerName || undefined,
+            ...(birthday ? { birthday: new Date(birthday) } : {}),
+            ...(anniversary ? { anniversary: new Date(anniversary) } : {}),
+          },
         })
         : null;
       let customerReferralCode: string | null = null;
@@ -203,8 +212,8 @@ export const createOrder = async (req: Request, res: Response) => {
           customerName,
           mobileNumber: normalizedMobileNumber || mobileNumber,
           whatsappNumber,
-          birthday: birthday ? new Date(birthday) : undefined,
-          anniversary: anniversary ? new Date(anniversary) : undefined,
+          birthday: birthday ? new Date(birthday) : customer ? customer.birthday : undefined,
+          anniversary: anniversary ? new Date(anniversary) : customer ? customer.anniversary : undefined,
           email,
           address,
           tableNumber,

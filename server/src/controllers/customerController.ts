@@ -46,10 +46,20 @@ const normalizeMobileNumber = (value: string) => {
   return digits;
 };
 
+const customerIdFromToken = (authorization: string) => {
+  const token = String(authorization || '').replace(/^Bearer\s+/i, '');
+  if (!token) return null;
+  const decoded = jwt.verify(token, JWT_SECRET) as any;
+  return decoded.type === 'customer' && decoded.id ? Number(decoded.id) : null;
+};
+
 const publicCustomerWallet = async (customerId: number) => {
   const customer = await prisma.customer.findUnique({
     where: { id: customerId },
     include: {
+      savedAddresses: {
+        orderBy: { updatedAt: 'desc' },
+      },
       cashbackTransactions: {
         orderBy: { createdAt: 'desc' },
         take: 20,
@@ -73,8 +83,15 @@ const publicCustomerWallet = async (customerId: number) => {
       id: customer.id,
       mobileNumber: customer.mobileNumber,
       name: customer.name,
+      birthday: customer.birthday,
+      anniversary: customer.anniversary,
       referralCode: customer.referralCode,
       cashbackBalance: Number(customer.cashbackBalance),
+      savedAddresses: customer.savedAddresses.map((savedAddress) => ({
+        id: savedAddress.id,
+        label: savedAddress.label,
+        address: savedAddress.address,
+      })),
     },
     transactions: customer.cashbackTransactions.map((transaction) => ({
       id: transaction.id,
@@ -129,16 +146,28 @@ export const requestCustomerOtp = async (req: Request, res: Response) => {
   try {
     const mobileNumber = normalizeMobileNumber(req.body.mobileNumber);
     const name = String(req.body.name || '').trim();
+    const intent = String(req.body.intent || '').trim().toLowerCase();
 
     if (mobileNumber.length < 10) {
       return res.status(400).json({ error: 'A valid mobile number is required' });
     }
 
-    const customer = await prisma.customer.upsert({
-      where: { mobileNumber },
-      update: name ? { name } : {},
-      create: { mobileNumber, name: name || undefined },
-    });
+    let customer;
+    if (intent === 'existing') {
+      customer = await prisma.customer.findUnique({ where: { mobileNumber } });
+      if (!customer) {
+        return res.status(404).json({
+          error: 'This mobile number is not registered yet. Please continue as a New User.',
+          notRegistered: true,
+        });
+      }
+    } else {
+      customer = await prisma.customer.upsert({
+        where: { mobileNumber },
+        update: name ? { name } : {},
+        create: { mobileNumber, name: name || undefined },
+      });
+    }
     await ensureCustomerReferralCode(prisma, customer);
     const expiresAt = new Date(Date.now() + OTP_MINUTES * 60 * 1000);
 
@@ -321,6 +350,101 @@ export const getCustomerAccount = async (req: Request, res: Response) => {
 
     res.json({ ...wallet, orders: await publicCustomerOrders(Number(decoded.id)) });
   } catch (error) {
+    res.status(401).json({ error: 'Invalid customer token' });
+  }
+};
+
+export const saveCustomerAddress = async (req: Request, res: Response) => {
+  try {
+    const customerId = customerIdFromToken(String(req.headers.authorization || ''));
+    if (!customerId) return res.status(401).json({ error: 'Please login to save an address.' });
+
+    const label = String(req.body.label || '').trim().slice(0, 40);
+    const address = String(req.body.address || '').trim().slice(0, 1000);
+    if (!label || !address) return res.status(400).json({ error: 'An address title and address are required.' });
+
+    const existing = await prisma.customerAddress.findFirst({ where: { customerId, label } });
+    if (existing) {
+      await prisma.customerAddress.update({ where: { id: existing.id }, data: { address } });
+    } else {
+      await prisma.customerAddress.create({ data: { customerId, label, address } });
+    }
+
+    const wallet = await publicCustomerWallet(customerId);
+    res.status(201).json(wallet);
+  } catch (error) {
+    console.error('Save customer address error:', error);
+    res.status(401).json({ error: 'Could not save the address.' });
+  }
+};
+
+export const deleteCustomerAddress = async (req: Request, res: Response) => {
+  try {
+    const customerId = customerIdFromToken(String(req.headers.authorization || ''));
+    const addressId = Number(req.params.id);
+    if (!customerId) return res.status(401).json({ error: 'Customer login required' });
+    if (!Number.isInteger(addressId)) return res.status(400).json({ error: 'Invalid address' });
+
+    await prisma.customerAddress.deleteMany({ where: { id: addressId, customerId } });
+    const wallet = await publicCustomerWallet(customerId);
+    res.json(wallet);
+  } catch (error) {
+    res.status(500).json({ error: 'Could not remove the address.' });
+  }
+};
+
+export const updateCustomerProfile = async (req: Request, res: Response) => {
+  try {
+    const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    let customerId: number | null = null;
+
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      if (decoded.type === 'customer' && decoded.id) customerId = Number(decoded.id);
+    }
+
+    if (!customerId && req.body.orderNumber && req.body.orderSessionToken) {
+      const order = await prisma.order.findFirst({
+        where: {
+          orderNumber: String(req.body.orderNumber),
+          customerSessionToken: String(req.body.orderSessionToken),
+          customerSessionExpiresAt: { gt: new Date() },
+        },
+      });
+      if (order) {
+        if (order.customerId) {
+          customerId = order.customerId;
+        } else {
+          const byMobile = await prisma.customer.findUnique({ where: { mobileNumber: order.mobileNumber } });
+          customerId = byMobile ? byMobile.id : null;
+        }
+      }
+    }
+
+    if (!customerId) return res.status(401).json({ error: 'Customer login required' });
+
+    const birthday = req.body.birthday ? new Date(String(req.body.birthday)) : null;
+    const anniversary = req.body.anniversary ? new Date(String(req.body.anniversary)) : null;
+
+    if (birthday && Number.isNaN(birthday.getTime())) {
+      return res.status(400).json({ error: 'Invalid birthday' });
+    }
+    if (anniversary && Number.isNaN(anniversary.getTime())) {
+      return res.status(400).json({ error: 'Invalid anniversary' });
+    }
+
+    await prisma.customer.update({
+      where: { id: customerId },
+      data: {
+        birthday,
+        anniversary,
+      },
+    });
+
+    const wallet = await publicCustomerWallet(customerId);
+    res.json(wallet);
+  } catch (error) {
+    console.error('Customer profile update error:', error);
     res.status(401).json({ error: 'Invalid customer token' });
   }
 };
