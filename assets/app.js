@@ -12,6 +12,8 @@ const API_BASE_URL = ['localhost', '127.0.0.1'].includes(window.location.hostnam
 const MSG91_OTP_CONFIG = {
   widgetId: '36686b6e6663393239393237',
   tokenAuth: '557264T5RUil1Qow6a7b3134P1',
+  // CAPTCHA is disabled in this widget's MSG91 dashboard settings.
+  captchaRenderId: '',
 };
 let msg91WidgetPromise;
 let msg91VerifiedToken = '';
