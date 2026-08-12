@@ -292,7 +292,7 @@ function renderAccount(account) {
           <label>Mobile Number<input name="mobile_number" required inputmode="tel" placeholder="10-digit mobile number"></label>
           <button class="btn primary" type="submit">Send OTP</button>
         </form>
-        ${pending ? `<form class="cashback-login-form" data-account-verify-form><input type="hidden" name="mobile_number" value="${escapeHtml(pending.mobileNumber)}">${pending.testOtp ? `<p class="cashback-test-otp">Testing OTP: <strong>${escapeHtml(pending.testOtp)}</strong></p>` : '<p class="cashback-test-otp">OTP sent. Check your phone.</p>'}<label>Enter OTP<input name="otp" required inputmode="numeric" maxlength="6" placeholder="6-digit OTP"></label><button class="btn primary" type="submit">Login</button></form>` : ''}
+        ${pending ? `<form class="cashback-login-form" data-account-verify-form><input type="hidden" name="mobile_number" value="${escapeHtml(pending.mobileNumber)}">${pending.testOtp ? `<p class="cashback-test-otp">Testing OTP: <strong>${escapeHtml(pending.testOtp)}</strong></p>` : '<p class="cashback-test-otp">OTP sent. Check your phone.</p>'}<label>Enter OTP<input name="otp" required inputmode="numeric" maxlength="4" placeholder="4-digit OTP"></label><button class="btn primary" type="submit">Login</button></form>` : ''}
       </section>`;
     return;
   }
@@ -462,7 +462,7 @@ function renderCashbackPanel(preCashbackTotal = 0, applied = 0) {
         <form class="cashback-login-form" data-cashback-verify-form>
           <input type="hidden" name="mobile_number" value="${escapeHtml(pendingOtp.mobileNumber)}">
           ${pendingOtp.testOtp ? `<p class="cashback-test-otp">Testing OTP: <strong>${escapeHtml(pendingOtp.testOtp)}</strong></p>` : '<p class="cashback-test-otp">OTP sent. Check your phone.</p>'}
-          <label>Enter OTP<input name="otp" required inputmode="numeric" maxlength="6" placeholder="6-digit OTP"></label>
+          <label>Enter OTP<input name="otp" required inputmode="numeric" maxlength="4" placeholder="4-digit OTP"></label>
           <button class="btn primary full" type="submit">Verify &amp; Login</button>
         </form>
       ` : ''}
