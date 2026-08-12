@@ -14,18 +14,41 @@ const MSG91_OTP_CONFIG = {
   tokenAuth: '557264T5RUil1Qow6a7b3134P1',
 };
 let msg91WidgetPromise;
+let msg91VerifiedToken = '';
 
 function apiUrl(path) {
   return `${API_BASE_URL}${path}`;
 }
 
 function msg91AccessToken(data) {
-  return data?.accessToken || data?.access_token || data?.['access-token'] || data?.token
-    || data?.data?.accessToken || data?.data?.access_token || data?.data?.['access-token'] || data?.data?.token || '';
+  if (typeof data === 'string') return data;
+  if (!data || typeof data !== 'object') return '';
+
+  const token = data.accessToken || data.access_token || data['access-token'] || data.token
+    || data.jwt || data.jwtToken || data.jwt_token;
+  if (typeof token === 'string' && token) return token;
+
+  return msg91AccessToken(data.data || data.result || data.response);
+}
+
+function waitForMsg91Methods() {
+  return new Promise((resolve, reject) => {
+    const deadline = Date.now() + 10000;
+    const check = () => {
+      if (typeof window.sendOtp === 'function' && typeof window.verifyOtp === 'function') {
+        resolve();
+      } else if (Date.now() >= deadline) {
+        reject(new Error('MSG91 OTP service did not initialise. Please refresh and try again.'));
+      } else {
+        window.setTimeout(check, 100);
+      }
+    };
+    check();
+  });
 }
 
 function loadMsg91Widget() {
-  if (window.sendOtp && window.verifyOtp) return Promise.resolve();
+  if (typeof window.sendOtp === 'function' && typeof window.verifyOtp === 'function') return Promise.resolve();
   if (msg91WidgetPromise) return msg91WidgetPromise;
 
   msg91WidgetPromise = new Promise((resolve, reject) => {
@@ -40,10 +63,12 @@ function loadMsg91Widget() {
       window.initSendOTP({
         ...MSG91_OTP_CONFIG,
         exposeMethods: true,
-        success: () => {},
+        success: (data) => {
+          msg91VerifiedToken = msg91AccessToken(data) || msg91VerifiedToken;
+        },
         failure: () => {},
       });
-      resolve();
+      waitForMsg91Methods().then(resolve, reject);
     };
     script.onerror = () => reject(new Error('Could not load MSG91 OTP service.'));
     document.head.appendChild(script);
@@ -53,6 +78,7 @@ function loadMsg91Widget() {
 
 async function sendMsg91Otp(mobileNumber) {
   await loadMsg91Widget();
+  msg91VerifiedToken = '';
   return new Promise((resolve, reject) => {
     window.sendOtp(mobileNumber, resolve, (error) => reject(new Error(error?.message || 'MSG91 could not send the OTP.')));
   });
@@ -62,7 +88,7 @@ async function verifyMsg91Otp(otp) {
   await loadMsg91Widget();
   return new Promise((resolve, reject) => {
     window.verifyOtp(String(otp), (data) => {
-      const accessToken = msg91AccessToken(data);
+      const accessToken = msg91AccessToken(data) || msg91VerifiedToken;
       if (!accessToken) {
         reject(new Error('MSG91 verified the OTP but did not return a login token.'));
         return;
