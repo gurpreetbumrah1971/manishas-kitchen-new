@@ -17,6 +17,7 @@ const MSG91_OTP_CONFIG = {
 };
 let msg91WidgetPromise;
 let msg91VerifiedToken = '';
+let msg91VerificationError = '';
 let msg91RequestId = '';
 
 function apiUrl(path) {
@@ -78,7 +79,9 @@ function loadMsg91Widget() {
         success: (data) => {
           msg91VerifiedToken = msg91AccessToken(data) || msg91VerifiedToken;
         },
-        failure: () => {},
+        failure: (error) => {
+          msg91VerificationError = error?.message || 'Invalid or expired OTP.';
+        },
       });
       waitForMsg91Methods().then(resolve, reject);
     };
@@ -91,6 +94,7 @@ function loadMsg91Widget() {
 async function sendMsg91Otp(mobileNumber) {
   await loadMsg91Widget();
   msg91VerifiedToken = '';
+  msg91VerificationError = '';
   msg91RequestId = '';
   return new Promise((resolve, reject) => {
     window.sendOtp(mobileNumber, (data) => {
@@ -103,27 +107,25 @@ async function sendMsg91Otp(mobileNumber) {
 async function verifyMsg91Otp(otp, requestId = '') {
   await loadMsg91Widget();
   return new Promise((resolve, reject) => {
-    const onSuccess = (data) => {
-      const accessToken = msg91AccessToken(data) || msg91VerifiedToken;
-      if (accessToken) return resolve(accessToken);
-
-      const deadline = Date.now() + 2000;
-      const waitForToken = () => {
-        if (msg91VerifiedToken) return resolve(msg91VerifiedToken);
-        if (Date.now() >= deadline) {
-          reject(new Error('MSG91 verified the OTP but did not return a login token.'));
-          return;
-        }
-        window.setTimeout(waitForToken, 50);
-      };
-      waitForToken();
+    msg91VerifiedToken = '';
+    msg91VerificationError = '';
+    const deadline = Date.now() + 5000;
+    const waitForToken = () => {
+      if (msg91VerifiedToken) return resolve(msg91VerifiedToken);
+      if (msg91VerificationError) return reject(new Error(msg91VerificationError));
+      if (Date.now() >= deadline) {
+        reject(new Error('MSG91 verified the OTP but did not return a login token.'));
+        return;
+      }
+      window.setTimeout(waitForToken, 50);
     };
-    const onFailure = (error) => reject(new Error(error?.message || 'Invalid or expired OTP.'));
+
     if (requestId || msg91RequestId) {
-      window.verifyOtp(String(otp), onSuccess, onFailure, requestId || msg91RequestId);
+      window.verifyOtp(String(otp), undefined, undefined, requestId || msg91RequestId);
     } else {
-      window.verifyOtp(String(otp), onSuccess, onFailure);
+      window.verifyOtp(String(otp));
     }
+    waitForToken();
   });
 }
 const CASHBACK_NUMBER_KEY = 'mkCashbackNumber';
