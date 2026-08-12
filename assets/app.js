@@ -18,22 +18,39 @@ const MSG91_OTP_CONFIG = {
 let msg91WidgetPromise;
 let msg91VerifiedToken = '';
 let msg91VerificationError = '';
+let msg91VerificationResponse = null;
 let msg91RequestId = '';
 
 function apiUrl(path) {
   return `${API_BASE_URL}${path}`;
 }
 
-function msg91AccessToken(data) {
+function msg91AccessToken(data, seen = new Set()) {
   if (typeof data === 'string') return data;
-  if (Array.isArray(data)) return data.map(msg91AccessToken).find(Boolean) || '';
-  if (!data || typeof data !== 'object') return '';
+  if (!data || typeof data !== 'object' || seen.has(data)) return '';
+  seen.add(data);
 
-  const token = data.accessToken || data.access_token || data['access-token'] || data.token
-    || data.jwt || data.jwtToken || data.jwt_token;
-  if (typeof token === 'string' && token) return token;
+  if (Array.isArray(data)) return data.map((item) => msg91AccessToken(item, seen)).find(Boolean) || '';
 
-  return msg91AccessToken(data.data || data.result || data.response);
+  for (const [key, value] of Object.entries(data)) {
+    const normalizedKey = key.replace(/[^a-z]/gi, '').toLowerCase();
+    if (['token', 'accesstoken', 'jwt', 'jwttoken', 'authorization'].includes(normalizedKey)
+      && typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return Object.values(data).map((value) => msg91AccessToken(value, seen)).find(Boolean) || '';
+}
+
+function msg91ResponseFields(data, depth = 0) {
+  if (!data || typeof data !== 'object' || depth > 2) return '';
+  const keys = Array.isArray(data) ? ['array'] : Object.keys(data);
+  const nested = Object.entries(data)
+    .filter(([, value]) => value && typeof value === 'object')
+    .map(([key, value]) => `${key}.{${msg91ResponseFields(value, depth + 1)}}`)
+    .filter(Boolean);
+  return [...keys, ...nested].join(', ');
 }
 
 function msg91RequestIdentifier(data) {
@@ -77,6 +94,7 @@ function loadMsg91Widget() {
         ...MSG91_OTP_CONFIG,
         exposeMethods: true,
         success: (data) => {
+          msg91VerificationResponse = data;
           msg91VerifiedToken = msg91AccessToken(data) || msg91VerifiedToken;
         },
         failure: (error) => {
@@ -95,6 +113,7 @@ async function sendMsg91Otp(mobileNumber) {
   await loadMsg91Widget();
   msg91VerifiedToken = '';
   msg91VerificationError = '';
+  msg91VerificationResponse = null;
   msg91RequestId = '';
   return new Promise((resolve, reject) => {
     window.sendOtp(mobileNumber, (data) => {
@@ -109,12 +128,14 @@ async function verifyMsg91Otp(otp, requestId = '') {
   return new Promise((resolve, reject) => {
     msg91VerifiedToken = '';
     msg91VerificationError = '';
+    msg91VerificationResponse = null;
     const deadline = Date.now() + 5000;
     const waitForToken = () => {
       if (msg91VerifiedToken) return resolve(msg91VerifiedToken);
       if (msg91VerificationError) return reject(new Error(msg91VerificationError));
       if (Date.now() >= deadline) {
-        reject(new Error('MSG91 verified the OTP but did not return a login token.'));
+        const fields = msg91ResponseFields(msg91VerificationResponse || (window.getWidgetData && window.getWidgetData()));
+        reject(new Error(`MSG91 verified the OTP but did not return a login token${fields ? ` (widget fields: ${fields})` : ''}.`));
         return;
       }
       window.setTimeout(waitForToken, 50);
