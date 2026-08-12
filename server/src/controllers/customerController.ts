@@ -7,7 +7,7 @@ import { ensureCustomerReferralCode, normalizeReferralCode } from '../utils/refe
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const OTP_MINUTES = 10;
 const CUSTOMER_TOKEN_DAYS = 30;
-const REFERRAL_DISCOUNT_RATE = 0.10;
+const REFERRAL_DISCOUNT_RATE = 0.05;
 
 const twilioConfig = () => ({
   enabled: process.env.OTP_PROVIDER === 'twilio',
@@ -341,8 +341,8 @@ export const validateReferral = async (req: Request, res: Response) => {
       discountPercent: Math.round(REFERRAL_DISCOUNT_RATE * 100),
       referrerName: referrer.name || null,
       message: referrer.name
-        ? `Referral accepted! 10% off from ${referrer.name}.`
-        : 'Referral accepted! You get 10% off on this order.',
+        ? `Referral accepted! 5% off from ${referrer.name}.`
+        : 'Referral accepted! You get 5% off on this order.',
     });
   } catch (error) {
     console.error('Referral validation error:', error);

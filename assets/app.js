@@ -369,7 +369,7 @@ function appliedReferralCode() {
 }
 
 function referralDiscountForSubtotal(subtotal) {
-  return appliedReferralCode() ? Math.round(Number(subtotal || 0) * 0.10 * 100) / 100 : 0;
+  return appliedReferralCode() ? Math.round(Number(subtotal || 0) * 0.05 * 100) / 100 : 0;
 }
 
 function fallbackCopyText(text) {
@@ -398,7 +398,7 @@ function renderReferralState() {
     input.value = code;
     if (applyBtn) applyBtn.textContent = 'Remove';
     if (status) {
-      status.textContent = '10% referral discount applied to this order.';
+      status.textContent = '5% referral discount applied to this order.';
       status.classList.add('ok');
       status.classList.remove('error');
     }
@@ -1200,7 +1200,7 @@ document.addEventListener('click', (event) => {
       .then((result) => {
         if (result.valid) {
           localStorage.setItem(CASHBACK_REFERRAL_KEY, code);
-          if (status) { status.textContent = result.message || '10% referral discount applied!'; status.classList.add('ok'); status.classList.remove('error'); }
+          if (status) { status.textContent = result.message || '5% referral discount applied!'; status.classList.add('ok'); status.classList.remove('error'); }
         } else {
           localStorage.removeItem(CASHBACK_REFERRAL_KEY);
           if (status) { status.textContent = result.message || 'Invalid referral code.'; status.classList.add('error'); status.classList.remove('ok'); }
@@ -1781,7 +1781,7 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
   const customer = (auth && auth.customer) || {};
   const referralCode = String(order.customerReferralCode || order.referralCode || (auth && auth.customer && auth.customer.referralCode) || '').trim().toUpperCase();
   const shareUrl = `${window.location.origin}/menu.html`;
-  const shareText = `Order from Manisha's Kitchen and get 10% off your first order with my referral code\n\n${referralCode}\n\nVisit - ${shareUrl}`;
+  const shareText = `Order from Manisha's Kitchen and get 5% off your first order with my referral code\n\n${referralCode}\n\nVisit - ${shareUrl}`;
   section.innerHTML = `
     <div class="success-panel checkout-thank-you">
       <h1>Thank you for your order!</h1>
@@ -1818,7 +1818,7 @@ function showStaticOrderThankYou({ order, total, amount, paymentMethod, whatsapp
       ${referralCode ? `
         <div class="referral-share-card" data-referral-share-card>
           <h2>Refer &amp; earn cashback</h2>
-          <p>Share your code with friends. They get 10% off their first order, and you earn 10% cashback on their bill.</p>
+          <p>Share your code with friends. They get 5% off their first order, and you earn 5% cashback on their bill.</p>
           <div class="referral-code-box">
             <strong data-referral-code-value>${escapeHtml(referralCode)}</strong>
             <button type="button" class="btn secondary" data-copy-referral>Copy</button>

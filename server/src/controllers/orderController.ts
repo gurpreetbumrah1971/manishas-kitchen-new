@@ -7,8 +7,8 @@ import { ensureCustomerReferralCode, normalizeReferralCode } from '../utils/refe
 
 const ORDER_SESSION_MINUTES = 30;
 const CASHBACK_RATE = 0.10;
-const REFERRAL_DISCOUNT_RATE = 0.10;
-const REFERRAL_REWARD_RATE = 0.10;
+const REFERRAL_DISCOUNT_RATE = 0.05;
+const REFERRAL_REWARD_RATE = 0.05;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 const orderInclude = {
