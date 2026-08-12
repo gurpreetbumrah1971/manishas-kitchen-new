@@ -17,6 +17,12 @@ services:
         fromDatabase:
           name: manishas-kitchen-db
           property: connectionString
+      - key: MSG91_WHATSAPP_AUTHKEY
+        sync: false
+      - key: MSG91_WHATSAPP_SENDER_NUMBER
+        sync: false
+      - key: MSG91_WHATSAPP_TEMPLATE_NAMESPACE
+        sync: false
 
 databases:
   - name: manishas-kitchen-db

@@ -97,6 +97,72 @@ const buildTextPayload = (recipient: string, order: OrderForWhatsApp) => ({
   },
 });
 
+const orderItemSummary = (order: OrderForWhatsApp) => (order.orderItems || [])
+  .map((item) => `${item.foodItem?.name || 'Food item'} x ${item.quantity}`)
+  .join(', ') || 'Your selected items';
+
+const msg91CustomerConfirmationPayload = (senderNumber: string, recipient: string, order: OrderForWhatsApp) => {
+  const templateName = process.env.MSG91_WHATSAPP_ORDER_TEMPLATE || 'order_confirmation';
+  const namespace = process.env.MSG91_WHATSAPP_TEMPLATE_NAMESPACE;
+  const template: Record<string, unknown> = {
+    name: templateName,
+    language: {
+      code: process.env.MSG91_WHATSAPP_TEMPLATE_LANGUAGE || 'en',
+      policy: 'deterministic',
+    },
+    to_and_components: [{
+      to: [recipient],
+      components: {
+        body_1: { type: 'text', value: order.customerName || 'Customer' },
+        body_2: { type: 'text', value: order.orderNumber },
+        body_3: { type: 'text', value: orderItemSummary(order) },
+        body_4: { type: 'text', value: String(order.orderType || 'ORDER').replace(/_/g, ' ') },
+        body_5: { type: 'text', value: money(order.grandTotal) },
+      },
+    }],
+  };
+  if (namespace) template.namespace = namespace;
+
+  return {
+    integrated_number: senderNumber,
+    content_type: 'template',
+    payload: {
+      messaging_product: 'whatsapp',
+      type: 'template',
+      template,
+    },
+  };
+};
+
+export const sendCustomerOrderConfirmationMsg91 = async (order: OrderForWhatsApp) => {
+  const authKey = process.env.MSG91_WHATSAPP_AUTHKEY || process.env.MSG91_AUTHKEY;
+  const senderNumber = normalizePhoneNumber(process.env.MSG91_WHATSAPP_SENDER_NUMBER);
+  const recipient = normalizePhoneNumber(order.whatsappNumber || order.mobileNumber);
+
+  if (!authKey || !senderNumber || !recipient) {
+    console.warn('MSG91 customer order confirmation skipped: missing auth key, sender number, or customer WhatsApp number');
+    return { sent: false, skipped: true };
+  }
+
+  const payload = msg91CustomerConfirmationPayload(senderNumber, recipient, order);
+  const response = await fetch('https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      authkey: authKey,
+    },
+    body: JSON.stringify(payload),
+  });
+  const responseBody = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    console.error('MSG91 customer order confirmation failed:', response.status, responseBody);
+    return { sent: false, skipped: false, error: responseBody };
+  }
+
+  return { sent: true, skipped: false, response: responseBody };
+};
+
 export const sendAdminOrderWhatsApp = async (order: OrderForWhatsApp) => {
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
   const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;

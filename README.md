@@ -90,6 +90,14 @@ Optional, but recommended for production-initiated WhatsApp messages:
 ```env
 WHATSAPP_ADMIN_ORDER_TEMPLATE="your_approved_template_name"
 WHATSAPP_TEMPLATE_LANGUAGE="en_US"
+
+# MSG91 WhatsApp customer order confirmation (optional)
+# Use numbers with country code and no +, e.g. 919999999999.
+MSG91_WHATSAPP_AUTHKEY="your_msg91_whatsapp_authkey"
+MSG91_WHATSAPP_SENDER_NUMBER="your_msg91_whatsapp_sender_number"
+MSG91_WHATSAPP_TEMPLATE_NAMESPACE="your_msg91_template_namespace"
+MSG91_WHATSAPP_ORDER_TEMPLATE="order_confirmation"
+MSG91_WHATSAPP_TEMPLATE_LANGUAGE="en"
 ```
 
 If the WhatsApp credentials are missing or invalid, order creation continues and the server logs the notification failure.
