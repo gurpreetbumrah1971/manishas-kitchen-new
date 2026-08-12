@@ -20,8 +20,8 @@ function apiUrl(path) {
 }
 
 function msg91AccessToken(data) {
-  return data?.accessToken || data?.access_token || data?.token
-    || data?.data?.accessToken || data?.data?.access_token || data?.data?.token || '';
+  return data?.accessToken || data?.access_token || data?.['access-token'] || data?.token
+    || data?.data?.accessToken || data?.data?.access_token || data?.data?.['access-token'] || data?.data?.token || '';
 }
 
 function loadMsg91Widget() {
