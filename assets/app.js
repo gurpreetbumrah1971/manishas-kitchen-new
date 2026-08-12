@@ -1382,8 +1382,7 @@ document.addEventListener('submit', async (event) => {
     if (submitButton) submitButton.disabled = true;
     try {
       const pending = getPendingCashbackOtp();
-      const msg91AccessToken = pending?.provider === 'msg91' ? await verifyMsg91Otp(formData.get('otp'), pending.requestId) : '';
-      const response = await fetch(apiUrl('/customer/verify-otp'), { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber: normalizeMobileNumber(formData.get('mobile_number')), otp: formData.get('otp'), msg91AccessToken }) });
+      const response = await fetch(apiUrl('/customer/verify-otp'), { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber: normalizeMobileNumber(formData.get('mobile_number')), otp: formData.get('otp'), msg91RequestId: pending?.provider === 'msg91' ? pending.requestId : '' }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not verify OTP.');
       localStorage.removeItem(CASHBACK_OTP_KEY);
@@ -1469,7 +1468,6 @@ document.addEventListener('submit', async (event) => {
 
     try {
       const pending = getPendingCashbackOtp();
-      const msg91AccessToken = pending?.provider === 'msg91' ? await verifyMsg91Otp(formData.get('otp'), pending.requestId) : '';
       const response = await fetch(apiUrl('/customer/verify-otp'), {
         method: 'POST',
         headers: {
@@ -1479,7 +1477,7 @@ document.addEventListener('submit', async (event) => {
         body: JSON.stringify({
           mobileNumber: normalizeMobileNumber(formData.get('mobile_number')),
           otp: formData.get('otp'),
-          msg91AccessToken,
+          msg91RequestId: pending?.provider === 'msg91' ? pending.requestId : '',
         }),
       });
       const result = await response.json().catch(() => ({}));
