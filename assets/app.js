@@ -10,8 +10,8 @@ const API_BASE_URL = ['localhost', '127.0.0.1'].includes(window.location.hostnam
 // MSG91 requires tokenAuth in the browser for its OTP widget. The server-only
 // MSG91 authkey remains in server/.env and is never sent to this page.
 const MSG91_OTP_CONFIG = {
-  widgetId: '36686b6e6663393239393237',
-  tokenAuth: '557264T5RUil1Qow6a7b3134P1',
+  widgetId: '36686c6d4e4c353935353334',
+  tokenAuth: '557264TceyJ1oa3G6a7c77e8P1',
   // CAPTCHA is disabled in this widget's MSG91 dashboard settings.
   captchaRenderId: '',
 };

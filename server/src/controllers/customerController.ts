@@ -20,7 +20,7 @@ const msg91Config = () => ({
   enabled: process.env.OTP_PROVIDER === 'msg91',
   // Reuse the WhatsApp key when a separate OTP key is not configured in Render.
   authKey: process.env.MSG91_AUTHKEY || process.env.MSG91_WHATSAPP_AUTHKEY || '',
-  widgetId: process.env.MSG91_OTP_WIDGET_ID || '36686b6e6663393239393237',
+  widgetId: process.env.MSG91_OTP_WIDGET_ID || '36686c6d4e4c353935353334',
 });
 
 const verifyMsg91Otp = async (requestId: string, otp: string) => {
