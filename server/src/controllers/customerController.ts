@@ -20,25 +20,7 @@ const msg91Config = () => ({
   enabled: process.env.OTP_PROVIDER === 'msg91',
   // Reuse the WhatsApp key when a separate OTP key is not configured in Render.
   authKey: process.env.MSG91_AUTHKEY || process.env.MSG91_WHATSAPP_AUTHKEY || '',
-  widgetId: process.env.MSG91_OTP_WIDGET_ID || '36686c6d4e4c353935353334',
 });
-
-const verifyMsg91Otp = async (requestId: string, otp: string) => {
-  const { authKey, widgetId } = msg91Config();
-  if (!authKey) throw new Error('MSG91 authentication key is not configured');
-  if (!requestId) throw new Error('MSG91 OTP session expired. Please request a new OTP.');
-
-  const response = await fetch('https://api.msg91.com/api/v5/widget/verifyOtp', {
-    method: 'POST',
-    headers: { authkey: authKey, 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ widgetId, reqId: requestId, otp }),
-  });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok || result.success === false) {
-    throw new Error(result.message || result.error || 'Invalid or expired OTP');
-  }
-  return result;
-};
 
 const verifyMsg91AccessToken = async (accessToken: string) => {
   const { authKey } = msg91Config();
@@ -263,7 +245,6 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
     const mobileNumber = normalizeMobileNumber(req.body.mobileNumber);
     const code = String(req.body.otp || req.body.code || '').trim();
     const msg91AccessToken = String(req.body.msg91AccessToken || '').trim();
-    const msg91RequestId = String(req.body.msg91RequestId || '').trim();
 
     if (!mobileNumber || (!code && !msg91AccessToken)) {
       return res.status(400).json({ error: 'Mobile number and OTP are required' });
@@ -271,11 +252,7 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
 
     let otp: { id: number } | null = null;
     if (msg91Config().enabled) {
-      if (msg91RequestId) {
-        await verifyMsg91Otp(msg91RequestId, code);
-      } else {
-        await verifyMsg91AccessToken(msg91AccessToken);
-      }
+      await verifyMsg91AccessToken(msg91AccessToken);
     } else if (twilioConfig().enabled) {
       const verification = await twilioRequest('VerificationCheck', mobileNumber, code);
       if (verification.status !== 'approved') return res.status(401).json({ error: 'Invalid or expired OTP' });
