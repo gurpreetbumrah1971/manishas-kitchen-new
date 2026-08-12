@@ -18,7 +18,8 @@ const twilioConfig = () => ({
 
 const msg91Config = () => ({
   enabled: process.env.OTP_PROVIDER === 'msg91',
-  authKey: process.env.MSG91_AUTHKEY || '',
+  // Reuse the WhatsApp key when a separate OTP key is not configured in Render.
+  authKey: process.env.MSG91_AUTHKEY || process.env.MSG91_WHATSAPP_AUTHKEY || '',
   widgetId: process.env.MSG91_OTP_WIDGET_ID || '36686b6e6663393239393237',
 });
 
@@ -324,7 +325,8 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Customer OTP verification error:', error);
-    res.status(500).json({ error: 'Could not verify OTP' });
+    const message = error instanceof Error ? error.message : 'Could not verify OTP';
+    res.status(/invalid|expired|session/i.test(message) ? 401 : 500).json({ error: message });
   }
 };
 
