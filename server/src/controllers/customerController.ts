@@ -16,6 +16,29 @@ const twilioConfig = () => ({
   verifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID || '',
 });
 
+const msg91Config = () => ({
+  enabled: process.env.OTP_PROVIDER === 'msg91',
+  authKey: process.env.MSG91_AUTHKEY || '',
+});
+
+const verifyMsg91AccessToken = async (accessToken: string) => {
+  const { authKey } = msg91Config();
+  if (!authKey) throw new Error('MSG91 authentication key is not configured');
+
+  const response = await fetch('https://control.msg91.com/api/v5/widget/verifyAccessToken', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ authkey: authKey, 'access-token': accessToken }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.message || 'MSG91 access-token verification failed');
+
+  const verified = result.success === true
+    || String(result.type || result.status || '').toLowerCase() === 'success';
+  if (!verified) throw new Error(result.message || 'MSG91 could not verify this OTP session');
+  return result;
+};
+
 const twilioRequest = async (endpoint: string, mobileNumber: string, code?: string) => {
   const config = twilioConfig();
   if (!config.accountSid || !config.authToken || !config.verifyServiceSid) {
@@ -171,6 +194,16 @@ export const requestCustomerOtp = async (req: Request, res: Response) => {
     await ensureCustomerReferralCode(prisma, customer);
     const expiresAt = new Date(Date.now() + OTP_MINUTES * 60 * 1000);
 
+    if (msg91Config().enabled) {
+      return res.status(201).json({
+        ok: true,
+        mobileNumber,
+        expiresAt,
+        provider: 'msg91',
+        message: 'Ready to send OTP through MSG91.',
+      });
+    }
+
     if (twilioConfig().enabled) {
       await twilioRequest('Verifications', mobileNumber, undefined).then(() => undefined);
       return res.status(201).json({
@@ -210,13 +243,16 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
   try {
     const mobileNumber = normalizeMobileNumber(req.body.mobileNumber);
     const code = String(req.body.otp || req.body.code || '').trim();
+    const msg91AccessToken = String(req.body.msg91AccessToken || '').trim();
 
-    if (!mobileNumber || !code) {
+    if (!mobileNumber || (!code && !msg91AccessToken)) {
       return res.status(400).json({ error: 'Mobile number and OTP are required' });
     }
 
     let otp: { id: number } | null = null;
-    if (twilioConfig().enabled) {
+    if (msg91Config().enabled) {
+      await verifyMsg91AccessToken(msg91AccessToken);
+    } else if (twilioConfig().enabled) {
       const verification = await twilioRequest('VerificationCheck', mobileNumber, code);
       if (verification.status !== 'approved') return res.status(401).json({ error: 'Invalid or expired OTP' });
     } else {
