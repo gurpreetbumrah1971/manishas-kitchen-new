@@ -23,6 +23,10 @@ services:
         sync: false
       - key: MSG91_WHATSAPP_TEMPLATE_NAMESPACE
         sync: false
+      - key: MSG91_WHATSAPP_ORDER_TEMPLATE
+        value: order_confirmation
+      - key: MSG91_WHATSAPP_TEMPLATE_LANGUAGE
+        value: en
       - key: OTP_PROVIDER
         sync: false
       - key: MSG91_AUTHKEY
