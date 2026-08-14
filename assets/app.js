@@ -54,6 +54,7 @@ function msg91ResponseFields(data, depth = 0) {
 }
 
 function msg91RequestIdentifier(data) {
+  if (typeof data === 'string' && data.trim()) return data.trim();
   if (!data || typeof data !== 'object') return '';
   if (Array.isArray(data)) return data.map(msg91RequestIdentifier).find(Boolean) || '';
   const requestId = data.reqId || data.req_id || data.requestId || data.request_id;
@@ -117,7 +118,14 @@ async function sendMsg91Otp(mobileNumber) {
   msg91RequestId = '';
   return new Promise((resolve, reject) => {
     window.sendOtp(mobileNumber, (data) => {
-      msg91RequestId = msg91RequestIdentifier(data);
+      // MSG91 SDK versions return reqId either in this callback or from
+      // getWidgetData(). Retain it because server-side verification requires it.
+      msg91RequestId = msg91RequestIdentifier(data)
+        || msg91RequestIdentifier(window.getWidgetData && window.getWidgetData());
+      if (!msg91RequestId) {
+        reject(new Error('MSG91 did not return an OTP session. Please request a new OTP.'));
+        return;
+      }
       resolve(msg91RequestId);
     }, (error) => reject(new Error(error?.message || 'MSG91 could not send the OTP.')));
   });
