@@ -20,25 +20,50 @@ const msg91Config = () => ({
   enabled: process.env.OTP_PROVIDER === 'msg91',
   // Reuse the WhatsApp key when a separate OTP key is not configured in Render.
   authKey: process.env.MSG91_AUTHKEY || process.env.MSG91_WHATSAPP_AUTHKEY || '',
+  // Token used by the MSG91 OTP widget (and shared with this server for
+  // server-side OTP verification against the widget's reqId session).
+  tokenAuth: process.env.MSG91_TOKEN_AUTH || '',
   widgetId: process.env.MSG91_WIDGET_ID || '',
 });
 
+const verifyMsg91AccessToken = async (accessToken: string) => {
+  const { authKey } = msg91Config();
+  if (!authKey) throw new Error('MSG91 authentication key is not configured');
+  if (!accessToken) throw new Error('MSG91 verification token is missing. Please request a new OTP.');
+
+  const response = await fetch('https://control.msg91.com/api/v5/widget/verifyAccessToken', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ authkey: authKey, 'access-token': accessToken }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.message || 'MSG91 access-token verification failed');
+
+  const verified = result.success === true
+    || String(result.type || result.status || '').toLowerCase() === 'success';
+  if (!verified) throw new Error(result.message || 'MSG91 could not verify this OTP session');
+  return result;
+};
+
+// Verifies the OTP server-side against the MSG91 widget session created when the
+// widget sent the OTP. This is the same call the browser widget would make, and
+// avoids relying on a client-extracted access token.
 const verifyMsg91Otp = async (otp: string, requestId: string) => {
-  const { authKey, widgetId } = msg91Config();
-  if (!authKey || !widgetId) throw new Error('MSG91 auth key or widget ID is not configured');
+  const { tokenAuth, widgetId } = msg91Config();
+  if (!tokenAuth || !widgetId) throw new Error('MSG91 widget credentials are not configured');
   if (!requestId) throw new Error('MSG91 OTP session is missing. Please request a new OTP.');
 
-  const response = await fetch('https://api.msg91.com/api/v5/widget/verifyOtp', {
+  const response = await fetch('https://control.msg91.com/api/v5/widget/verifyOtp', {
     method: 'POST',
-    headers: { authkey: authKey, 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ widgetId, reqId: requestId, otp }),
+    headers: { tokenAuth, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ tokenAuth, widgetId, reqId: requestId, otp }),
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(result.message || 'MSG91 OTP verification failed');
 
   const verified = result.success === true
     || String(result.type || result.status || '').toLowerCase() === 'success';
-  if (!verified) throw new Error(result.message || 'MSG91 could not verify this OTP');
+  if (!verified) throw new Error('Invalid or expired OTP');
   return result;
 };
 
@@ -246,6 +271,7 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
   try {
     const mobileNumber = normalizeMobileNumber(req.body.mobileNumber);
     const code = String(req.body.otp || req.body.code || '').trim();
+    const msg91AccessToken = String(req.body.msg91AccessToken || '').trim();
     const msg91RequestId = String(req.body.msg91RequestId || '').trim();
 
     if (!mobileNumber || !code) {
@@ -254,7 +280,11 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
 
     let otp: { id: number } | null = null;
     if (msg91Config().enabled) {
-      await verifyMsg91Otp(code, msg91RequestId);
+      if (msg91RequestId) {
+        await verifyMsg91Otp(code, msg91RequestId);
+      } else {
+        await verifyMsg91AccessToken(msg91AccessToken);
+      }
     } else if (twilioConfig().enabled) {
       const verification = await twilioRequest('VerificationCheck', mobileNumber, code);
       if (verification.status !== 'approved') return res.status(401).json({ error: 'Invalid or expired OTP' });
@@ -305,7 +335,7 @@ export const verifyCustomerOtp = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Customer OTP verification error:', error);
     const message = error instanceof Error ? error.message : 'Could not verify OTP';
-    res.status(/invalid|expired|session/i.test(message) ? 401 : 500).json({ error: message });
+    res.status(/invalid|expired|session|token|missing|verification/i.test(message) ? 401 : 500).json({ error: message });
   }
 };
 

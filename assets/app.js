@@ -16,50 +16,26 @@ const MSG91_OTP_CONFIG = {
   captchaRenderId: '',
 };
 let msg91WidgetPromise;
-let msg91VerifiedToken = '';
-let msg91VerificationError = '';
-let msg91VerificationResponse = null;
 let msg91RequestId = '';
 
 function apiUrl(path) {
   return `${API_BASE_URL}${path}`;
 }
 
-function msg91AccessToken(data, seen = new Set()) {
-  if (typeof data === 'string') return data;
-  if (!data || typeof data !== 'object' || seen.has(data)) return '';
-  seen.add(data);
-
-  if (Array.isArray(data)) return data.map((item) => msg91AccessToken(item, seen)).find(Boolean) || '';
-
-  for (const [key, value] of Object.entries(data)) {
-    const normalizedKey = key.replace(/[^a-z]/gi, '').toLowerCase();
-    if (['token', 'accesstoken', 'jwt', 'jwttoken', 'authorization'].includes(normalizedKey)
-      && typeof value === 'string' && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  return Object.values(data).map((value) => msg91AccessToken(value, seen)).find(Boolean) || '';
-}
-
-function msg91ResponseFields(data, depth = 0) {
-  if (!data || typeof data !== 'object' || depth > 2) return '';
-  const keys = Array.isArray(data) ? ['array'] : Object.keys(data);
-  const nested = Object.entries(data)
-    .filter(([, value]) => value && typeof value === 'object')
-    .map(([key, value]) => `${key}.{${msg91ResponseFields(value, depth + 1)}}`)
-    .filter(Boolean);
-  return [...keys, ...nested].join(', ');
-}
-
 function msg91RequestIdentifier(data) {
+  // The widget's sendOtp success response carries the session request id in
+  // `message` (a short hex string), and some builds expose it as `reqId` etc.
   if (typeof data === 'string' && data.trim()) return data.trim();
   if (!data || typeof data !== 'object') return '';
   if (Array.isArray(data)) return data.map(msg91RequestIdentifier).find(Boolean) || '';
-  const requestId = data.reqId || data.req_id || data.requestId || data.request_id;
-  if (typeof requestId === 'string' && requestId) return requestId;
-  return msg91RequestIdentifier(data.data || data.result || data.response);
+  const direct = data.reqId || data.req_id || data.requestId || data.request_id || data.reqID;
+  if (typeof direct === 'string' && direct.trim()) return direct.trim();
+  if (typeof data.message === 'string' && data.message.trim()
+    && !/\s/.test(data.message) && data.message.trim().length < 64) return data.message.trim();
+  return Object.values(data)
+    .filter((value) => value && typeof value === 'object')
+    .map((value) => msg91RequestIdentifier(value))
+    .find(Boolean) || '';
 }
 
 function waitForMsg91Methods() {
@@ -94,13 +70,8 @@ function loadMsg91Widget() {
       window.initSendOTP({
         ...MSG91_OTP_CONFIG,
         exposeMethods: true,
-        success: (data) => {
-          msg91VerificationResponse = data;
-          msg91VerifiedToken = msg91AccessToken(data) || msg91VerifiedToken;
-        },
-        failure: (error) => {
-          msg91VerificationError = error?.message || 'Invalid or expired OTP.';
-        },
+        success: () => {},
+        failure: () => {},
       });
       waitForMsg91Methods().then(resolve, reject);
     };
@@ -110,34 +81,23 @@ function loadMsg91Widget() {
   return msg91WidgetPromise;
 }
 
+// Sends the OTP via the MSG91 widget and returns the request id for that
+// session. The server verifies the OTP against the same session, so no access
+// token needs to be extracted or verified in the browser.
 async function sendMsg91Otp(mobileNumber) {
   await loadMsg91Widget();
-  msg91VerifiedToken = '';
-  msg91VerificationError = '';
-  msg91VerificationResponse = null;
   msg91RequestId = '';
   return new Promise((resolve, reject) => {
     window.sendOtp(mobileNumber, (data) => {
-      // MSG91 SDK versions return reqId either in this callback or from
-      // getWidgetData(). Retain it because server-side verification requires it.
-      msg91RequestId = msg91RequestIdentifier(data)
-        || msg91RequestIdentifier(window.getWidgetData && window.getWidgetData());
-      if (!msg91RequestId) {
+      const requestId = msg91RequestIdentifier(data);
+      if (!requestId) {
         reject(new Error('MSG91 did not return an OTP session. Please request a new OTP.'));
         return;
       }
-      resolve(msg91RequestId);
+      msg91RequestId = requestId;
+      resolve(requestId);
     }, (error) => reject(new Error(error?.message || 'MSG91 could not send the OTP.')));
   });
-}
-
-async function verifyMsg91Otp(otp, requestId = '') {
-  if (!requestId && !msg91RequestId) {
-    throw new Error('OTP session is missing. Please request a new OTP.');
-  }
-  // The server verifies the OTP using MSG91's documented reqId + OTP API.
-  // Avoid calling the widget's undocumented custom-UI verify signature here.
-  return requestId || msg91RequestId;
 }
 const CASHBACK_NUMBER_KEY = 'mkCashbackNumber';
 const CASHBACK_NAME_KEY = 'mkCashbackName';
@@ -1384,8 +1344,13 @@ document.addEventListener('submit', async (event) => {
       const response = await fetch(apiUrl('/customer/request-otp'), { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not send OTP.');
-      const msg91RequestId = result.provider === 'msg91' ? await sendMsg91Otp(result.mobileNumber || mobileNumber) : '';
-      localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({ mobileNumber: result.mobileNumber || mobileNumber, testOtp: result.testOtp || '', provider: result.provider || 'test', requestId: msg91RequestId, expiresAt: result.expiresAt }));
+      if (result.provider === 'msg91') {
+        const requestId = await sendMsg91Otp(result.mobileNumber || mobileNumber);
+        localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({ mobileNumber: result.mobileNumber || mobileNumber, testOtp: result.testOtp || '', provider: result.provider || 'test', expiresAt: result.expiresAt, requestId }));
+        renderAccount(null);
+        return;
+      }
+      localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({ mobileNumber: result.mobileNumber || mobileNumber, testOtp: result.testOtp || '', provider: result.provider || 'test', expiresAt: result.expiresAt }));
       renderAccount(null);
     } catch (error) {
       alert(error.message || 'Could not send OTP.');
@@ -1402,7 +1367,7 @@ document.addEventListener('submit', async (event) => {
     if (submitButton) submitButton.disabled = true;
     try {
       const pending = getPendingCashbackOtp();
-      const msg91RequestId = pending?.provider === 'msg91' ? await verifyMsg91Otp(formData.get('otp'), pending.requestId) : '';
+      const msg91RequestId = pending?.provider === 'msg91' ? (pending.requestId || msg91RequestId) : '';
       const response = await fetch(apiUrl('/customer/verify-otp'), { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ mobileNumber: normalizeMobileNumber(formData.get('mobile_number')), otp: formData.get('otp'), msg91RequestId }) });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Could not verify OTP.');
@@ -1457,13 +1422,13 @@ document.addEventListener('submit', async (event) => {
         }
         throw new Error(result.error || 'Could not send OTP.');
       }
-      const msg91RequestId = result.provider === 'msg91' ? await sendMsg91Otp(result.mobileNumber || mobileNumber) : '';
+      const requestId = result.provider === 'msg91' ? await sendMsg91Otp(result.mobileNumber || mobileNumber) : '';
       localStorage.setItem(CASHBACK_OTP_KEY, JSON.stringify({
         mobileNumber: result.mobileNumber || mobileNumber,
         testOtp: result.testOtp || '',
         provider: result.provider || 'test',
-        requestId: msg91RequestId,
         expiresAt: result.expiresAt,
+        requestId,
       }));
       renderCheckout();
     } catch (error) {
@@ -1489,7 +1454,7 @@ document.addEventListener('submit', async (event) => {
 
     try {
       const pending = getPendingCashbackOtp();
-      const msg91RequestId = pending?.provider === 'msg91' ? await verifyMsg91Otp(formData.get('otp'), pending.requestId) : '';
+      const msg91RequestId = pending?.provider === 'msg91' ? (pending.requestId || msg91RequestId) : '';
       const response = await fetch(apiUrl('/customer/verify-otp'), {
         method: 'POST',
         headers: {

@@ -23,6 +23,14 @@ services:
         sync: false
       - key: MSG91_WHATSAPP_TEMPLATE_NAMESPACE
         sync: false
+      - key: OTP_PROVIDER
+        sync: false
+      - key: MSG91_AUTHKEY
+        sync: false
+      - key: MSG91_WIDGET_ID
+        sync: false
+      - key: MSG91_TOKEN_AUTH
+        sync: false
 
 databases:
   - name: manishas-kitchen-db
