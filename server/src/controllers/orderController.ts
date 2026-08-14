@@ -301,10 +301,6 @@ export const createOrder = async (req: Request, res: Response) => {
     sendAdminOrderWhatsApp(order.order).catch((error) => {
       console.error('WhatsApp admin notification error:', error);
     });
-    sendCustomerOrderConfirmationMsg91(order.order).catch((error) => {
-      console.error('MSG91 customer order confirmation error:', error);
-    });
-
     res.status(201).json({
       ...order.order,
       customerReferralCode: order.customerReferralCode,
@@ -343,6 +339,7 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 
     const now = new Date();
     const requestedAction = String(action || status || '').toUpperCase();
+    const isFirstConfirmation = (requestedAction === 'CONFIRM' || requestedAction === 'CONFIRMED') && !existingOrder.confirmedAt;
     const data: any = {};
 
     if (requestedAction === 'CONFIRM' || requestedAction === 'CONFIRMED') {
@@ -377,6 +374,13 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       data,
       include: orderInclude
     });
+
+    if (isFirstConfirmation) {
+      sendCustomerOrderConfirmationMsg91(order).catch((error) => {
+        console.error('MSG91 customer order confirmation error:', error);
+      });
+    }
+
     res.json(order);
   } catch (error) {
     res.status(500).json({ error: 'Failed to update order status' });

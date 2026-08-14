@@ -98,8 +98,15 @@ const buildTextPayload = (recipient: string, order: OrderForWhatsApp) => ({
 });
 
 const orderItemSummary = (order: OrderForWhatsApp) => (order.orderItems || [])
-  .map((item) => `${item.foodItem?.name || 'Food item'} x ${item.quantity}`)
+  .map((item) => `${item.foodItem?.name || 'Food item'} x ${item.quantity} (${money(item.subtotal)})`)
   .join(', ') || 'Your selected items';
+
+const orderCostSummary = (order: OrderForWhatsApp) => [
+  `Subtotal: ${money(order.totalAmount)}`,
+  `GST: ${money(order.gstAmount)}`,
+  `Discount: ${money(order.discountAmount)}`,
+  `Total: ${money(order.grandTotal)}`,
+].join(' | ');
 
 const msg91CustomerConfirmationPayload = (senderNumber: string, recipient: string, order: OrderForWhatsApp) => {
   const templateName = process.env.MSG91_WHATSAPP_ORDER_TEMPLATE || 'order_confirmation';
@@ -117,7 +124,7 @@ const msg91CustomerConfirmationPayload = (senderNumber: string, recipient: strin
         body_2: { type: 'text', value: order.orderNumber },
         body_3: { type: 'text', value: orderItemSummary(order) },
         body_4: { type: 'text', value: String(order.orderType || 'ORDER').replace(/_/g, ' ') },
-        body_5: { type: 'text', value: money(order.grandTotal) },
+        body_5: { type: 'text', value: orderCostSummary(order) },
       },
     }],
   };
