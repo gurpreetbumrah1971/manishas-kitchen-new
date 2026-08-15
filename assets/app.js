@@ -933,10 +933,18 @@ function initAboutParallax() {
   let framePending = false;
   const update = () => {
     const viewportMiddle = window.innerHeight / 2;
-    cards.forEach((card) => {
+    const stickyTop = window.innerWidth <= 820 ? 76 : 82;
+    cards.forEach((card, index) => {
       const rect = card.getBoundingClientRect();
       const distance = Math.max(-1, Math.min(1, (rect.top + rect.height / 2 - viewportMiddle) / window.innerHeight));
       card.style.setProperty('--parallax-shift', `${distance * -11}%`);
+      const entering = index === 0 ? 1 : Math.max(0, Math.min(1, (window.innerHeight * 0.96 - rect.top) / (window.innerHeight * 0.62)));
+      const nextCard = cards[index + 1];
+      const nextTop = nextCard ? nextCard.getBoundingClientRect().top : window.innerHeight * 2;
+      const exiting = nextCard ? Math.max(0, Math.min(1, (window.innerHeight * 0.7 - nextTop) / (window.innerHeight * 0.7 - stickyTop))) : 0;
+      card.style.setProperty('--gallery-opacity', String(Math.max(0.18, entering * (1 - exiting * 0.7))));
+      card.style.setProperty('--gallery-scale', String(0.93 + entering * 0.07 - exiting * 0.025));
+      card.style.setProperty('--gallery-lift', `${(1 - entering) * 34 - exiting * 8}px`);
     });
     framePending = false;
   };

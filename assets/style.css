@@ -2304,6 +2304,8 @@ th {
     padding: 2rem 0 4rem;
 }
 
+.about-page .promo-banner { display: none; }
+
 .about-hero {
     padding: clamp(2.5rem, 7vw, 5rem);
     color: #fff;
@@ -2344,11 +2346,16 @@ th {
 .restaurant-slider-dots button.active { width: 24px; background: #ffd581; }
 .restaurant-slider--legacy { display: none; }
 
-.restaurant-parallax-gallery { display: grid; gap: 1rem; margin: 4rem 0; }
+.restaurant-parallax-gallery { display: grid; gap: 0; margin: 4rem 0; }
 .parallax-gallery-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; padding: 0 0.5rem; }
 .parallax-gallery-heading > p:last-child { max-width: 260px; margin: 0; color: #6b6b6b; text-align: right; line-height: 1.45; }
-.restaurant-parallax-card { position: relative; min-height: min(70vw, 620px); margin: 0; overflow: hidden; border-radius: 20px; background: #281113; box-shadow: 0 18px 42px rgba(20, 20, 20, 0.2); }
+.restaurant-parallax-card { position: sticky; top: 82px; min-height: min(70vw, 620px); margin: 1.2rem 0 17vh; overflow: hidden; border-radius: 20px; background: #281113; box-shadow: 0 18px 42px rgba(20, 20, 20, 0.2); opacity: var(--gallery-opacity, 1); transform: translate3d(0, var(--gallery-lift, 0), 0) scale(var(--gallery-scale, 1)); transform-origin: center top; transition: opacity 180ms linear, transform 220ms ease-out; will-change: opacity, transform; }
 .restaurant-parallax-card--offset { width: 82%; margin-left: auto; }
+.restaurant-parallax-card:nth-of-type(1) { z-index: 1; }
+.restaurant-parallax-card:nth-of-type(2) { z-index: 2; }
+.restaurant-parallax-card:nth-of-type(3) { z-index: 3; }
+.restaurant-parallax-card:nth-of-type(4) { z-index: 4; }
+.restaurant-parallax-card:nth-of-type(5) { z-index: 5; }
 .restaurant-parallax-card::after { position: absolute; inset: 0; content: ""; background: linear-gradient(180deg, transparent 46%, rgba(12, 4, 4, 0.76) 100%); pointer-events: none; }
 .restaurant-parallax-card img { position: absolute; top: -12%; left: 0; width: 100%; height: 124%; object-fit: cover; transform: scale(1.04) translate3d(0, var(--parallax-shift, 0), 0); will-change: transform; }
 .restaurant-parallax-card figcaption { position: absolute; z-index: 1; right: 1.25rem; bottom: 1.2rem; left: 1.25rem; display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; color: #fff; }
@@ -2901,10 +2908,10 @@ th {
     .about-main { width: min(100% - 1.25rem, 960px); padding-top: 1rem; }
     .about-section { grid-template-columns: 1fr; margin: 2.5rem 0; gap: 1rem; }
     .restaurant-slide { height: 110vw; max-height: 560px; }
-    .restaurant-parallax-gallery { gap: 0.85rem; margin: 2.5rem 0; }
+    .restaurant-parallax-gallery { margin: 2.5rem 0; }
     .parallax-gallery-heading { display: block; padding: 0 0.2rem 0.25rem; }
     .parallax-gallery-heading > p:last-child { max-width: 220px; margin-top: 0.4rem; text-align: left; }
-    .restaurant-parallax-card { min-height: 112vw; max-height: 590px; border-radius: 16px; }
+    .restaurant-parallax-card { top: 76px; min-height: 112vw; max-height: 590px; margin-top: 0.85rem; margin-bottom: 14vh; border-radius: 16px; }
     .restaurant-parallax-card--offset { width: 91%; }
 
     .order-app .site-header {
