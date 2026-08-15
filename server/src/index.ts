@@ -5,7 +5,10 @@ import fs from 'fs';
 import path from 'path';
 import apiRoutes from './routes/api';
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Load .env from server folder (works for both ts-node and built dist)
+const envPath = path.resolve(__dirname, '..', '.env');
+dotenv.config({ path: envPath });
+console.log('Loaded env from:', envPath);
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -63,11 +66,15 @@ app.get('/checkout', (req, res) => {
   res.redirect(302, '/checkout.html');
 });
 
+app.get('/about', (req, res) => {
+  res.redirect(302, '/about.html');
+});
+
 app.get(['/', '/index.html'], (req, res) => {
   sendPublicPage(res, 'index');
 });
 
-app.get(['/menu.html', '/checkout.html', '/account.html'], (req, res) => {
+app.get(['/menu.html', '/checkout.html', '/account.html', '/about.html'], (req, res) => {
   sendPublicPage(res, path.basename(req.path, '.html'));
 });
 

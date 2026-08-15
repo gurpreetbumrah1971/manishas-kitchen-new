@@ -106,8 +106,11 @@ export const createOrder = async (req: Request, res: Response) => {
     const requestedIds = items
       .map((item: any) => Number(item.foodItemId))
       .filter((id: number) => Number.isInteger(id) && id > 0);
+    const baseMenuItemName = (name: unknown) => String(name || '')
+      .replace(/\s*\+\s*(?:Extra )?Cheese\s*$/i, '')
+      .trim();
     const requestedNames = items
-      .map((item: any) => String(item.name || '').trim())
+      .map((item: any) => baseMenuItemName(item.name))
       .filter(Boolean);
     if (!requestedIds.length && !requestedNames.length) {
       return res.status(400).json({ error: 'Valid order items are required' });
@@ -125,7 +128,7 @@ export const createOrder = async (req: Request, res: Response) => {
     const foodItemsByName = new Map(foodItems.map((item) => [item.name.toLowerCase(), item]));
     const orderItems = items.map((item: any) => {
       const foodItemId = Number(item.foodItemId);
-      const name = String(item.name || '').trim().toLowerCase();
+      const name = baseMenuItemName(item.name).toLowerCase();
       const foodItem = foodItemsByName.get(name) || foodItemsById.get(foodItemId);
       const quantity = Math.max(1, Number(item.quantity) || 1);
       const unitPrice = Number(item.unitPrice);
@@ -328,6 +331,9 @@ export const getOrders = async (req: Request, res: Response) => {
 };
 
 export const updateOrderStatus = async (req: Request, res: Response) => {
+  const fs = require('fs');
+  fs.appendFileSync('controller-debug.log', 'SYNC: updateOrderStatus called\n');
+  console.log('SYNC: updateOrderStatus called');
   try {
     const { id } = req.params;
     const { status, action, preparationMinutes } = req.body;
@@ -375,8 +381,12 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       include: orderInclude
     });
 
-    if (isFirstConfirmation) {
-      sendCustomerOrderConfirmationMsg91(order).catch((error) => {
+if (isFirstConfirmation) {
+      console.log('SYNC LOG: isFirstConfirmation=true, orderNumber=', order.orderNumber);
+      console.error('>>> CONTROLLER: Calling sendCustomerOrderConfirmationMsg91 for order', order.orderNumber);
+      sendCustomerOrderConfirmationMsg91(order).then(result => {
+        console.error('>>> CONTROLLER: MSG91 result:', result);
+      }).catch((error) => {
         console.error('MSG91 customer order confirmation error:', error);
       });
     }

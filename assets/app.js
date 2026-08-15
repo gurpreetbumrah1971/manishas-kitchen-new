@@ -118,35 +118,60 @@ const ADDITIONAL_STATIC_CATEGORIES = [
   { name: 'Kebabs', slug: 'kebabs' },
 ];
 const ADDITIONAL_STATIC_MENU_ITEMS = [
-  { id: 63, name: 'Mulli Paratha', description: 'Wheat flatbread stuffed with seasoned radish.', price: 65, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/muli-paratha.png' },
-  { id: 64, name: 'Chicken Kheema Paratha', description: 'Wheat flatbread stuffed with spiced chicken kheema.', price: 100, categoryName: 'Parathas', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
-  { id: 65, name: 'Corn Cheese Paratha', description: 'Wheat flatbread stuffed with sweet corn and cheese.', price: 100, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/corn-cheese-paratha.png' },
-  { id: 66, name: 'Loki Paratha', description: 'Wheat flatbread stuffed with seasoned vegetables.', price: 65, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/loki-paratha.png' },
-  { id: 67, name: 'Chicken Galouti Kebab', description: 'Tender minced chicken kebab with aromatic spices.', price: 195, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
-  { id: 68, name: 'Chicken Shami Kebab', description: 'Spiced chicken and lentil kebab cooked until tender.', price: 195, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
+  { id: 69, name: 'Chicken Frankie', description: 'Soft roll filled with spiced chicken and onions.', price: 139, categoryName: 'Frankies', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
+  { id: 70, name: 'Moong Dal Pakoda', description: 'Crisp moong dal fritters with house masala.', price: 69, categoryName: 'Pakodas', isVeg: true, image: '/assets/food/photo-updates/moong-dal-pakoda.png' },
+  { id: 71, name: 'Chana Daal Pakoda', description: 'Crisp chana dal fritters with house masala.', price: 69, categoryName: 'Pakodas', isVeg: true, image: '/assets/food/photo-updates/chana-dal-pakoda.png' },
+  { id: 72, name: 'Palak Pakoda', description: 'Crisp spinach fritters with house masala.', price: 69, categoryName: 'Pakodas', isVeg: true, image: '/assets/food/photo-updates/palak-paratha.png' },
+  { id: 73, name: 'Paneer Pakoda', description: 'Crisp paneer fritters with house masala.', price: 109, categoryName: 'Pakodas', isVeg: true, image: '/assets/food/optimized/generated/paneer-paratha-realistic.jpg' },
+  { id: 74, name: 'Idli', description: 'Steamed rice cakes served with chutney.', price: 49, categoryName: 'Snacks', isVeg: true, image: '/assets/food/optimized/generated/uttapam-realistic.jpg' },
+  { id: 63, name: 'Mulli Paratha', description: 'Wheat flatbread stuffed with seasoned radish.', price: 69, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/muli-paratha.png' },
+  { id: 64, name: 'Chicken Kheema Paratha', description: 'Wheat flatbread stuffed with spiced chicken kheema.', price: 109, categoryName: 'Parathas', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
+  { id: 65, name: 'Corn Cheese Paratha', description: 'Wheat flatbread stuffed with sweet corn and cheese.', price: 109, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/corn-cheese-paratha.png' },
+  { id: 66, name: 'Loki Paratha', description: 'Wheat flatbread stuffed with seasoned vegetables.', price: 69, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/loki-paratha.png' },
+  { id: 67, name: 'Chicken Galouti Kebab', description: 'Tender minced chicken kebab with aromatic spices.', price: 199, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
+  { id: 68, name: 'Chicken Shami Kebab', description: 'Spiced chicken and lentil kebab cooked until tender.', price: 199, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
 ];
 const STATIC_MENU_ITEM_OVERRIDES = new Map([
-  ['Egg Burji + 2 Pav (Single)', { name: 'Single Egg Burjee + 2 Butter Pav', price: 70, isVeg: false }],
-  ['Egg Burji + 2 Pav (Double)', { name: 'Double Egg Burjee + 4 Butter Pav', price: 120, isVeg: false }],
-  ['Egg Omelet + 2 Pav (Single)', { name: 'Single Egg Omelet + 2 Butter Pav', price: 70, isVeg: false }],
-  ['Egg Omelet + 2 Pav (Double)', { name: 'Double Omelet + 4 Butter Pav', price: 120, isVeg: false }],
-  ['Aloo Frankie', { price: 70 }],
-  ['Paneer Frankie', { price: 130 }],
-  ['Wada Pav', { price: 25 }],
-  ['Wada', { price: 20 }],
-  ['Onion Pakoda', { price: 65 }],
-  ['Aloo Paratha', { price: 65 }],
-  ['Gobi Paratha', { price: 65 }],
-  ['Methi Paratha', { price: 65 }],
-  ['Palak Paratha', { price: 65 }],
-  ['Cabbage Paratha', { price: 65 }],
-  ['Poha', { price: 45 }],
-  ['Upma', { price: 45 }],
-  ['Chole Puri', { price: 130 }],
-  ['Chole Plate', { price: 90 }],
+  ['Tea', { price: 29 }],
+  ['Hot Coffee', { price: 39 }],
+  ['Chaas', { price: 29 }],
+  ['Nimbu Pani', { price: 29 }],
+  ['Lemon Tea', { price: 39 }],
+  ['Green Tea', { price: 39 }],
+  ['Iced Tea', { price: 69 }],
+  ['Chocolate Milkshake', { price: 99 }],
+  ['Cold Coffee', { price: 79 }],
+  ['Egg Burji + 2 Pav (Single)', { name: 'Single Egg Burjee + 2 Butter Pav', price: 79, isVeg: false }],
+  ['Egg Burji + 2 Pav (Double)', { name: 'Double Egg Burjee + 4 Butter Pav', price: 139, isVeg: false }],
+  ['Egg Omelet + 2 Pav (Single)', { name: 'Single Egg Omelet + 2 Butter Pav', price: 79, isVeg: false }],
+  ['Egg Omelet + 2 Pav (Double)', { name: 'Double Omelet + 4 Butter Pav', price: 139, isVeg: false }],
+  ['Aloo Frankie', { price: 79 }],
+  ['Paneer Frankie', { price: 139 }],
+  ['Wada Pav', { price: 29 }],
+  ['Wada', { price: 29 }],
+  ['Onion Pakoda', { price: 69 }],
+  ['Aloo Paratha', { price: 79 }],
+  ['Gobi Paratha', { price: 69 }],
+  ['Paneer Paratha', { price: 109 }],
+  ['Methi Paratha', { price: 69 }],
+  ['Palak Paratha', { price: 69 }],
+  ['Cabbage Paratha', { price: 69 }],
+  ['Moong Daal Chilla', { price: 69 }],
+  ['Plain Paratha', { price: 29 }],
+  ['Poha', { price: 49 }],
+  ['Upma', { price: 49 }],
+  ['Uttapam', { price: 69 }],
+  ['Chole Puri', { remove: true }],
+  ['Chole Bhature', { remove: true }],
+  ['Chole Plate', { remove: true }],
+  ['Pav Bhaji', { remove: true }],
+  ['Pav', { remove: true }],
   ['Mix Pakoda', { remove: true }],
   ['Misal Pav', { remove: true }],
   ['Wada Usal Pav', { remove: true }],
+  ['Chikoo Milkshake', { remove: true }],
+  ['Watermelon Juice', { remove: true }],
+  ['Mango Milkshake', { remove: true }],
 ]);
 
 function getCart() {
@@ -636,6 +661,53 @@ function updateStaticMenuItemOverrides() {
   });
 }
 
+function isFrankie(name) {
+  return /Frankie$/i.test(name || '');
+}
+
+function isCheeseAddonEligible(name) {
+  return isFrankie(name) || /Paratha$/i.test(name || '') || name === 'Moong Daal Chilla';
+}
+
+function cheeseAddonHtml() {
+  return '<label class="cheese-addon"><input type="checkbox" data-cheese-addon><span>Add Cheese</span><strong>+Rs. 19.00</strong></label>';
+}
+
+function syncCheeseAddon(card, restoreSelection = false) {
+  const control = card.querySelector('[data-cart-control]');
+  const checkbox = card.querySelector('[data-cheese-addon]');
+  if (!control || !checkbox) return;
+
+  if (!control.dataset.baseCartItem) control.dataset.baseCartItem = control.dataset.cartItem || '{}';
+  const baseItem = JSON.parse(control.dataset.baseCartItem);
+  const addonId = Number(baseItem.id) + 10000;
+  if (restoreSelection) checkbox.checked = getCart().some((item) => Number(item.id) === addonId);
+
+  const item = checkbox.checked
+    ? { ...baseItem, id: addonId, name: `${baseItem.name} + Cheese`, price: Number(baseItem.price) + 19 }
+    : baseItem;
+  const encodedItem = JSON.stringify(item);
+  control.dataset.id = String(item.id);
+  control.dataset.cartItem = encodedItem;
+  control.querySelectorAll('[data-add-cart]').forEach((button) => {
+    button.dataset.item = encodedItem;
+  });
+}
+
+function addCheeseAddons() {
+  document.querySelectorAll('[data-menu-item]').forEach((card) => {
+    const name = categoryNameFromNode(card.querySelector('.menu-heading h3'));
+    if (!isCheeseAddonEligible(name)) return;
+    const body = card.querySelector('.menu-body');
+    const description = body && body.querySelector('p');
+    if (!body || !description) return;
+    if (!body.querySelector('[data-cheese-addon]')) {
+      description.insertAdjacentHTML('afterend', cheeseAddonHtml());
+    }
+    syncCheeseAddon(card, true);
+  });
+}
+
 function discountRateForSubtotal(subtotal, tiers) {
   return Object.entries(tiers || {})
     .map(([threshold, rate]) => [Number(threshold), Number(rate)])
@@ -819,6 +891,66 @@ function normalizeStaticMenuCategories() {
   });
 }
 
+function moveMenuItemsToCategory(itemNames, sourceCategory, targetCategory) {
+  const names = new Set(itemNames);
+  const shouldMove = (card) => names.has(categoryNameFromNode(card.querySelector('.menu-heading h3')));
+
+  document.querySelectorAll('[data-menu-tabs]').forEach((tabGroup) => {
+    const tabs = [...tabGroup.querySelectorAll('[data-menu-tab]')];
+    const sourceTab = tabs.find((tab) => categoryNameFromNode(tab) === sourceCategory);
+    const targetTab = tabs.find((tab) => categoryNameFromNode(tab) === targetCategory);
+    if (!sourceTab || !targetTab) return;
+
+    const sourcePanel = [...tabGroup.querySelectorAll('[data-menu-panel]')]
+      .find((panel) => panel.dataset.menuPanel === sourceTab.dataset.menuTab);
+    const targetPanel = [...tabGroup.querySelectorAll('[data-menu-panel]')]
+      .find((panel) => panel.dataset.menuPanel === targetTab.dataset.menuTab);
+    const targetGrid = targetPanel && targetPanel.querySelector('.menu-grid');
+    if (!sourcePanel || !targetGrid) return;
+
+    [...sourcePanel.querySelectorAll('[data-menu-item]')]
+      .filter(shouldMove)
+      .forEach((card) => targetGrid.appendChild(card));
+  });
+
+  document.querySelectorAll('.menu-accordion-layout').forEach((layout) => {
+    const sections = [...layout.querySelectorAll('.menu-accordion')];
+    const source = sections.find((section) => categoryNameFromNode(section.querySelector('summary')) === sourceCategory);
+    const target = sections.find((section) => categoryNameFromNode(section.querySelector('summary')) === targetCategory);
+    const targetGrid = target && target.querySelector('.menu-grid');
+    if (!source || !targetGrid) return;
+
+    [...source.querySelectorAll('[data-menu-item]')]
+      .filter(shouldMove)
+      .forEach((card) => targetGrid.appendChild(card));
+  });
+}
+
+function initAboutParallax() {
+  const cards = [...document.querySelectorAll('[data-about-parallax]')];
+  if (!cards.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  let framePending = false;
+  const update = () => {
+    const viewportMiddle = window.innerHeight / 2;
+    cards.forEach((card) => {
+      const rect = card.getBoundingClientRect();
+      const distance = Math.max(-1, Math.min(1, (rect.top + rect.height / 2 - viewportMiddle) / window.innerHeight));
+      card.style.setProperty('--parallax-shift', `${distance * -11}%`);
+    });
+    framePending = false;
+  };
+  const requestUpdate = () => {
+    if (framePending) return;
+    framePending = true;
+    window.requestAnimationFrame(update);
+  };
+
+  window.addEventListener('scroll', requestUpdate, { passive: true });
+  window.addEventListener('resize', requestUpdate);
+  requestUpdate();
+}
+
 function menuCardHtml(item) {
   const cartItem = JSON.stringify({
     id: item.id,
@@ -838,6 +970,7 @@ function menuCardHtml(item) {
           <strong>${money(item.price)}</strong>
         </div>
         <p>${escapeHtml(item.description)}</p>
+        ${isCheeseAddonEligible(item.name) ? cheeseAddonHtml() : ''}
         <div class="cart-control" data-cart-control data-id="${item.id}" data-cart-item='${escapeHtml(cartItem)}'>
           <button class="btn primary full" type="button" data-add-cart data-item='${escapeHtml(cartItem)}'>Add</button>
         </div>
@@ -929,6 +1062,7 @@ function renderMenuSearchResults(query, vegMode) {
   count.textContent = matches.length === 1 ? '1 item found' : `${matches.length} items found`;
   grid.innerHTML = matches.map(menuCardHtml).join('');
   empty.hidden = matches.length > 0;
+  addCheeseAddons();
   renderCartControls();
 }
 
@@ -1324,6 +1458,47 @@ document.addEventListener('click', (event) => {
     });
     applyMenuFilters();
   }
+});
+
+document.addEventListener('change', (event) => {
+  const checkbox = event.target.closest('[data-cheese-addon]');
+  if (!checkbox) return;
+  const card = checkbox.closest('[data-menu-item]');
+  const control = card && card.querySelector('[data-cart-control]');
+  if (!card || !control) return;
+
+  const baseItem = JSON.parse(control.dataset.baseCartItem || control.dataset.cartItem || '{}');
+  const baseId = Number(baseItem.id);
+  const addonId = baseId + 10000;
+  const cart = getCart();
+  const baseIndex = cart.findIndex((item) => Number(item.id) === baseId);
+  const addonIndex = cart.findIndex((item) => Number(item.id) === addonId);
+
+  if (checkbox.checked && baseIndex !== -1) {
+    const upgradedItem = {
+      ...cart[baseIndex],
+      id: addonId,
+      name: `${baseItem.name} + Cheese`,
+      price: Number(baseItem.price) + 19,
+    };
+    if (addonIndex !== -1) {
+      cart[addonIndex].quantity += upgradedItem.quantity;
+      cart.splice(baseIndex, 1);
+    } else {
+      cart[baseIndex] = upgradedItem;
+    }
+    saveCart(cart);
+  } else if (!checkbox.checked && addonIndex !== -1) {
+    cart[addonIndex] = {
+      ...cart[addonIndex],
+      id: baseId,
+      name: baseItem.name,
+      price: Number(baseItem.price),
+    };
+    saveCart(cart);
+  }
+  syncCheeseAddon(card);
+  renderCartControls();
 });
 
 document.addEventListener('change', (event) => {
@@ -2168,7 +2343,10 @@ document.addEventListener('input', (event) => {
 
 hydrateStaticMenuAdditions();
 normalizeStaticMenuCategories();
+moveMenuItemsToCategory(['Wada', 'Wada Pav'], 'Pakodas', 'Snacks');
 updateStaticMenuItemOverrides();
+addCheeseAddons();
+initAboutParallax();
 ensureMenuSearchResults();
 renderCartControls();
 renderCheckout();

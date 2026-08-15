@@ -2298,6 +2298,68 @@ th {
     padding-bottom: 96px;
 }
 
+.about-main {
+    width: min(960px, 100% - 2rem);
+    margin: 0 auto;
+    padding: 2rem 0 4rem;
+}
+
+.about-hero {
+    padding: clamp(2.5rem, 7vw, 5rem);
+    color: #fff;
+    text-align: center;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #3e0608, #a31320);
+    box-shadow: 0 20px 45px rgba(90, 10, 16, 0.24);
+}
+
+.about-kicker {
+    margin: 0 0 0.5rem;
+    color: #c52031;
+    font-size: 0.78rem;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.about-hero .about-kicker { color: #ffd581; }
+.about-hero h1 { margin: 0; color: #fff; font-family: "Bebas Neue", sans-serif; font-size: clamp(3rem, 9vw, 5.5rem); letter-spacing: 0.03em; }
+.about-hero > p:not(.about-kicker) { max-width: 560px; margin: 0.75rem auto 1.6rem; color: #fff6ef; line-height: 1.6; }
+.about-hero .btn { background: #fff; color: #8d1019; }
+
+.about-section { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(1.5rem, 5vw, 4rem); align-items: start; margin: 4rem 0; }
+.about-section h2 { margin: 0; color: #191919; font-family: "Bebas Neue", sans-serif; font-size: clamp(2rem, 5vw, 3.2rem); letter-spacing: 0.02em; line-height: 1; }
+.about-story > p { margin: 0; color: #535353; font-size: 1rem; line-height: 1.8; }
+
+.restaurant-slider { overflow: hidden; border-radius: 20px; background: #151515; box-shadow: 0 18px 42px rgba(20, 20, 20, 0.2); }
+.restaurant-slider-viewport { overflow: hidden; }
+.restaurant-slider-track { display: flex; transition: transform 420ms ease; }
+.restaurant-slide { flex: 0 0 100%; height: min(66vw, 610px); margin: 0; }
+.restaurant-slide img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.restaurant-slider-controls { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; padding: 0.8rem; background: #1b1b1b; }
+.restaurant-slider-controls > button { width: 38px; height: 38px; border: 1px solid #515151; border-radius: 50%; color: #fff; font-size: 1.3rem; background: transparent; cursor: pointer; }
+.restaurant-slider-controls > button:last-child { justify-self: end; }
+.restaurant-slider-dots { display: flex; justify-content: center; gap: 0.45rem; }
+.restaurant-slider-dots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px; background: #6b6b6b; cursor: pointer; }
+.restaurant-slider-dots button.active { width: 24px; background: #ffd581; }
+.restaurant-slider--legacy { display: none; }
+
+.restaurant-parallax-gallery { display: grid; gap: 1rem; margin: 4rem 0; }
+.parallax-gallery-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; padding: 0 0.5rem; }
+.parallax-gallery-heading > p:last-child { max-width: 260px; margin: 0; color: #6b6b6b; text-align: right; line-height: 1.45; }
+.restaurant-parallax-card { position: relative; min-height: min(70vw, 620px); margin: 0; overflow: hidden; border-radius: 20px; background: #281113; box-shadow: 0 18px 42px rgba(20, 20, 20, 0.2); }
+.restaurant-parallax-card--offset { width: 82%; margin-left: auto; }
+.restaurant-parallax-card::after { position: absolute; inset: 0; content: ""; background: linear-gradient(180deg, transparent 46%, rgba(12, 4, 4, 0.76) 100%); pointer-events: none; }
+.restaurant-parallax-card img { position: absolute; top: -12%; left: 0; width: 100%; height: 124%; object-fit: cover; transform: scale(1.04) translate3d(0, var(--parallax-shift, 0), 0); will-change: transform; }
+.restaurant-parallax-card figcaption { position: absolute; z-index: 1; right: 1.25rem; bottom: 1.2rem; left: 1.25rem; display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; color: #fff; }
+.restaurant-parallax-card figcaption span { color: #ffd581; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.14em; }
+.restaurant-parallax-card figcaption strong { font-family: "Bebas Neue", sans-serif; font-size: clamp(1.75rem, 5vw, 2.7rem); font-weight: 400; letter-spacing: 0.025em; text-align: right; }
+
+.about-visit { padding: clamp(1.5rem, 5vw, 3rem); border-radius: 18px; background: #fff; box-shadow: 0 10px 32px rgba(20, 20, 20, 0.08); }
+.about-address { display: grid; gap: 0.4rem; color: #555; line-height: 1.55; }
+.about-address strong { color: #181818; font-size: 1.1rem; }
+.about-address .btn { width: fit-content; margin-top: 1rem; }
+
 .order-app main {
     min-height: calc(100vh - 68px);
 }
@@ -2603,6 +2665,25 @@ th {
     margin-top: 0.25rem;
 }
 
+.cheese-addon {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0.1rem 0 0;
+    color: #4b4b4b;
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.cheese-addon input {
+    accent-color: #c52031;
+}
+
+.cheese-addon strong {
+    color: #c52031;
+}
+
 .menu-page .btn.primary {
     min-height: 34px;
     border-color: #c52031;
@@ -2816,6 +2897,15 @@ th {
     .order-app {
         padding-bottom: 104px;
     }
+
+    .about-main { width: min(100% - 1.25rem, 960px); padding-top: 1rem; }
+    .about-section { grid-template-columns: 1fr; margin: 2.5rem 0; gap: 1rem; }
+    .restaurant-slide { height: 110vw; max-height: 560px; }
+    .restaurant-parallax-gallery { gap: 0.85rem; margin: 2.5rem 0; }
+    .parallax-gallery-heading { display: block; padding: 0 0.2rem 0.25rem; }
+    .parallax-gallery-heading > p:last-child { max-width: 220px; margin-top: 0.4rem; text-align: left; }
+    .restaurant-parallax-card { min-height: 112vw; max-height: 590px; border-radius: 16px; }
+    .restaurant-parallax-card--offset { width: 91%; }
 
     .order-app .site-header {
         padding: 0.75rem 1rem;
