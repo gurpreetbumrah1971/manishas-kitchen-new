@@ -2353,6 +2353,21 @@ th {
     padding: 0 0 2rem;
 }
 
+.menu-offer-banner {
+    width: min(760px, 100%);
+    margin: 0 auto;
+    background: #4d0708;
+    border-right: 1px solid #e8e8e8;
+    border-left: 1px solid #e8e8e8;
+    box-shadow: 0 8px 18px rgba(20, 20, 20, 0.06);
+}
+
+.menu-offer-banner img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
 .menu-app-shell {
     min-height: calc(100vh - 64px);
     background: #fff;
@@ -2816,6 +2831,11 @@ th {
 
     .order-menu-section {
         width: 100%;
+    }
+
+    .menu-offer-banner {
+        border: 0;
+        box-shadow: none;
     }
 
     .menu-app-shell {
