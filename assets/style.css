@@ -2362,6 +2362,15 @@ th {
 .restaurant-parallax-card figcaption span { color: #ffd581; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.14em; }
 .restaurant-parallax-card figcaption strong { font-family: "Bebas Neue", sans-serif; font-size: clamp(1.75rem, 5vw, 2.7rem); font-weight: 400; letter-spacing: 0.025em; text-align: right; }
 
+.about-celebrate { margin: 4rem 0; padding: clamp(2rem, 6vw, 3.5rem); text-align: center; color: #fff; border-radius: 20px; background: linear-gradient(135deg, #3e0608, #a31320); box-shadow: 0 20px 45px rgba(90, 10, 16, 0.24); }
+.about-celebrate .about-kicker { color: #ffd581; }
+.about-celebrate h2 { margin: 0; color: #fff; font-family: "Bebas Neue", sans-serif; font-size: clamp(2.1rem, 5.5vw, 3.4rem); letter-spacing: 0.02em; line-height: 1.05; }
+.about-celebrate > p { max-width: 560px; margin: 0.9rem auto 1.8rem; color: #fff6ef; line-height: 1.6; }
+.about-celebrate-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.6rem; }
+.about-celebrate-cta span { color: #fff6ef; font-weight: 700; }
+.about-celebrate-cta .btn { background: #fff; color: #8d1019; }
+.about-celebrate-cta .btn:hover { background: #ffd581; }
+
 .about-visit { padding: clamp(1.5rem, 5vw, 3rem); border-radius: 18px; background: #fff; box-shadow: 0 10px 32px rgba(20, 20, 20, 0.08); }
 .about-address { display: grid; gap: 0.4rem; color: #555; line-height: 1.55; }
 .about-address strong { color: #181818; font-size: 1.1rem; }
@@ -2907,6 +2916,7 @@ th {
 
     .about-main { width: min(100% - 1.25rem, 960px); padding-top: 1rem; }
     .about-section { grid-template-columns: 1fr; margin: 2.5rem 0; gap: 1rem; }
+    .about-celebrate { margin: 2.5rem 0; }
     .restaurant-slide { height: 110vw; max-height: 560px; }
     .restaurant-parallax-gallery { margin: 2.5rem 0; }
     .parallax-gallery-heading { display: block; padding: 0 0.2rem 0.25rem; }
