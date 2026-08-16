@@ -66,7 +66,7 @@ const menuItems: MenuItemSeed[] = [
   { name: 'Moong Dal Pakoda', description: 'Crisp moong dal fritters with house masala.', price: 69, categoryName: 'Pakodas', isVeg: true, image: photoUpdateUrl('moong-dal-pakoda') },
   { name: 'Chana Daal Pakoda', description: 'Crisp chana dal fritters with house masala.', price: 69, categoryName: 'Pakodas', isVeg: true, image: photoUpdateUrl('chana-dal-pakoda') },
   { name: 'Palak Pakoda', description: 'Crisp spinach fritters with house masala.', price: 69, categoryName: 'Pakodas', isVeg: true, image: photoUpdateUrl('palak-paratha') },
-  { name: 'Aloo Paratha', description: 'Wheat flatbread stuffed with spiced potatoes.', price: 79, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Aloo Paratha') },
+  { name: 'Aloo Paratha', description: 'Wheat flatbread stuffed with spiced potatoes.', price: 69, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Aloo Paratha') },
   { name: 'Gobi Paratha', description: 'Wheat flatbread stuffed with spiced cauliflower.', price: 69, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('gobi-paratha') },
   { name: 'Paneer Paratha', description: 'Wheat flatbread stuffed with spiced cottage cheese.', price: 109, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Paneer Paratha') },
   { name: 'Methi Paratha', description: 'Wheat flatbread with fresh fenugreek leaves.', price: 69, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('methi-paratha') },

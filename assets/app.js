@@ -150,7 +150,7 @@ const STATIC_MENU_ITEM_OVERRIDES = new Map([
   ['Wada Pav', { price: 29 }],
   ['Wada', { price: 29 }],
   ['Onion Pakoda', { price: 69 }],
-  ['Aloo Paratha', { price: 79 }],
+  ['Aloo Paratha', { price: 69 }],
   ['Gobi Paratha', { price: 69 }],
   ['Paneer Paratha', { price: 109 }],
   ['Methi Paratha', { price: 69 }],
