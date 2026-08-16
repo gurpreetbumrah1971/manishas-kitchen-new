@@ -2365,3 +2365,14 @@ syncPaymentBox();
 applyMenuFilters();
 restoreStaticOrderSession();
 showIndependenceBannerPopup();
+
+// Browsers restore a page from the back/forward cache without re-running scripts,
+// so a stale cart badge/count can linger after the cart changed on another page
+// (e.g. an order was just placed) and the user navigates back with the Back button.
+window.addEventListener('pageshow', (event) => {
+  if (!event.persisted) return;
+  renderCartControls();
+  renderCheckout();
+  updateCartCount();
+  restoreStaticOrderSession();
+});
