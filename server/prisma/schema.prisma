@@ -59,6 +59,9 @@ model Order {
   deliveredAt              DateTime?
   customerSessionToken     String?
   customerSessionExpiresAt DateTime?
+  whatsappMessageId        String?
+  whatsappStatus           String?
+  whatsappStatusAt         DateTime?
   customer                 Customer?     @relation(fields: [customerId], references: [id])
   referrer                 Customer?     @relation("ReferredBy", fields: [referrerId], references: [id])
   referralCode             String?

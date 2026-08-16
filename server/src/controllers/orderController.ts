@@ -382,10 +382,19 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     });
 
 if (isFirstConfirmation) {
-      console.log('SYNC LOG: isFirstConfirmation=true, orderNumber=', order.orderNumber);
-      console.error('>>> CONTROLLER: Calling sendCustomerOrderConfirmationMsg91 for order', order.orderNumber);
-      sendCustomerOrderConfirmationMsg91(order).then(result => {
-        console.error('>>> CONTROLLER: MSG91 result:', result);
+      sendCustomerOrderConfirmationMsg91(order).then(async (result) => {
+        if (result.sent && result.requestId) {
+          await prisma.order.update({
+            where: { id: orderId },
+            data: {
+              whatsappMessageId: result.requestId,
+              whatsappStatus: 'sent',
+              whatsappStatusAt: new Date(),
+            },
+          }).catch((error) => {
+            console.error('Failed to store MSG91 requestId on order:', error);
+          });
+        }
       }).catch((error) => {
         console.error('MSG91 customer order confirmation error:', error);
       });

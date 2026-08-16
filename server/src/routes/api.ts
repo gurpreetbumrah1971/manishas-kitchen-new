@@ -6,6 +6,7 @@ import { createFoodItem, deleteFoodItem, getCategories, getMenu, getMenuImage, u
 import { createOrder, getOrderStatus, getOrders, updateOrderStatus } from '../controllers/orderController';
 import { login } from '../controllers/adminController';
 import { deleteCustomerAddress, getCustomerAccount, getCustomerWallet, requestCustomerOtp, saveCustomerAddress, updateCustomerProfile, validateReferral, verifyCustomerOtp } from '../controllers/customerController';
+import { handleMsg91WhatsAppWebhook } from '../controllers/webhookController';
 import { authenticateAdmin } from '../middleware/auth';
 
 const router = Router();
@@ -91,5 +92,8 @@ router.delete('/customer/addresses/:id', deleteCustomerAddress);
 
 // Admin Auth
 router.post('/admin/login', login);
+
+// Webhooks
+router.post('/webhooks/msg91-whatsapp', handleMsg91WhatsAppWebhook);
 
 export default router;

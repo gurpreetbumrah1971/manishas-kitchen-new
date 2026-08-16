@@ -141,6 +141,18 @@ const msg91CustomerConfirmationPayload = (senderNumber: string, recipient: strin
   };
 };
 
+const extractMsg91RequestId = (responseBody: any): string | null => {
+  return (
+    responseBody?.requestId ||
+    responseBody?.request_id ||
+    responseBody?.data?.requestId ||
+    responseBody?.data?.request_id ||
+    responseBody?.data?.[0]?.requestId ||
+    responseBody?.data?.[0]?.request_id ||
+    null
+  );
+};
+
 export const sendCustomerOrderConfirmationMsg91 = async (order: OrderForWhatsApp) => {
   const authKey = process.env.MSG91_WHATSAPP_AUTHKEY || process.env.MSG91_AUTHKEY;
   const senderNumber = normalizePhoneNumber(process.env.MSG91_WHATSAPP_SENDER_NUMBER);
@@ -167,7 +179,7 @@ export const sendCustomerOrderConfirmationMsg91 = async (order: OrderForWhatsApp
     return { sent: false, skipped: false, error: responseBody };
   }
 
-  return { sent: true, skipped: false, response: responseBody };
+  return { sent: true, skipped: false, response: responseBody, requestId: extractMsg91RequestId(responseBody) };
 };
 
 export const sendAdminOrderWhatsApp = async (order: OrderForWhatsApp) => {
