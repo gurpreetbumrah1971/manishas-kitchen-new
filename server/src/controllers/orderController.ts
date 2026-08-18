@@ -372,9 +372,6 @@ export const deleteOrder = async (req: Request, res: Response) => {
 };
 
 export const updateOrderStatus = async (req: Request, res: Response) => {
-  const fs = require('fs');
-  fs.appendFileSync('controller-debug.log', 'SYNC: updateOrderStatus called\n');
-  console.log('SYNC: updateOrderStatus called');
   try {
     const { id } = req.params;
     const { status, action, preparationMinutes } = req.body;

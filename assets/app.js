@@ -303,8 +303,11 @@ function upiProviderButtons() {
 }
 
 function parseMoney(value) {
-  const amount = String(value || '').replace(/[^\d.]/g, '');
-  return Number(amount || 0);
+  // Values are formatted like "Rs. 3.45" - stripping non-digit/non-dot chars
+  // alone would leave the dot from "Rs." too (".3.45"), which Number() can't
+  // parse. Match the numeric run itself instead.
+  const match = String(value || '').match(/\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : 0;
 }
 
 function getActiveOrderSession() {
@@ -1332,7 +1335,12 @@ function renderCartControls() {
 function renderCheckout() {
   const cart = getCart();
   const target = document.querySelector('[data-checkout-items]');
-  const activeIds = target && target.dataset.activeItemIds ? JSON.parse(target.dataset.activeItemIds) : null;
+  // Union with ADDITIONAL_STATIC_MENU_ITEMS so items injected at runtime
+  // (hydrateStaticMenuAdditions) can't be silently dropped here just because
+  // checkout.html's static whitelist attribute fell out of sync with it.
+  const activeIds = target && target.dataset.activeItemIds
+    ? [...new Set([...JSON.parse(target.dataset.activeItemIds), ...ADDITIONAL_STATIC_MENU_ITEMS.map((item) => item.id)])]
+    : null;
   const gstRate = Number((target && target.dataset.gstRate) || 0);
   const discountTiers = target && target.dataset.discountTiers ? JSON.parse(target.dataset.discountTiers) : {};
   const visibleCart = activeIds ? cart.filter((item) => {
