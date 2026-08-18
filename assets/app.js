@@ -104,11 +104,11 @@ async function sendMsg91Otp(mobileNumber) {
 const CASHBACK_NUMBER_KEY = 'mkCashbackNumber';
 const CASHBACK_NAME_KEY = 'mkCashbackName';
 const CASHBACK_REFERRAL_KEY = 'mkReferralCode';
-const INDEPENDENCE_BANNER_SEEN_KEY = 'mkIndependenceBannerSeenV3';
+const INDEPENDENCE_BANNER_SEEN_KEY = 'mkIndependenceBannerSeenV4';
 const APP_ASSET_BASE_URL = document.currentScript && document.currentScript.src
   ? new URL('.', document.currentScript.src).toString()
   : '/assets/';
-const INDEPENDENCE_BANNER_URL = new URL('banners/independence-month-banner.jpg', APP_ASSET_BASE_URL).toString();
+const INDEPENDENCE_BANNER_URL = new URL('banners/independence-month-banner.png', APP_ASSET_BASE_URL).toString();
 const DISCOUNT_TIERS = {
   400: 0.10,
   800: 0.15,

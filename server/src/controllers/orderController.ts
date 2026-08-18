@@ -330,6 +330,47 @@ export const getOrders = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteOrder = async (req: Request, res: Response) => {
+  try {
+    const orderId = Number(req.params.id);
+    if (!Number.isInteger(orderId) || orderId < 1) {
+      return res.status(400).json({ error: 'Invalid order id' });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, orderNumber: true, customerId: true, referrerId: true },
+    });
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const affectedCustomerIds = [...new Set([order.customerId, order.referrerId].filter((id): id is number => id != null))];
+    await prisma.$transaction(async (tx) => {
+      await tx.cashbackTransaction.deleteMany({ where: { orderId } });
+      await tx.orderItem.deleteMany({ where: { orderId } });
+      await tx.order.delete({ where: { id: orderId } });
+
+      for (const customerId of affectedCustomerIds) {
+        const transactions = await tx.cashbackTransaction.findMany({
+          where: { customerId },
+          select: { type: true, amount: true },
+        });
+        const cashbackBalance = money(transactions.reduce((total, transaction) => {
+          const amount = Number(transaction.amount);
+          return transaction.type === 'REDEEMED' ? total - amount : total + amount;
+        }, 0));
+        await tx.customer.update({ where: { id: customerId }, data: { cashbackBalance } });
+      }
+    });
+
+    res.json({ ok: true, id: orderId, orderNumber: order.orderNumber });
+  } catch (error) {
+    console.error('Order deletion error:', error);
+    res.status(500).json({ error: 'Failed to delete order' });
+  }
+};
+
 export const updateOrderStatus = async (req: Request, res: Response) => {
   const fs = require('fs');
   fs.appendFileSync('controller-debug.log', 'SYNC: updateOrderStatus called\n');

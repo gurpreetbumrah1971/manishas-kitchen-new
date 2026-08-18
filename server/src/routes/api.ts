@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
 import { createFoodItem, deleteFoodItem, getCategories, getMenu, getMenuImage, updateFoodItem, updateFoodItemAvailability } from '../controllers/menuController';
-import { createOrder, getOrderStatus, getOrders, updateOrderStatus } from '../controllers/orderController';
+import { createOrder, deleteOrder, getOrderStatus, getOrders, updateOrderStatus } from '../controllers/orderController';
 import { login } from '../controllers/adminController';
 import { deleteCustomerAddress, getCustomerAccount, getCustomerWallet, requestCustomerOtp, saveCustomerAddress, updateCustomerProfile, validateReferral, verifyCustomerOtp } from '../controllers/customerController';
 import { handleMsg91WhatsAppWebhook } from '../controllers/webhookController';
@@ -79,6 +79,7 @@ router.post('/orders', createOrder);
 router.get('/orders/:orderNumber/status', getOrderStatus);
 router.get('/admin/orders', authenticateAdmin, getOrders);
 router.patch('/admin/orders/:id/status', authenticateAdmin, updateOrderStatus);
+router.delete('/admin/orders/:id', authenticateAdmin, deleteOrder);
 
 // Customer Wallet Routes
 router.post('/customer/request-otp', requestCustomerOtp);

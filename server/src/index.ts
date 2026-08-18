@@ -37,6 +37,9 @@ app.get('/health', (req, res) => {
 
 if (fs.existsSync(clientDistPath)) {
   app.use('/assets', express.static(path.join(clientDistPath, 'assets')));
+  app.get('/order-loop.mp3', (req, res) => {
+    res.sendFile(path.join(clientDistPath, 'order-loop.mp3'));
+  });
 }
 
 if (fs.existsSync(publicAssetsPath)) {

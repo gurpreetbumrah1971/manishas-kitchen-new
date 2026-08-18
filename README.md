@@ -81,7 +81,7 @@ Set these environment variables on Render for automatic admin order messages:
 ```env
 WHATSAPP_PHONE_NUMBER_ID="your_meta_phone_number_id"
 WHATSAPP_ACCESS_TOKEN="your_meta_whatsapp_access_token"
-WHATSAPP_ADMIN_NUMBER="919819068372"
+WHATSAPP_ADMIN_NUMBER="918879630082"
 WHATSAPP_API_VERSION="v23.0"
 ```
 

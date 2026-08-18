@@ -106,8 +106,7 @@ const AdminDashboard = () => {
   const [updatingOrderActionById, setUpdatingOrderActionById] = useState<Record<number, string>>({});
   const [ringtoneEnabled, setRingtoneEnabled] = useState(localStorage.getItem('adminRingtoneEnabled') === '1');
   const [ringtoneBlocked, setRingtoneBlocked] = useState(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const ringtoneTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const orderAlertAudioRef = useRef<HTMLAudioElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const normalizedPath = location.pathname.replace(/\/+$/, '') || '/admin';
@@ -127,47 +126,21 @@ const AdminDashboard = () => {
   }, [normalizedPath, navigate]);
 
   const stopRingtone = useCallback(() => {
-    if (ringtoneTimerRef.current) {
-      clearInterval(ringtoneTimerRef.current);
-      ringtoneTimerRef.current = null;
+    if (orderAlertAudioRef.current) {
+      orderAlertAudioRef.current.pause();
+      orderAlertAudioRef.current.currentTime = 0;
     }
   }, []);
 
   const playRingtoneTone = useCallback(async () => {
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) return;
-
-      if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContextClass();
+      if (!orderAlertAudioRef.current) {
+        const audio = new Audio('/order-loop.mp3');
+        audio.loop = true;
+        audio.volume = 0.7;
+        orderAlertAudioRef.current = audio;
       }
-
-      const context = audioContextRef.current;
-      if (context.state !== 'running') {
-        await context.resume();
-      }
-
-      if (context.state !== 'running') {
-        setRingtoneBlocked(true);
-        return;
-      }
-
-      const startAt = context.currentTime;
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(880, startAt);
-      oscillator.frequency.setValueAtTime(660, startAt + 0.18);
-      oscillator.frequency.setValueAtTime(880, startAt + 0.36);
-      gain.gain.setValueAtTime(0.0001, startAt);
-      gain.gain.exponentialRampToValueAtTime(0.16, startAt + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.62);
-
-      oscillator.connect(gain);
-      gain.connect(context.destination);
-      oscillator.start(startAt);
-      oscillator.stop(startAt + 0.65);
+      await orderAlertAudioRef.current.play();
       setRingtoneBlocked(false);
     } catch {
       setRingtoneBlocked(true);
@@ -175,11 +148,7 @@ const AdminDashboard = () => {
   }, []);
 
   const startRingtone = useCallback(() => {
-    if (ringtoneTimerRef.current) return;
     void playRingtoneTone();
-    ringtoneTimerRef.current = setInterval(() => {
-      void playRingtoneTone();
-    }, 1400);
   }, [playRingtoneTone]);
 
   const enableRingtone = async () => {
@@ -425,6 +394,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const deleteOrder = async (order: any) => {
+    if (!window.confirm(`Permanently delete order ${order.orderNumber}? This cannot be undone.`)) return;
+
+    setUpdatingOrderActionById(current => ({ ...current, [order.id]: 'DELETE' }));
+    try {
+      await axios.delete(`${API_URL}/admin/orders/${order.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setOrders(current => current.filter(currentOrder => currentOrder.id !== order.id));
+      setSelectedOrder((current: any | null) => current && current.id === order.id ? null : current);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to delete order');
+    } finally {
+      setUpdatingOrderActionById(current => {
+        const next = { ...current };
+        delete next[order.id];
+        return next;
+      });
+    }
+  };
+
   const renderOrderActions = (order: any) => {
     const statusLabel = orderStatusLabel(order);
     const minutesValue = preparationMinutesByOrder[order.id] ?? String(order.preparationMinutes || 20);
@@ -473,6 +463,9 @@ const AdminDashboard = () => {
             {updatingAction === 'DELIVERED' ? 'Updating...' : 'Delivered'}
           </button>
         )}
+        <button disabled={Boolean(updatingAction)} onClick={() => deleteOrder(order)} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #c62828', backgroundColor: '#fff', color: '#c62828', cursor: updatingAction ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, opacity: updatingAction ? 0.68 : 1 }}>
+          <Trash2 size={15} /> {updatingAction === 'DELETE' ? 'Deleting...' : 'Delete Order'}
+        </button>
       </div>
     );
   };
