@@ -2004,6 +2004,36 @@ th {
     line-height: 1.4;
 }
 
+.footer-partners {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+}
+
+.footer-partners-label {
+    color: var(--muted);
+    font-size: 0.86rem;
+}
+
+.footer-partner-link {
+    display: inline-flex;
+    align-items: center;
+    opacity: 0.9;
+    transition: opacity 0.2s ease;
+}
+
+.footer-partner-link:hover,
+.footer-partner-link:focus-visible {
+    opacity: 1;
+}
+
+.footer-partner-link img {
+    display: block;
+    height: 28px;
+    width: auto;
+}
+
 [hidden] {
     display: none !important;
 }
