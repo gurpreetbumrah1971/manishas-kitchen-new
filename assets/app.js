@@ -978,6 +978,77 @@ function moveMenuItemsToCategory(itemNames, sourceCategory, targetCategory) {
   });
 }
 
+function categoryEntriesForTabGroup(tabGroup) {
+  const tabsContainer = tabGroup.querySelector('.menu-tabs');
+  if (!tabsContainer) return [];
+  const panels = [...tabGroup.querySelectorAll('[data-menu-panel]')];
+  return [...tabsContainer.querySelectorAll('[data-menu-tab]')].map((tab) => ({
+    tab,
+    panel: panels.find((panel) => panel.dataset.menuPanel === tab.dataset.menuTab),
+  }));
+}
+
+function removeEmptyMenuCategories() {
+  document.querySelectorAll('[data-menu-tabs]').forEach((tabGroup) => {
+    const entries = categoryEntriesForTabGroup(tabGroup);
+    const emptyEntries = entries.filter((entry) => entry.panel && !entry.panel.querySelector('[data-menu-item]'));
+    const activeTabRemoved = emptyEntries.some((entry) => entry.tab.classList.contains('active'));
+
+    emptyEntries.forEach((entry) => {
+      entry.tab.remove();
+      if (entry.panel) entry.panel.remove();
+    });
+
+    if (!activeTabRemoved) return;
+    const nextTab = tabGroup.querySelector('[data-menu-tab]');
+    if (!nextTab) return;
+
+    tabGroup.querySelectorAll('[data-menu-tab]').forEach((tab) => {
+      const isActive = tab === nextTab;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    tabGroup.querySelectorAll('[data-menu-panel]').forEach((panel) => {
+      panel.hidden = panel.dataset.menuPanel !== nextTab.dataset.menuTab;
+    });
+  });
+
+  document.querySelectorAll('.menu-accordion-layout .menu-accordion').forEach((details) => {
+    if (!details.querySelector('[data-menu-item]')) details.remove();
+  });
+}
+
+// The storefront menu markup is static HTML (not rendered from the database),
+// so an admin toggling a menu item's availability only changes the DB. This
+// syncs the live /api/menu availability onto the static cards after page load,
+// matching by name since the static markup's data-id values can drift from
+// the database's auto-increment ids after reseeds.
+async function syncMenuAvailability() {
+  const cards = [...document.querySelectorAll('[data-menu-item]')];
+  if (!cards.length) return;
+
+  let items;
+  try {
+    const response = await fetch(apiUrl('/menu'));
+    if (!response.ok) return;
+    items = await response.json();
+    if (!Array.isArray(items)) return;
+  } catch {
+    return;
+  }
+
+  const availableNames = new Set(items.map((item) => String(item.name || '').trim().toLowerCase()));
+
+  cards.forEach((card) => {
+    const name = categoryNameFromNode(card.querySelector('.menu-heading h3')).toLowerCase();
+    if (name && !availableNames.has(name)) card.remove();
+  });
+
+  removeEmptyMenuCategories();
+  ensureMenuSearchResults();
+  renderCartControls();
+}
+
 function initAboutParallax() {
   const cards = [...document.querySelectorAll('[data-about-parallax]')];
   if (!cards.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -2437,6 +2508,7 @@ updateCartCount();
 syncPaymentBox();
 applyMenuFilters();
 restoreStaticOrderSession();
+syncMenuAvailability();
 showIndependenceBannerPopup();
 
 // Browsers restore a page from the back/forward cache without re-running scripts,
