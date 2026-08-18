@@ -1,4 +1,6 @@
 const CART_KEY = 'phpCart';
+const CART_EXPIRES_AT_KEY = 'phpCartExpiresAt';
+const CART_TTL_MS = 30 * 60 * 1000;
 const ORDER_SESSION_KEY = 'mkOrderSession';
 const CUSTOMER_AUTH_KEY = 'mkCustomerAuth';
 const CASHBACK_REDEEM_KEY = 'mkCashbackRedeem';
@@ -125,7 +127,7 @@ const ADDITIONAL_STATIC_MENU_ITEMS = [
   { id: 73, name: 'Paneer Pakoda', description: 'Crisp paneer fritters with house masala.', price: 109, categoryName: 'Pakodas', isVeg: true, image: '/assets/food/optimized/generated/paneer-paratha-realistic.jpg' },
   { id: 74, name: 'Idli', description: 'Steamed rice cakes served with chutney.', price: 49, categoryName: 'Snacks', isVeg: true, image: '/assets/food/optimized/generated/uttapam-realistic.jpg' },
   { id: 63, name: 'Mulli Paratha', description: 'Wheat flatbread stuffed with seasoned radish.', price: 69, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/muli-paratha.png' },
-  { id: 64, name: 'Chicken Kheema Paratha', description: 'Wheat flatbread stuffed with spiced chicken kheema.', price: 109, categoryName: 'Parathas', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
+  { id: 64, name: 'Chicken Kheema Paratha', description: 'Wheat flatbread stuffed with spiced chicken kheema.', price: 129, categoryName: 'Parathas', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
   { id: 65, name: 'Corn Cheese Paratha', description: 'Wheat flatbread stuffed with sweet corn and cheese.', price: 109, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/corn-cheese-paratha.png' },
   { id: 66, name: 'Loki Paratha', description: 'Wheat flatbread stuffed with seasoned vegetables.', price: 69, categoryName: 'Parathas', isVeg: true, image: '/assets/food/photo-updates/loki-paratha.png' },
   { id: 67, name: 'Chicken Galouti Kebab', description: 'Tender minced chicken kebab with aromatic spices.', price: 199, categoryName: 'Kebabs', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
@@ -174,18 +176,56 @@ const STATIC_MENU_ITEM_OVERRIDES = new Map([
   ['Mango Milkshake', { remove: true }],
 ]);
 
+let cartExpiryTimer;
+
+function clearCartStorage() {
+  localStorage.removeItem(CART_KEY);
+  localStorage.removeItem(CART_EXPIRES_AT_KEY);
+  if (cartExpiryTimer) window.clearTimeout(cartExpiryTimer);
+}
+
+function scheduleCartExpiry() {
+  if (cartExpiryTimer) window.clearTimeout(cartExpiryTimer);
+  const expiresAt = Number(localStorage.getItem(CART_EXPIRES_AT_KEY));
+  const delay = expiresAt - Date.now();
+  if (!Number.isFinite(expiresAt) || delay <= 0) return;
+  cartExpiryTimer = window.setTimeout(() => {
+    getCart();
+    renderCartControls();
+    renderCheckout();
+    updateCartCount();
+  }, delay);
+}
+
 function getCart() {
   try {
-    return JSON.parse(localStorage.getItem(CART_KEY) || '[]')
+    const storedCart = localStorage.getItem(CART_KEY);
+    if (!storedCart) return [];
+    const expiresAt = Number(localStorage.getItem(CART_EXPIRES_AT_KEY));
+    // Carts created before this expiry policy have no deadline, so they are
+    // treated as expired instead of reappearing indefinitely.
+    if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
+      clearCartStorage();
+      return [];
+    }
+    scheduleCartExpiry();
+    return JSON.parse(storedCart)
       .map(applyCartItemOverride)
       .filter(Boolean);
   } catch {
+    clearCartStorage();
     return [];
   }
 }
 
 function saveCart(cart) {
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  if (!cart.length) {
+    clearCartStorage();
+  } else {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    localStorage.setItem(CART_EXPIRES_AT_KEY, String(Date.now() + CART_TTL_MS));
+    scheduleCartExpiry();
+  }
   renderCartControls();
   renderCheckout();
   updateCartCount();
@@ -423,6 +463,18 @@ function appliedReferralCode() {
 
 function referralDiscountForSubtotal(subtotal) {
   return appliedReferralCode() ? Math.round(Number(subtotal || 0) * 0.05 * 100) / 100 : 0;
+}
+
+function studentDiscountDetails() {
+  const institution = String((document.querySelector('[data-student-institution]') || {}).value || '').trim();
+  const grade = String((document.querySelector('[data-student-grade]') || {}).value || '').trim();
+  return { institution, grade, eligible: Boolean(institution && grade) };
+}
+
+function studentDiscountForSubtotal(subtotal) {
+  return studentDiscountDetails().eligible
+    ? Math.round(Number(subtotal || 0) * 0.10 * 100) / 100
+    : 0;
 }
 
 function fallbackCopyText(text) {
@@ -1212,15 +1264,26 @@ function renderCheckout() {
   const activeIds = target && target.dataset.activeItemIds ? JSON.parse(target.dataset.activeItemIds) : null;
   const gstRate = Number((target && target.dataset.gstRate) || 0);
   const discountTiers = target && target.dataset.discountTiers ? JSON.parse(target.dataset.discountTiers) : {};
-  const visibleCart = activeIds ? cart.filter((item) => activeIds.includes(Number(item.id))) : cart;
+  const visibleCart = activeIds ? cart.filter((item) => {
+    const itemId = Number(item.id);
+    if (activeIds.includes(itemId)) return true;
+    // Cheese upgrades use a client-only id (base item id + 10000). Keep the
+    // upgrade when its base menu item is active; the order API maps it back
+    // to the base item by name while preserving the upgraded price.
+    const baseItemId = itemId - 10000;
+    return Number.isInteger(baseItemId)
+      && activeIds.includes(baseItemId)
+      && /\+\s*(?:Extra )?Cheese$/i.test(String(item.name || ''));
+  }) : cart;
   const removedCount = activeIds ? cart.length - visibleCart.length : 0;
   const subtotal = visibleCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const gst = Number((subtotal * gstRate).toFixed(2));
   const discountRate = discountRateForSubtotal(subtotal, discountTiers);
   const discount = Number((subtotal * discountRate).toFixed(2));
   const referralDiscount = referralDiscountForSubtotal(subtotal);
+  const studentDiscount = studentDiscountForSubtotal(subtotal);
   const deliveryCharge = deliveryChargeForSubtotal(subtotal);
-  const preCashbackGrandTotal = subtotal + gst - discount - referralDiscount + deliveryCharge;
+  const preCashbackGrandTotal = subtotal + gst - discount - referralDiscount - studentDiscount + deliveryCharge;
   const cashbackRedeemed = cashbackAppliedFor(preCashbackGrandTotal);
   const grandTotal = Math.max(0, Number((preCashbackGrandTotal - cashbackRedeemed).toFixed(2)));
   document.querySelectorAll('[data-checkout-subtotal]').forEach((node) => node.textContent = money(subtotal));
@@ -1228,6 +1291,8 @@ function renderCheckout() {
   document.querySelectorAll('[data-checkout-discount]').forEach((node) => node.textContent = money(discount));
   document.querySelectorAll('[data-checkout-referral-discount]').forEach((node) => node.textContent = money(referralDiscount));
   document.querySelectorAll('[data-checkout-referral-row]').forEach((node) => node.hidden = referralDiscount <= 0);
+  document.querySelectorAll('[data-student-discount]').forEach((node) => node.textContent = money(studentDiscount));
+  document.querySelectorAll('[data-student-discount-row]').forEach((node) => node.hidden = studentDiscount <= 0);
   document.querySelectorAll('[data-checkout-delivery]').forEach((node) => node.textContent = money(deliveryCharge));
   document.querySelectorAll('[data-checkout-cashback]').forEach((node) => node.textContent = money(cashbackRedeemed));
   document.querySelectorAll('[data-checkout-cashback-row]').forEach((node) => node.hidden = cashbackRedeemed <= 0);
@@ -2128,7 +2193,10 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
     const checkoutTotalNode = document.querySelector('[data-checkout-total]');
     const subtotal = parseMoney(subtotalNode && subtotalNode.textContent);
     const gstAmount = parseMoney(gstNode && gstNode.textContent);
-    const discountAmount = parseMoney(discountNode && discountNode.textContent);
+    const regularDiscountAmount = parseMoney(discountNode && discountNode.textContent);
+    const studentDiscountNode = document.querySelector('[data-student-discount]');
+    const studentDiscountAmount = parseMoney(studentDiscountNode && studentDiscountNode.textContent);
+    const discountAmount = regularDiscountAmount + studentDiscountAmount;
     const deliveryAmount = parseMoney(deliveryNode && deliveryNode.textContent);
     const cashbackRedeemAmount = parseMoney(cashbackNode && cashbackNode.textContent);
     const grandTotal = parseMoney(checkoutTotalNode && checkoutTotalNode.textContent);
@@ -2176,6 +2244,8 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
       mobileNumber: number,
       whatsappNumber: number,
       address,
+      studentInstitution: studentDiscountDetails().institution || null,
+      studentGrade: studentDiscountDetails().grade || null,
       referralCode: appliedReferralCode() || null,
       orderType: 'DINE_IN',
       paymentMethod: formData.get('payment_method') || 'UPI',
@@ -2248,7 +2318,7 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
         }
         : null;
 
-      localStorage.removeItem(CART_KEY);
+      clearCartStorage();
       localStorage.removeItem(CASHBACK_REDEEM_KEY);
       localStorage.removeItem(CASHBACK_REFERRAL_KEY);
       if (session) saveOrderSession(session);
@@ -2323,7 +2393,7 @@ document.querySelectorAll('[data-availability-form]').forEach((form) => {
 
 const success = document.querySelector('[data-clear-cart]');
 if (success) {
-  localStorage.removeItem(CART_KEY);
+  clearCartStorage();
   const url = success.dataset.whatsapp;
   if (url) {
     setTimeout(() => window.open(url, '_blank'), 800);
@@ -2331,6 +2401,9 @@ if (success) {
 }
 
 document.addEventListener('input', (event) => {
+  if (event.target.closest('[data-student-institution], [data-student-grade]')) {
+    renderCheckout();
+  }
   const walletNumber = event.target.closest('[data-wallet-number]');
   if (walletNumber) {
     try {
@@ -2369,10 +2442,16 @@ showIndependenceBannerPopup();
 // Browsers restore a page from the back/forward cache without re-running scripts,
 // so a stale cart badge/count can linger after the cart changed on another page
 // (e.g. an order was just placed) and the user navigates back with the Back button.
-window.addEventListener('pageshow', (event) => {
-  if (!event.persisted) return;
+window.addEventListener('pageshow', () => {
   renderCartControls();
   renderCheckout();
   updateCartCount();
   restoreStaticOrderSession();
+});
+
+window.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  renderCartControls();
+  renderCheckout();
+  updateCartCount();
 });

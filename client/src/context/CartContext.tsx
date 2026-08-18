@@ -19,16 +19,60 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+const CART_STORAGE_KEY = 'cart';
+const CART_EXPIRY_STORAGE_KEY = 'cartExpiresAt';
+const CART_TTL_MS = 30 * 60 * 1000;
+
+const clearStoredCart = () => {
+  localStorage.removeItem(CART_STORAGE_KEY);
+  localStorage.removeItem(CART_EXPIRY_STORAGE_KEY);
+};
+
+const loadStoredCart = (): CartItem[] => {
+  try {
+    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+    const expiresAt = Number(localStorage.getItem(CART_EXPIRY_STORAGE_KEY));
+    // Carts from before the expiry policy do not have a valid deadline.
+    if (!savedCart || !Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
+      clearStoredCart();
+      return [];
+    }
+    const cart = JSON.parse(savedCart);
+    return Array.isArray(cart) ? cart : [];
+  } catch {
+    clearStoredCart();
+    return [];
+  }
+};
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    const savedCart = localStorage.getItem('cart');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  const [cart, setCart] = useState<CartItem[]>(loadStoredCart);
 
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart));
+    if (!cart.length) {
+      clearStoredCart();
+      return;
+    }
+
+    const expiresAt = Date.now() + CART_TTL_MS;
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    localStorage.setItem(CART_EXPIRY_STORAGE_KEY, String(expiresAt));
+    const expiryTimer = window.setTimeout(() => setCart([]), CART_TTL_MS);
+    return () => window.clearTimeout(expiryTimer);
   }, [cart]);
+
+  useEffect(() => {
+    const clearExpiredCartOnReturn = () => {
+      const expiresAt = Number(localStorage.getItem(CART_EXPIRY_STORAGE_KEY));
+      if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) setCart([]);
+    };
+    window.addEventListener('pageshow', clearExpiredCartOnReturn);
+    window.addEventListener('focus', clearExpiredCartOnReturn);
+    return () => {
+      window.removeEventListener('pageshow', clearExpiredCartOnReturn);
+      window.removeEventListener('focus', clearExpiredCartOnReturn);
+    };
+  }, []);
 
   const addToCart = (item: CartItem) => {
     setCart(prev => {

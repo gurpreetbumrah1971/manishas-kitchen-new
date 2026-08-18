@@ -75,7 +75,7 @@ const menuItems: MenuItemSeed[] = [
   { name: 'Moong Daal Chilla', description: 'Savory moong dal pancake with mild spices.', price: 69, categoryName: 'Parathas', isVeg: true, image: generatedMenuAssetUrl('Moong Daal Chilla') },
   { name: 'Plain Paratha', description: 'Simple layered wheat flatbread.', price: 29, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('plain-paratha') },
   { name: 'Mulli Paratha', description: 'Wheat flatbread stuffed with seasoned radish.', price: 69, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('muli-paratha') },
-  { name: 'Chicken Kheema Paratha', description: 'Wheat flatbread stuffed with spiced chicken kheema.', price: 109, categoryName: 'Parathas', isVeg: false, image: photoUpdateUrl('chicken-kheema-paratha') },
+  { name: 'Chicken Kheema Paratha', description: 'Wheat flatbread stuffed with spiced chicken kheema.', price: 129, categoryName: 'Parathas', isVeg: false, image: photoUpdateUrl('chicken-kheema-paratha') },
   { name: 'Corn Cheese Paratha', description: 'Wheat flatbread stuffed with sweet corn and cheese.', price: 109, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('corn-cheese-paratha') },
   { name: 'Loki Paratha', description: 'Wheat flatbread stuffed with seasoned vegetables.', price: 69, categoryName: 'Parathas', isVeg: true, image: photoUpdateUrl('loki-paratha') },
   { name: 'Poha', description: 'Flattened rice seasoned with spices.', price: 49, categoryName: 'Snacks', isVeg: true, image: '/food/poha.png' },

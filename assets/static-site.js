@@ -43,7 +43,7 @@ const STATIC_MENU = [
   [47, 'Moong Daal Chilla', 'Savory moong dal pancake with mild spices.', 65, 6, true, '/assets/food/optimized/generated/uttapam-realistic.jpg'],
   [29, 'Plain Paratha', 'Simple layered wheat flatbread.', 20, 6, true, '/assets/food/optimized/generated/plain-paratha-realistic.jpg'],
   [63, 'Mulli Paratha', 'Wheat flatbread stuffed with seasoned radish.', 65, 6, true, '/assets/food/photo-updates/muli-paratha.png'],
-  [64, 'Chicken Kheema Paratha', 'Wheat flatbread stuffed with spiced chicken kheema.', 100, 6, false, '/assets/food/photo-updates/chicken-kheema-paratha.png'],
+  [64, 'Chicken Kheema Paratha', 'Wheat flatbread stuffed with spiced chicken kheema.', 129, 6, false, '/assets/food/photo-updates/chicken-kheema-paratha.png'],
   [65, 'Corn Cheese Paratha', 'Wheat flatbread stuffed with sweet corn and cheese.', 100, 6, true, '/assets/food/photo-updates/corn-cheese-paratha.png'],
   [66, 'Loki Paratha', 'Wheat flatbread stuffed with seasoned vegetables.', 65, 6, true, '/assets/food/photo-updates/loki-paratha.png'],
   [67, 'Chicken Galouti Kebab', 'Tender minced chicken kebab with aromatic spices.', 195, 8, false, '/assets/food/photo-updates/chicken-kheema-paratha.png'],
