@@ -1,6 +1,7 @@
 const DEFAULT_RECIPIENTS = [
   'gurpreet.bumrah@gmail.com',
   'manishaskitchen2026@gmail.com',
+  'aryanchavan131@gmail.com',
 ];
 
 const money = (value: unknown) => `Rs. ${Number(value || 0).toFixed(2)}`;

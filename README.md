@@ -108,7 +108,7 @@ If the WhatsApp credentials are missing or invalid, order creation continues and
 
 ## Order Email Notifications
 
-Every successfully confirmed order is emailed to `gurpreet.bumrah@gmail.com` and `manishaskitchen2026@gmail.com`. Configure these server environment variables to enable sending through Resend:
+Every successfully confirmed order is emailed to `gurpreet.bumrah@gmail.com`, `manishaskitchen2026@gmail.com`, and `aryanchavan131@gmail.com`. Configure these server environment variables to enable sending through Resend:
 
 ```env
 RESEND_API_KEY="re_your_resend_api_key"
