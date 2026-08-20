@@ -120,7 +120,7 @@ const ADDITIONAL_STATIC_CATEGORIES = [
   { name: 'Kebabs', slug: 'kebabs' },
 ];
 const ADDITIONAL_STATIC_MENU_ITEMS = [
-  { id: 69, name: 'Chicken Frankie', description: 'Soft roll filled with spiced chicken and onions.', price: 139, categoryName: 'Frankies', isVeg: false, image: '/assets/food/photo-updates/chicken-kheema-paratha.png' },
+  { id: 69, name: 'Chicken Frankie', description: 'Soft roll filled with spiced chicken and onions.', price: 139, categoryName: 'Frankies', isVeg: false, image: '/assets/food/photo-updates/chicken-frankie.png' },
   { id: 70, name: 'Moong Dal Pakoda', description: 'Crisp moong dal fritters with house masala.', price: 69, categoryName: 'Pakodas', isVeg: true, image: '/assets/food/photo-updates/moong-dal-pakoda.png' },
   { id: 71, name: 'Chana Daal Pakoda', description: 'Crisp chana dal fritters with house masala.', price: 69, categoryName: 'Pakodas', isVeg: true, image: '/assets/food/photo-updates/chana-dal-pakoda.png' },
   { id: 72, name: 'Palak Pakoda', description: 'Crisp spinach fritters with house masala.', price: 69, categoryName: 'Pakodas', isVeg: true, image: '/assets/food/photo-updates/palak-paratha.png' },
