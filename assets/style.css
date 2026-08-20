@@ -83,6 +83,17 @@ button {
     border-bottom: 1px solid currentColor;
 }
 
+.operating-hours {
+    padding: 0.38rem 1rem;
+    color: #6d2f00;
+    background: #fff3e8;
+    border-bottom: 1px solid #f5c7a3;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-align: center;
+}
+
 @keyframes promo-ticker {
     from {
         transform: translateX(0);
