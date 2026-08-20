@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma';
 import { sendAdminOrderWhatsApp, sendCustomerOrderConfirmationMsg91 } from '../services/whatsappService';
+import { sendOrderNotificationEmail } from '../services/emailService';
 import { ensureCustomerReferralCode, normalizeReferralCode } from '../utils/referral';
 
 const ORDER_SESSION_MINUTES = 30;
@@ -303,6 +304,9 @@ export const createOrder = async (req: Request, res: Response) => {
 
     sendAdminOrderWhatsApp(order.order).catch((error) => {
       console.error('WhatsApp admin notification error:', error);
+    });
+    sendOrderNotificationEmail(order.order).catch((error) => {
+      console.error('Order email notification error:', error);
     });
     res.status(201).json({
       ...order.order,

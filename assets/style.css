@@ -674,8 +674,8 @@ textarea {
 
 .checkout-item {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto auto;
-    gap: 0.8rem;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
     align-items: center;
     margin-bottom: 0.55rem;
     padding: 0.75rem;
@@ -684,17 +684,18 @@ textarea {
     background: #f7f7f7;
 }
 
-.item-cell img {
-    width: 52px;
-    height: 52px;
-    border-radius: 6px;
-    object-fit: cover;
-}
-
 .checkout-item-name {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.checkout-item-details {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     white-space: nowrap;
 }
 
@@ -836,6 +837,25 @@ textarea {
 
 .student-discount-field label span {
     color: #17834a;
+}
+
+.student-discount-field .student-discount-toggle {
+    align-items: center;
+    cursor: pointer;
+}
+
+.student-discount-toggle input {
+    accent-color: #17834a;
+    height: 1.05rem;
+    margin: 0;
+    width: 1.05rem;
+}
+
+.student-discount-field .student-discount-toggle em {
+    color: #17834a;
+    font-size: 0.85rem;
+    font-style: normal;
+    margin-left: auto;
 }
 
 .student-discount-inputs {
@@ -1043,6 +1063,125 @@ textarea {
 .delivery-address-field textarea:focus {
     outline: none;
     border-color: #17834a;
+}
+
+.delivery-type-field,
+.delivery-location-field {
+    margin-bottom: 1rem;
+    padding: 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--soft);
+}
+
+.delivery-type-field fieldset,
+.delivery-location-field fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.delivery-type-field legend,
+.delivery-location-field legend {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.6rem;
+}
+
+.radio-group {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.radio-option:hover {
+    border-color: var(--primary);
+    background: #fff5f5;
+}
+
+.radio-option input[type="radio"] {
+    display: none;
+}
+
+.radio-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--line);
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+    transition: border-color 0.2s;
+}
+
+.radio-option input[type="radio"]:checked + .radio-custom {
+    border-color: var(--primary);
+}
+
+.radio-option input[type="radio"]:checked + .radio-custom::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+.radio-option strong {
+    font-size: 0.95rem;
+}
+
+.radio-option small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 0.1rem;
+}
+
+.delivery-location-field label {
+    display: grid;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.delivery-location-field select,
+.delivery-location-field input:not([type="checkbox"]) {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #dedede;
+    border-radius: 8px;
+    background: #fafafa;
+    font-size: 1rem;
+    font-family: inherit;
+    color: inherit;
+}
+
+.delivery-location-field select:focus,
+.delivery-location-field input:not([type="checkbox"]):focus {
+    outline: none;
+    border-color: #17834a;
+}
+
+.sector-field,
+.custom-location-field {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--line);
 }
 
 .cashback-balance-row {
@@ -2175,6 +2314,18 @@ th {
     .site-footer {
         grid-template-columns: 1fr;
         flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .footer-partners {
+        flex-wrap: nowrap;
+        justify-content: center;
+        gap: 1.5rem;
+    }
+
+    .footer-partner-link img {
+        height: 32px;
     }
 
     .search-box {

@@ -469,9 +469,10 @@ function referralDiscountForSubtotal(subtotal) {
 }
 
 function studentDiscountDetails() {
+  const selected = Boolean((document.querySelector('[data-student-discount-toggle]') || {}).checked);
   const institution = String((document.querySelector('[data-student-institution]') || {}).value || '').trim();
   const grade = String((document.querySelector('[data-student-grade]') || {}).value || '').trim();
-  return { institution, grade, eligible: Boolean(institution && grade) };
+  return { institution, grade, eligible: selected && Boolean(institution && grade) };
 }
 
 function studentDiscountForSubtotal(subtotal) {
@@ -771,15 +772,128 @@ function discountRateForSubtotal(subtotal, tiers) {
     .reduce((matchedRate, pair) => matchedRate || (subtotal >= pair[0] ? pair[1] : 0), 0);
 }
 
+function getDeliveryType() {
+  const checked = document.querySelector('input[name="delivery_type"]:checked');
+  return checked ? checked.value : 'dine_in';
+}
+
+function getSelectedLocality() {
+  const select = document.querySelector('[data-locality]');
+  return select ? select.value : '';
+}
+
+function getSelectedSector() {
+  const select = document.querySelector('[data-sector]');
+  return select ? select.value : '';
+}
+
+function getCustomLocation() {
+  const input = document.querySelector('[data-custom-location]');
+  return input ? input.value.trim() : '';
+}
+
 function deliveryChargeForSubtotal(subtotal) {
-  if (subtotal <= 0 || subtotal > 300) return 0;
-  return subtotal < 150 ? 50 : 30;
+  const deliveryType = getDeliveryType();
+  
+  // Dine in has no delivery charges
+  if (deliveryType === 'dine_in') return 0;
+  
+  // Home delivery - calculate based on locality and sector
+  const locality = getSelectedLocality();
+  
+  if (locality === 'koparkhairne') {
+    const sector = parseInt(getSelectedSector(), 10);
+    if (!sector) return 0; // No sector selected yet
+    
+    // Sector 17: Free for all orders
+    if (sector === 17) return 0;
+    
+    // Sectors 16-22: 20 for orders below 199, free above 200
+    if (sector >= 16 && sector <= 22) {
+      if (subtotal < 199) return 20;
+      return 0;
+    }
+    
+    // Remaining sectors (1-15, 23-26): 
+    // 30 for orders below 199
+    // 20 for orders 200-299
+    // Free above 300
+    if (subtotal < 199) return 30;
+    if (subtotal < 300) return 20;
+    return 0;
+  }
+  
+  // Bonkhode and Ghansoli delivery rates.
+  if (['bonkhode', 'ghansoli'].includes(locality)) {
+    if (subtotal < 199) return 50;
+    if (subtotal < 300) return 35;
+    return 20;
+  }
+
+  // Vashi delivery rates.
+  if (locality === 'vashi') {
+    if (subtotal < 199) return 65;
+    if (subtotal < 300) return 45;
+    return 30;
+  }
+  
+  // Other: Custom location - fixed delivery charge
+  if (locality === 'other' && getCustomLocation()) {
+    if (subtotal < 199) return 50;
+    if (subtotal < 300) return 40;
+    return 0;
+  }
+  
+  // No locality selected yet
+  return 0;
 }
 
 function deliveryNudgeForSubtotal(subtotal) {
-  if (subtotal <= 0) return '';
-  if (subtotal > 300) return '(Free delivery unlocked)';
-  return `(Add ${money(301 - subtotal)} more for free delivery)`;
+  const deliveryType = getDeliveryType();
+  
+  if (deliveryType === 'dine_in') return '(Dine in - no delivery charges)';
+  
+  const locality = getSelectedLocality();
+  
+  if (!locality) return '(Select location to see delivery charges)';
+  
+  if (locality === 'koparkhairne') {
+    const sector = parseInt(getSelectedSector(), 10);
+    if (!sector) return '(Select sector to see delivery charges)';
+    
+    if (sector === 17) return '(Free delivery for Sector 17)';
+    
+    if (sector >= 16 && sector <= 22) {
+      if (subtotal < 199) return `(Add ${money(199 - subtotal)} more for free delivery)`;
+      return '(Free delivery unlocked)';
+    }
+    
+    if (subtotal < 199) return `(Add ${money(199 - subtotal)} more for Rs. 20 delivery)`;
+    if (subtotal < 300) return `(Add ${money(300 - subtotal)} more for free delivery)`;
+    return '(Free delivery unlocked)';
+  }
+  
+  if (['bonkhode', 'ghansoli'].includes(locality)) {
+    if (subtotal < 199) return '(Delivery charge: Rs. 50)';
+    if (subtotal < 300) return '(Delivery charge: Rs. 35)';
+    return '(Delivery charge: Rs. 20)';
+  }
+
+  if (locality === 'vashi') {
+    if (subtotal < 199) return '(Delivery charge: Rs. 65)';
+    if (subtotal < 300) return '(Delivery charge: Rs. 45)';
+    return '(Delivery charge: Rs. 30)';
+  }
+  
+  if (locality === 'other' && getCustomLocation()) {
+    if (subtotal < 199) return `(Add ${money(199 - subtotal)} more for Rs. 40 delivery)`;
+    if (subtotal < 300) return `(Add ${money(300 - subtotal)} more for free delivery)`;
+    return '(Free delivery unlocked)';
+  }
+  
+  if (locality === 'other') return '(Enter location to see delivery charges)';
+  
+  return '';
 }
 
 function nextDiscountNudge(subtotal, tiers = DISCOUNT_TIERS) {
@@ -1335,26 +1449,17 @@ function renderCartControls() {
 function renderCheckout() {
   const cart = getCart();
   const target = document.querySelector('[data-checkout-items]');
-  // Union with ADDITIONAL_STATIC_MENU_ITEMS so items injected at runtime
-  // (hydrateStaticMenuAdditions) can't be silently dropped here just because
-  // checkout.html's static whitelist attribute fell out of sync with it.
-  const activeIds = target && target.dataset.activeItemIds
-    ? [...new Set([...JSON.parse(target.dataset.activeItemIds), ...ADDITIONAL_STATIC_MENU_ITEMS.map((item) => item.id)])]
-    : null;
   const gstRate = Number((target && target.dataset.gstRate) || 0);
-  const discountTiers = target && target.dataset.discountTiers ? JSON.parse(target.dataset.discountTiers) : {};
-  const visibleCart = activeIds ? cart.filter((item) => {
-    const itemId = Number(item.id);
-    if (activeIds.includes(itemId)) return true;
-    // Cheese upgrades use a client-only id (base item id + 10000). Keep the
-    // upgrade when its base menu item is active; the order API maps it back
-    // to the base item by name while preserving the upgraded price.
-    const baseItemId = itemId - 10000;
-    return Number.isInteger(baseItemId)
-      && activeIds.includes(baseItemId)
-      && /\+\s*(?:Extra )?Cheese$/i.test(String(item.name || ''));
-  }) : cart;
-  const removedCount = activeIds ? cart.length - visibleCart.length : 0;
+  let discountTiers = {};
+  if (target && target.dataset.discountTiers) {
+    try {
+      discountTiers = JSON.parse(target.dataset.discountTiers);
+    } catch {
+      // The cart must still render if an optional pricing setting is invalid.
+    }
+  }
+  const visibleCart = cart;
+  const removedCount = 0;
   const subtotal = visibleCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const gst = Number((subtotal * gstRate).toFixed(2));
   const discountRate = discountRateForSubtotal(subtotal, discountTiers);
@@ -1396,21 +1501,23 @@ function renderCheckout() {
     return `
     <div class="checkout-item">
       <strong class="checkout-item-name">${itemName}</strong>
-      <div class="qty-control checkout-qty-control" aria-label="Quantity for ${itemName}">
-        <button type="button" data-qty="${itemId}" data-value="${quantity - 1}" aria-label="Decrease ${itemName} quantity">-</button>
-        <strong>${quantity}</strong>
-        <button type="button" data-qty="${itemId}" data-value="${quantity + 1}" aria-label="Increase ${itemName} quantity">+</button>
+      <div class="checkout-item-details">
+        <div class="qty-control checkout-qty-control" aria-label="Quantity for ${itemName}">
+          <button type="button" data-qty="${itemId}" data-value="${quantity - 1}" aria-label="Decrease ${itemName} quantity">-</button>
+          <strong>${quantity}</strong>
+          <button type="button" data-qty="${itemId}" data-value="${quantity + 1}" aria-label="Increase ${itemName} quantity">+</button>
+        </div>
+        <strong class="checkout-line-price">${money(item.price * quantity)}</strong>
+        <button class="icon-remove" type="button" data-remove="${itemId}" aria-label="Remove ${itemName} from cart" title="Remove">
+          <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M6 6l1 18h10l1-18"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+          </svg>
+        </button>
       </div>
-      <strong class="checkout-line-price">${money(item.price * quantity)}</strong>
-      <button class="icon-remove" type="button" data-remove="${itemId}" aria-label="Remove ${itemName} from cart" title="Remove">
-        <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-          <path d="M3 6h18"></path>
-          <path d="M8 6V4h8v2"></path>
-          <path d="M6 6l1 18h10l1-18"></path>
-          <path d="M10 11v6"></path>
-          <path d="M14 11v6"></path>
-        </svg>
-      </button>
     </div>
   `;
   }).join('')}`;
@@ -2323,8 +2430,8 @@ if (checkoutForm) checkoutForm.addEventListener('submit', async (event) => {
       mobileNumber: number,
       whatsappNumber: number,
       address,
-      studentInstitution: studentDiscountDetails().institution || null,
-      studentGrade: studentDiscountDetails().grade || null,
+      studentInstitution: studentDiscountDetails().eligible ? studentDiscountDetails().institution : null,
+      studentGrade: studentDiscountDetails().eligible ? studentDiscountDetails().grade : null,
       referralCode: appliedReferralCode() || null,
       orderType: 'DINE_IN',
       paymentMethod: formData.get('payment_method') || 'UPI',
@@ -2483,6 +2590,9 @@ document.addEventListener('input', (event) => {
   if (event.target.closest('[data-student-institution], [data-student-grade]')) {
     renderCheckout();
   }
+  if (event.target.closest('[name="delivery_type"], [data-locality], [data-sector], [data-custom-location]')) {
+    renderCheckout();
+  }
   const walletNumber = event.target.closest('[data-wallet-number]');
   if (walletNumber) {
     try {
@@ -2501,6 +2611,77 @@ document.addEventListener('input', (event) => {
   }
 });
 
+function syncStudentDiscountFields() {
+  const toggle = document.querySelector('[data-student-discount-toggle]');
+  if (!toggle) return;
+
+  const isSelected = toggle.checked;
+  document.querySelectorAll('[data-student-discount-details], [data-student-discount-note]').forEach((node) => {
+    node.hidden = !isSelected;
+  });
+  toggle.setAttribute('aria-expanded', isSelected ? 'true' : 'false');
+}
+
+document.addEventListener('change', (event) => {
+  if (!event.target.closest('[data-student-discount-toggle]')) return;
+  syncStudentDiscountFields();
+  renderCheckout();
+});
+
+function initDeliveryFields() {
+  const deliveryTypeField = document.querySelector('.delivery-type-field');
+  const deliveryLocationField = document.querySelector('[data-delivery-location-field]');
+  const localitySelect = document.querySelector('[data-locality]');
+  const sectorField = document.querySelector('[data-sector-field]');
+  const customLocationField = document.querySelector('[data-custom-location-field]');
+  const sectorSelect = document.querySelector('[data-sector]');
+
+  if (!deliveryTypeField || !deliveryLocationField || !localitySelect) return;
+
+  // Populate sector dropdown
+  if (sectorSelect && sectorSelect.options.length <= 1) {
+    for (let i = 1; i <= 26; i++) {
+      const option = document.createElement('option');
+      option.value = i;
+      option.textContent = `Sector ${i}`;
+      sectorSelect.appendChild(option);
+    }
+  }
+
+  function updateVisibility() {
+    const deliveryType = getDeliveryType();
+    deliveryLocationField.hidden = deliveryType !== 'home_delivery';
+
+    const locality = getSelectedLocality();
+    sectorField.hidden = locality !== 'koparkhairne';
+    customLocationField.hidden = locality !== 'other';
+
+    // Clear sector when locality changes
+    if (locality !== 'koparkhairne' && sectorSelect) {
+      sectorSelect.value = '';
+    }
+    // Clear custom location when locality changes
+    if (locality !== 'other') {
+      const customInput = document.querySelector('[data-custom-location]');
+      if (customInput) customInput.value = '';
+    }
+  }
+
+  // Initial update
+  updateVisibility();
+
+  // Add event listeners
+  document.querySelectorAll('[name="delivery_type"]').forEach((radio) => {
+    radio.addEventListener('change', updateVisibility);
+  });
+
+  localitySelect.addEventListener('change', updateVisibility);
+}
+
+// Initialize delivery fields
+initDeliveryFields();
+syncStudentDiscountFields();
+
 hydrateStaticMenuAdditions();
 normalizeStaticMenuCategories();
 moveMenuItemsToCategory(['Wada', 'Wada Pav'], 'Pakodas', 'Snacks');
@@ -2518,6 +2699,7 @@ applyMenuFilters();
 restoreStaticOrderSession();
 syncMenuAvailability();
 showIndependenceBannerPopup();
+renderCheckout();
 
 // Browsers restore a page from the back/forward cache without re-running scripts,
 // so a stale cart badge/count can linger after the cart changed on another page
