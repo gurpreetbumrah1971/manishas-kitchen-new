@@ -98,6 +98,10 @@ MSG91_WHATSAPP_SENDER_NUMBER="your_msg91_whatsapp_sender_number"
 MSG91_WHATSAPP_TEMPLATE_NAMESPACE="your_msg91_template_namespace"
 MSG91_WHATSAPP_ORDER_TEMPLATE="order_confirmation"
 MSG91_WHATSAPP_TEMPLATE_LANGUAGE="en"
+
+# MSG91 admin order notification
+MSG91_ADMIN_ORDER_TEMPLATE="order_notification"
+MSG91_ADMIN_NOTIFICATION_NUMBERS="919819068372,918879630082"
 ```
 
 If the WhatsApp credentials are missing or invalid, order creation continues and the server logs the notification failure.

@@ -32,6 +32,11 @@ const normalizePhoneNumber = (number?: string | null) => {
   return digits;
 };
 
+const msg91AdminNotificationNumbers = () => (process.env.MSG91_ADMIN_NOTIFICATION_NUMBERS || '919819068372,918879630082')
+  .split(',')
+  .map((number) => normalizePhoneNumber(number))
+  .filter(Boolean);
+
 const money = (value?: unknown) => {
   const amount = Number(value) || 0;
   return `Rs. ${amount.toFixed(2)}`;
@@ -180,6 +185,45 @@ export const sendCustomerOrderConfirmationMsg91 = async (order: OrderForWhatsApp
   }
 
   return { sent: true, skipped: false, response: responseBody, requestId: extractMsg91RequestId(responseBody) };
+};
+
+export const sendAdminOrderNotificationMsg91 = async () => {
+  const authKey = process.env.MSG91_WHATSAPP_AUTHKEY || process.env.MSG91_AUTHKEY;
+  const senderNumber = normalizePhoneNumber(process.env.MSG91_WHATSAPP_SENDER_NUMBER || '919653102273');
+  const templateName = process.env.MSG91_ADMIN_ORDER_TEMPLATE || 'order_notification';
+  const recipients = msg91AdminNotificationNumbers();
+
+  if (!authKey || !senderNumber || !recipients.length) {
+    console.warn('MSG91 admin order notification skipped: missing auth key, sender number, or recipients');
+    return { sent: false, skipped: true };
+  }
+
+  const response = await fetch('https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      authkey: authKey,
+    },
+    body: JSON.stringify({
+      integrated_number: senderNumber,
+      content_type: 'template',
+      payload: {
+        messaging_product: 'whatsapp',
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: process.env.MSG91_WHATSAPP_TEMPLATE_LANGUAGE || 'en', policy: 'deterministic' },
+          to_and_components: [{
+            to: recipients,
+            components: {},
+          }],
+        },
+      },
+    }),
+  });
+  const responseBody = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(`MSG91 admin order notification failed (${response.status}): ${JSON.stringify(responseBody)}`);
+  return { sent: true, skipped: false, response: responseBody };
 };
 
 export const sendAdminOrderWhatsApp = async (order: OrderForWhatsApp) => {

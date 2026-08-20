@@ -20,11 +20,15 @@ services:
       - key: MSG91_WHATSAPP_AUTHKEY
         sync: false
       - key: MSG91_WHATSAPP_SENDER_NUMBER
-        sync: false
+        value: 919653102273
       - key: MSG91_WHATSAPP_TEMPLATE_NAMESPACE
         sync: false
       - key: MSG91_WHATSAPP_ORDER_TEMPLATE
         value: order_confirmation
+      - key: MSG91_ADMIN_ORDER_TEMPLATE
+        value: order_notification
+      - key: MSG91_ADMIN_NOTIFICATION_NUMBERS
+        value: 919819068372,918879630082
       - key: MSG91_WEBHOOK_SECRET
         sync: false
       - key: MSG91_WHATSAPP_TEMPLATE_LANGUAGE
