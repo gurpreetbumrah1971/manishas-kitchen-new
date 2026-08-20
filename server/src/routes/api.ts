@@ -5,6 +5,7 @@ import multer from 'multer';
 import { createFoodItem, deleteFoodItem, getCategories, getMenu, getMenuImage, updateFoodItem, updateFoodItemAvailability } from '../controllers/menuController';
 import { createOrder, deleteOrder, getOrderStatus, getOrders, updateOrderStatus } from '../controllers/orderController';
 import { login } from '../controllers/adminController';
+import { createAdminCustomer, creditAdminCashback, getAdminCustomers, updateAdminCustomer } from '../controllers/adminCustomerController';
 import { deleteCustomerAddress, getCustomerAccount, getCustomerWallet, requestCustomerOtp, saveCustomerAddress, updateCustomerProfile, validateReferral, verifyCustomerOtp } from '../controllers/customerController';
 import { handleMsg91WhatsAppWebhook } from '../controllers/webhookController';
 import { authenticateAdmin } from '../middleware/auth';
@@ -80,6 +81,12 @@ router.get('/orders/:orderNumber/status', getOrderStatus);
 router.get('/admin/orders', authenticateAdmin, getOrders);
 router.patch('/admin/orders/:id/status', authenticateAdmin, updateOrderStatus);
 router.delete('/admin/orders/:id', authenticateAdmin, deleteOrder);
+
+// Admin Customer LMS Routes
+router.get('/admin/customers', authenticateAdmin, getAdminCustomers);
+router.post('/admin/customers', authenticateAdmin, createAdminCustomer);
+router.patch('/admin/customers/:id', authenticateAdmin, updateAdminCustomer);
+router.post('/admin/customers/:id/cashback', authenticateAdmin, creditAdminCashback);
 
 // Customer Wallet Routes
 router.post('/customer/request-otp', requestCustomerOtp);

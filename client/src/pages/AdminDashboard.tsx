@@ -86,6 +86,7 @@ const adminNavStyle = (isActive: boolean): React.CSSProperties => ({
 
 const AdminDashboard = () => {
   const [orders, setOrders] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +103,11 @@ const AdminDashboard = () => {
   const [bulkMediaUrl, setBulkMediaUrl] = useState('');
   const [bulkSendingIndex, setBulkSendingIndex] = useState<number | null>(null);
   const [uploadingBulkMedia, setUploadingBulkMedia] = useState(false);
+  const [customerForm, setCustomerForm] = useState({ id: null as number | null, name: '', mobileNumber: '', birthday: '', anniversary: '' });
+  const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
+  const [cashbackForm, setCashbackForm] = useState({ id: null as number | null, name: '', amount: '', note: '' });
+  const [isCashbackFormOpen, setIsCashbackFormOpen] = useState(false);
+  const [savingCustomer, setSavingCustomer] = useState(false);
   const [preparationMinutesByOrder, setPreparationMinutesByOrder] = useState<Record<number, string>>({});
   const [updatingOrderActionById, setUpdatingOrderActionById] = useState<Record<number, string>>({});
   const [ringtoneEnabled, setRingtoneEnabled] = useState(localStorage.getItem('adminRingtoneEnabled') === '1');
@@ -191,15 +197,17 @@ const AdminDashboard = () => {
 
     const fetchData = async () => {
       try {
-        const [ordersRes, menuRes, categoriesRes] = await Promise.all([
+        const [ordersRes, menuRes, categoriesRes, customersRes] = await Promise.all([
           axios.get(`${API_URL}/admin/orders`, config),
           axios.get(`${API_URL}/menu?admin=true`, config),
-          axios.get(`${API_URL}/categories`, config)
+          axios.get(`${API_URL}/categories`, config),
+          axios.get(`${API_URL}/admin/customers`, config)
         ]);
         applyOrders(ordersRes.data);
         if (active) {
           setMenuItems(menuRes.data);
           setCategories(categoriesRes.data);
+          setCustomers(customersRes.data);
         }
       } catch (err) {
         console.error(err);
@@ -474,6 +482,67 @@ const AdminDashboard = () => {
     openWhatsAppMessage(customer.number, buildCustomerOfferMessage(customer));
   };
 
+  const openAddCustomer = () => {
+    setCustomerForm({ id: null, name: '', mobileNumber: '', birthday: '', anniversary: '' });
+    setIsCustomerFormOpen(true);
+  };
+
+  const openEditCustomer = (customer: any) => {
+    setCustomerForm({
+      id: customer.id,
+      name: customer.name || '',
+      mobileNumber: customer.mobileNumber || customer.number || '',
+      birthday: customer.birthday ? String(customer.birthday).slice(0, 10) : '',
+      anniversary: customer.anniversary ? String(customer.anniversary).slice(0, 10) : '',
+    });
+    setIsCustomerFormOpen(true);
+  };
+
+  const saveCustomer = async (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      setSavingCustomer(true);
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = customerForm.id
+        ? await axios.patch(`${API_URL}/admin/customers/${customerForm.id}`, customerForm, config)
+        : await axios.post(`${API_URL}/admin/customers`, customerForm, config);
+      setCustomers(current => {
+        const next = customerForm.id
+          ? current.map(customer => customer.id === response.data.id ? response.data : customer)
+          : [response.data, ...current];
+        return [...next].sort((a, b) => new Date(b.latestOrderAt || b.updatedAt).getTime() - new Date(a.latestOrderAt || a.updatedAt).getTime());
+      });
+      setIsCustomerFormOpen(false);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Could not save customer details.');
+    } finally {
+      setSavingCustomer(false);
+    }
+  };
+
+  const openCashbackForm = (customer: any) => {
+    setCashbackForm({ id: customer.id, name: customer.name || customer.number, amount: '', note: '' });
+    setIsCashbackFormOpen(true);
+  };
+
+  const creditCashback = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!cashbackForm.id) return;
+    try {
+      setSavingCustomer(true);
+      const response = await axios.post(`${API_URL}/admin/customers/${cashbackForm.id}/cashback`, {
+        amount: cashbackForm.amount,
+        note: cashbackForm.note,
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      setCustomers(current => current.map(customer => customer.id === response.data.id ? response.data : customer));
+      setIsCashbackFormOpen(false);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Could not credit cashback.');
+    } finally {
+      setSavingCustomer(false);
+    }
+  };
+
   const toggleCustomerSelection = (number: string) => {
     setSelectedCustomerNumbers(current =>
       current.includes(number)
@@ -550,36 +619,6 @@ const AdminDashboard = () => {
   const visibleMenuItems = selectedCategoryId === 'all'
     ? menuItems
     : menuItems.filter(item => item.categoryId?.toString() === selectedCategoryId);
-  const customers: any[] = Object.values(
-    orders.reduce((acc: any, order) => {
-      const number = order.whatsappNumber || order.mobileNumber || 'Unknown';
-      if (!acc[number]) {
-        acc[number] = {
-          name: order.customerName,
-          number,
-          birthday: order.birthday,
-          anniversary: order.anniversary,
-          orders: [],
-          totalSpent: 0,
-          firstOrderAt: order.createdAt,
-          latestOrderAt: order.createdAt,
-        };
-      }
-
-      acc[number].name = order.customerName || acc[number].name;
-      acc[number].birthday = order.birthday || acc[number].birthday;
-      acc[number].anniversary = order.anniversary || acc[number].anniversary;
-      acc[number].orders.push(order);
-      acc[number].totalSpent += Number(order.grandTotal);
-      if (new Date(order.createdAt) < new Date(acc[number].firstOrderAt)) {
-        acc[number].firstOrderAt = order.createdAt;
-      }
-      if (new Date(order.createdAt) > new Date(acc[number].latestOrderAt)) {
-        acc[number].latestOrderAt = order.createdAt;
-      }
-      return acc;
-    }, {})
-  ).sort((a: any, b: any) => new Date(b.latestOrderAt).getTime() - new Date(a.latestOrderAt).getTime());
   const selectedCustomers = customers.filter((customer: any) => selectedCustomerNumbers.includes(customer.number));
 
   const formatDate = (date?: string) => date ? new Date(date).toLocaleDateString() : '-';
@@ -1058,6 +1097,32 @@ const AdminDashboard = () => {
         {activeTab === 'customers' && (
           <>
             <h1 className="admin-page-title" style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Customer LMS</h1>
+            {isCustomerFormOpen && (
+              <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}><h3>{customerForm.id ? 'Edit Customer' : 'Add Customer'}</h3><button onClick={() => setIsCustomerFormOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Close customer form"><X size={22} /></button></div>
+                <form onSubmit={saveCustomer}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                    <label>Name<input value={customerForm.name} onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })} style={{ width: '100%', marginTop: '6px', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} /></label>
+                    <label>Mobile Number<input value={customerForm.mobileNumber} onChange={(e) => setCustomerForm({ ...customerForm, mobileNumber: e.target.value })} required inputMode="numeric" style={{ width: '100%', marginTop: '6px', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} /></label>
+                    <label>Birthday<input type="date" value={customerForm.birthday} onChange={(e) => setCustomerForm({ ...customerForm, birthday: e.target.value })} style={{ width: '100%', marginTop: '6px', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} /></label>
+                    <label>Anniversary<input type="date" value={customerForm.anniversary} onChange={(e) => setCustomerForm({ ...customerForm, anniversary: e.target.value })} style={{ width: '100%', marginTop: '6px', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} /></label>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}><button type="button" onClick={() => setIsCustomerFormOpen(false)} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>Cancel</button><button type="submit" className="btn-primary" disabled={savingCustomer}>{savingCustomer ? 'Saving...' : 'Save Customer'}</button></div>
+                </form>
+              </div>
+            )}
+            {isCashbackFormOpen && (
+              <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}><div><h3>Credit Cashback Wallet</h3><p style={{ color: '#666', fontSize: '0.9rem', marginTop: '4px' }}>{cashbackForm.name}</p></div><button onClick={() => setIsCashbackFormOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }} aria-label="Close cashback form"><X size={22} /></button></div>
+                <form onSubmit={creditCashback}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 0.4fr) minmax(240px, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+                    <label>Amount (₹)<input type="number" min="0.01" step="0.01" value={cashbackForm.amount} onChange={(e) => setCashbackForm({ ...cashbackForm, amount: e.target.value })} required style={{ width: '100%', marginTop: '6px', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} /></label>
+                    <label>Note (optional)<input value={cashbackForm.note} onChange={(e) => setCashbackForm({ ...cashbackForm, note: e.target.value })} placeholder="Reason for cashback credit" style={{ width: '100%', marginTop: '6px', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} /></label>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}><button type="button" onClick={() => setIsCashbackFormOpen(false)} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #ddd', background: '#fff', cursor: 'pointer' }}>Cancel</button><button type="submit" className="btn-primary" disabled={savingCustomer}>{savingCustomer ? 'Crediting...' : 'Add Cashback'}</button></div>
+                </form>
+              </div>
+            )}
             <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                 <div>
@@ -1113,9 +1178,12 @@ const AdminDashboard = () => {
               <div style={{ padding: '1.5rem', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                 <div>
                   <h3>Customer Lifecycle</h3>
-                  <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '4px' }}>Order dates are captured from each order timestamp.</p>
+                  <p style={{ color: '#666', fontSize: '0.9rem', marginTop: '4px' }}>Manage customer profiles and cashback wallets.</p>
                 </div>
-                <span style={{ color: '#666', fontSize: '0.9rem' }}>{customers.length} customers</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ color: '#666', fontSize: '0.9rem' }}>{customers.length} customers</span>
+                  <button onClick={openAddCustomer} className="btn-primary" style={{ padding: '9px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Plus size={16} /> Add Customer</button>
+                </div>
               </div>
               <div className="admin-table-wrap" style={{ overflowX: 'auto' }}>
                 <table className="admin-table admin-customers-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -1128,6 +1196,7 @@ const AdminDashboard = () => {
                       <th style={{ padding: '1rem' }}>Number</th>
                       <th style={{ padding: '1rem' }}>Birthday</th>
                       <th style={{ padding: '1rem' }}>Anniversary</th>
+                      <th style={{ padding: '1rem' }}>Cashback Wallet</th>
                       <th style={{ padding: '1rem' }}>Orders</th>
                       <th style={{ padding: '1rem' }}>Total Spent</th>
                       <th style={{ padding: '1rem' }}>First Order</th>
@@ -1153,24 +1222,27 @@ const AdminDashboard = () => {
                           </td>
                           <td style={{ padding: '1rem' }}>{formatDate(customer.birthday)}</td>
                           <td style={{ padding: '1rem' }}>{formatDate(customer.anniversary)}</td>
+                          <td style={{ padding: '1rem', fontWeight: '700', color: '#2e7d32' }}>₹{Number(customer.cashbackBalance || 0).toFixed(2)}</td>
                           <td style={{ padding: '1rem' }}>{customer.orders.length}</td>
                           <td style={{ padding: '1rem', fontWeight: '600', color: 'var(--primary-color)' }}>₹{customer.totalSpent}</td>
                           <td style={{ padding: '1rem' }}>{formatDate(customer.firstOrderAt)}</td>
                           <td style={{ padding: '1rem' }}>{formatDate(customer.latestOrderAt)}</td>
                           <td style={{ padding: '1rem' }}>
-                            <button onClick={() => sendCustomerOffer(customer)} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}>
-                              <MessageCircle size={15} /> Offer
-                            </button>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              <button onClick={() => openEditCustomer(customer)} title="Edit customer" style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}><Pencil size={15} /> Edit</button>
+                              <button onClick={() => openCashbackForm(customer)} title="Credit cashback" style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #2e7d32', backgroundColor: '#fff', color: '#2e7d32', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}><Plus size={15} /> Cashback</button>
+                              <button onClick={() => sendCustomerOffer(customer)} style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid #25D366', backgroundColor: '#fff', color: '#128C7E', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}><MessageCircle size={15} /> Offer</button>
+                            </div>
                           </td>
                         </tr>
                         <tr className="admin-history-row">
-                          <td className="admin-history-cell" colSpan={10} style={{ padding: '0 1rem 1rem', backgroundColor: '#fcfcfc' }}>
+                          <td className="admin-history-cell" colSpan={11} style={{ padding: '0 1rem 1rem', backgroundColor: '#fcfcfc' }}>
                             <details>
                               <summary style={{ cursor: 'pointer', color: 'var(--primary-color)', fontWeight: '600', padding: '0.75rem 0' }}>Order History</summary>
                               <div style={{ display: 'grid', gap: '0.75rem' }}>
                                 {customer.orders.map((order: any) => (
                                   <div className="admin-history-order" key={order.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.4fr 1fr 1fr 1fr', gap: '1rem', padding: '0.75rem', border: '1px solid #eee', borderRadius: '8px', backgroundColor: '#fff' }}>
-                                    <button onClick={() => setSelectedOrder(order)} style={{ color: 'var(--primary-color)', fontWeight: '700', background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
+                                    <button onClick={() => setSelectedOrder(orders.find(item => item.id === order.id) || order)} style={{ color: 'var(--primary-color)', fontWeight: '700', background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
                                       {order.orderNumber}
                                     </button>
                                     <span>{new Date(order.createdAt).toLocaleString()}</span>
@@ -1187,7 +1259,7 @@ const AdminDashboard = () => {
                     ))}
                     {customers.length === 0 && (
                       <tr>
-                        <td colSpan={10} style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>No customer data found yet.</td>
+                        <td colSpan={11} style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>No customer data found yet.</td>
                       </tr>
                     )}
                   </tbody>

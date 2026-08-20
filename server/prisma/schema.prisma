@@ -105,10 +105,11 @@ enum OrderStatus {
 }
 
 model Admin {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id              Int      @id @default(autoincrement())
+  username        String   @unique
+  password        String
+  passwordVersion Int      @default(0)
+  createdAt       DateTime @default(now())
 }
 
 model Customer {

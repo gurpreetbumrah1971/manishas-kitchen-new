@@ -121,16 +121,27 @@ const retiredMenuItemNames = [
   'Pav',
 ];
 
+const ADMIN_PASSWORD_VERSION = 1;
+const ADMIN_PASSWORD_HASH = '$2b$12$Gd/Cp7ci72dpGKct6QjaWOUHoDtBATsVYYfgwYCNothyzhaUgWuBq';
+
 async function seedAdmin() {
   const existingAdmin = await prisma.admin.findUnique({ where: { username: 'admin' } });
-  if (existingAdmin) return;
+  if (existingAdmin) {
+    if (Number((existingAdmin as any).passwordVersion || 0) < ADMIN_PASSWORD_VERSION) {
+      await prisma.admin.update({
+        where: { id: existingAdmin.id },
+        data: { password: ADMIN_PASSWORD_HASH, passwordVersion: ADMIN_PASSWORD_VERSION } as any,
+      });
+    }
+    return;
+  }
 
-  const hashedPassword = await bcrypt.hash('admin123', 10);
   await prisma.admin.create({
     data: {
       username: 'admin',
-      password: hashedPassword,
-    },
+      password: ADMIN_PASSWORD_HASH,
+      passwordVersion: ADMIN_PASSWORD_VERSION,
+    } as any,
   });
 }
 
