@@ -104,15 +104,11 @@ If the WhatsApp credentials are missing or invalid, order creation continues and
 
 ## Order Email Notifications
 
-Every successfully confirmed order is emailed to `gurpreet.bumrah@gmail.com` and `manishaskitchen2026@gmail.com`. Configure these server environment variables to enable sending through Gmail SMTP:
+Every successfully confirmed order is emailed to `gurpreet.bumrah@gmail.com` and `manishaskitchen2026@gmail.com`. Configure these server environment variables to enable sending through Resend:
 
 ```env
-EMAIL_SMTP_USER="manishaskitchen2026@gmail.com"
-EMAIL_SMTP_PASS="your Google App Password"
-EMAIL_SMTP_HOST="smtp.gmail.com"
-EMAIL_SMTP_PORT="465"
-EMAIL_SMTP_SECURE="true"
-ORDER_EMAIL_FROM="manishaskitchen2026@gmail.com"
+RESEND_API_KEY="re_your_resend_api_key"
+RESEND_FROM_EMAIL="Manisha's Kitchen <orders@your-verified-domain.com>"
 ```
 
-Create a Google App Password for the sender account; do not use the account's regular Google password. Orders still complete if email credentials are missing or email delivery fails.
+Verify the sender domain in Resend before deploying. Orders still complete if the email configuration is missing or delivery fails.
